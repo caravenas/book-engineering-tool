@@ -1,13 +1,37 @@
-import { useBookStore } from '../store/useBookStore';
-import { SHEET_SIZES } from '../data/substrates';
+import { useState } from 'react';
+import { useBookStore, getAllSheetSizes } from '../store/useBookStore';
 import { roundTo } from '../engine/units';
 
 export function ImpositionVisualizer() {
   const {
-    impositionResult, sheetSizeId, setSheetSize,
+    impositionResult, 
+    sheetSizeId, 
+    customSheetSizes,
+    setSheetSize,
+    addCustomSheetSize,
+    removeCustomSheetSize
   } = useBookStore();
 
-  const currentSheet = SHEET_SIZES.find(s => s.id === sheetSizeId);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customW, setCustomW] = useState('');
+  const [customH, setCustomH] = useState('');
+
+  const allSheets = getAllSheetSizes(customSheetSizes);
+  const currentSheet = allSheets.find(s => s.id === sheetSizeId);
+
+  const handleAddCustom = () => {
+    const wVal = parseInt(customW, 10);
+    const hVal = parseInt(customH, 10);
+    
+    if (wVal > 0 && hVal > 0) {
+      addCustomSheetSize(customName.trim(), wVal, hVal);
+      setShowCustomForm(false);
+      setCustomName('');
+      setCustomW('');
+      setCustomH('');
+    }
+  };
 
   // SVG rendering
   const svgPadding = 30;
@@ -103,19 +127,117 @@ export function ImpositionVisualizer() {
 
       {/* Sheet size selector */}
       <div className="form-group">
-        <label className="form-label">Tamaño del pliego</label>
-        <select
-          className="form-input"
-          value={sheetSizeId}
-          onChange={e => setSheetSize(e.target.value)}
-          id="select-sheet-size"
-        >
-          {SHEET_SIZES.map(s => (
-            <option key={s.id} value={s.id}>
-              {s.name} ({s.width_mm}×{s.height_mm} mm)
-            </option>
-          ))}
-        </select>
+        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Tamaño del pliego</span>
+          <button 
+            type="button" 
+            onClick={() => setShowCustomForm(!showCustomForm)}
+            style={{
+              background: 'none', border: 'none', color: 'var(--color-amber-400)', 
+              cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600
+            }}
+          >
+            {showCustomForm ? 'Cancelar' : '+ Personalizado'}
+          </button>
+        </label>
+        
+        {showCustomForm ? (
+          <div style={{ 
+            background: 'rgba(0,0,0,0.2)', 
+            padding: 'var(--space-3)', 
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)',
+            marginBottom: 'var(--space-3)'
+          }}>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Nombre (opcional)"
+                value={customName}
+                onChange={e => setCustomName(e.target.value)}
+              />
+            </div>
+            <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+              <div className="input-with-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="Ancho"
+                  value={customW}
+                  onChange={e => setCustomW(e.target.value)}
+                  min="1"
+                />
+                <span className="input-unit">mm</span>
+              </div>
+              <div className="input-with-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  placeholder="Alto"
+                  value={customH}
+                  onChange={e => setCustomH(e.target.value)}
+                  min="1"
+                />
+                <span className="input-unit">mm</span>
+              </div>
+            </div>
+            <button 
+              onClick={handleAddCustom}
+              style={{
+                width: '100%',
+                padding: 'var(--space-2)',
+                background: 'var(--color-amber-500)',
+                color: '#000',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Crear Pliego
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <select
+              className="form-input"
+              value={sheetSizeId}
+              onChange={e => setSheetSize(e.target.value)}
+              id="select-sheet-size"
+              style={{ flex: 1 }}
+            >
+              {allSheets.map(s => {
+                const isCustom = customSheetSizes.some(cs => cs.id === s.id);
+                return (
+                  <option key={s.id} value={s.id}>
+                    {isCustom ? '⭐ ' : ''}{s.name} ({s.width_mm}×{s.height_mm} mm)
+                  </option>
+                );
+              })}
+            </select>
+            {customSheetSizes.some(cs => cs.id === sheetSizeId) && (
+              <button
+                onClick={() => removeCustomSheetSize(sheetSizeId)}
+                title="Eliminar pliego personalizado"
+                style={{
+                  background: 'rgba(244, 63, 94, 0.15)',
+                  color: 'var(--color-rose-400)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  width: '42px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px'
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* SVG Diagram */}

@@ -87,9 +87,11 @@ export interface BookConfig {
   // Substrate
   substrateId: string;
   selectedGrammage: number;      // g/m² (selecciona de las opciones del sustrato)
+  customGrammages: GrammageOption[];  // User-added grammage options per substrate
 
   // Imposition
   sheetSizeId: string;
+  customSheetSizes: SheetSize[];      // User-added sheet sizes
 
   // Spine & Weight
   totalPages: number;
@@ -110,5 +112,9 @@ export interface BookStore extends BookConfig {
   setGrammage: (grammage: number) => void;
   setSheetSize: (sheetSizeId: string) => void;
   setTotalPages: (pages: number) => void;
+  addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => void;
+  removeCustomSheetSize: (id: string) => void;
+  addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => void;
+  removeCustomGrammage: (substrateId: string, grammage: number) => void;
   recalculate: () => void;
 }
