@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
 import { SUBSTRATES } from '../data/substrates';
 
@@ -20,6 +20,26 @@ export function SubstrateSelector() {
   const currentSubstrate = SUBSTRATES.find(s => s.id === substrateId);
   const allOptions = getAllGrammageOptions(substrateId, customGrammages);
   const currentOption = allOptions.find(o => o.grammage === selectedGrammage);
+
+  // Auto-calculate caliper when grammage changes
+  useEffect(() => {
+    if (customG && currentSubstrate && currentSubstrate.options.length > 0) {
+      const gVal = parseInt(customG, 10);
+      if (!isNaN(gVal) && gVal > 0) {
+        // Find average ratio (caliper / grammage) for this substrate
+        const avgRatio = currentSubstrate.options.reduce(
+          (sum, opt) => sum + (opt.caliper / opt.grammage), 0
+        ) / currentSubstrate.options.length;
+        
+        const estimatedCaliper = Math.round(gVal * avgRatio);
+        setCustomCaliper(estimatedCaliper.toString());
+      } else {
+        setCustomCaliper('');
+      }
+    } else if (!customG) {
+      setCustomCaliper('');
+    }
+  }, [customG, currentSubstrate]);
 
   const handleAddCustom = () => {
     const gVal = parseInt(customG, 10);

@@ -60,6 +60,7 @@ export interface ImpositionResult {
   usedArea_mm2: number;
   totalArea_mm2: number;
   placements: PagePlacement[];
+  optimal: boolean; // Tells if the chosen layout fits the most possible pages
 }
 
 // ─── Spine & Weight Results ──────────────────────────────────────────────
@@ -83,6 +84,9 @@ export interface BookConfig {
   pageHeight_mm: number;
   bleed_mm: number;
   unitSystem: UnitSystem;
+
+  // Manual Rotation
+  pageOrientation: 'auto' | 'normal' | 'rotated';
 
   // Substrate
   substrateId: string;
@@ -108,6 +112,7 @@ export interface BookStore extends BookConfig {
   setPageDimensions: (width_mm: number, height_mm: number) => void;
   setBleed: (bleed_mm: number) => void;
   setUnitSystem: (system: UnitSystem) => void;
+  setPageOrientation: (orientation: 'auto' | 'normal' | 'rotated') => void;
   setSubstrate: (substrateId: string) => void;
   setGrammage: (grammage: number) => void;
   setSheetSize: (sheetSizeId: string) => void;

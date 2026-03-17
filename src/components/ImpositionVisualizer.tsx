@@ -7,9 +7,12 @@ export function ImpositionVisualizer() {
     impositionResult, 
     sheetSizeId, 
     customSheetSizes,
+    pageOrientation,
+    bleed_mm,
     setSheetSize,
     addCustomSheetSize,
-    removeCustomSheetSize
+    removeCustomSheetSize,
+    setPageOrientation
   } = useBookStore();
 
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -71,24 +74,41 @@ export function ImpositionVisualizer() {
         />
 
         {/* Pages placed on sheet */}
-        {impositionResult.placements.map((p, i) => (
-          <g key={i}>
-            <rect
-              className="page-rect"
-              x={svgPadding + p.x * scale}
-              y={svgPadding + p.y * scale}
-              width={p.width * scale}
-              height={p.height * scale}
-            />
-            <text
-              className="page-number"
-              x={svgPadding + (p.x + p.width / 2) * scale}
-              y={svgPadding + (p.y + p.height / 2) * scale}
-            >
-              {i + 1}
-            </text>
-          </g>
-        ))}
+        {impositionResult.placements.map((p, i) => {
+          // Inner rect for the safe zone (page minus bleed)
+          const safeX = p.x + bleed_mm;
+          const safeY = p.y + bleed_mm;
+          const safeW = p.width - bleed_mm * 2;
+          const safeH = p.height - bleed_mm * 2;
+          
+          return (
+            <g key={i}>
+              {/* Full page including bleed */}
+              <rect
+                className="page-rect"
+                x={svgPadding + p.x * scale}
+                y={svgPadding + p.y * scale}
+                width={p.width * scale}
+                height={p.height * scale}
+              />
+              {/* Safe zone (no bleed) */}
+              <rect
+                className="safe-zone"
+                x={svgPadding + safeX * scale}
+                y={svgPadding + safeY * scale}
+                width={safeW * scale}
+                height={safeH * scale}
+              />
+              <text
+                className="page-number"
+                x={svgPadding + (p.x + p.width / 2) * scale}
+                y={svgPadding + (p.y + p.height / 2) * scale}
+              >
+                {i + 1}
+              </text>
+            </g>
+          );
+        })}
 
         {/* Sheet dimensions label */}
         <text
@@ -126,20 +146,34 @@ export function ImpositionVisualizer() {
       </h2>
 
       {/* Sheet size selector */}
-      <div className="form-group">
-        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Tamaño del pliego</span>
-          <button 
-            type="button" 
-            onClick={() => setShowCustomForm(!showCustomForm)}
-            style={{
-              background: 'none', border: 'none', color: 'var(--color-amber-400)', 
-              cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600
-            }}
+      <div className="input-row">
+        <div className="form-group">
+          <label className="form-label">Rotación</label>
+          <select
+            className="form-input"
+            value={pageOrientation}
+            onChange={e => setPageOrientation(e.target.value as 'auto' | 'normal' | 'rotated')}
           >
-            {showCustomForm ? 'Cancelar' : '+ Personalizado'}
-          </button>
-        </label>
+            <option value="auto">Automática (Óptima)</option>
+            <option value="normal">Normal</option>
+            <option value="rotated">Rotada 90°</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Tamaño pliego</span>
+            <button 
+              type="button" 
+              onClick={() => setShowCustomForm(!showCustomForm)}
+              style={{
+                background: 'none', border: 'none', color: 'var(--color-amber-400)', 
+                cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600
+              }}
+            >
+              {showCustomForm ? 'Cancelar' : '+ Person.'}
+            </button>
+          </label>
         
         {showCustomForm ? (
           <div style={{ 
@@ -238,7 +272,26 @@ export function ImpositionVisualizer() {
             )}
           </div>
         )}
-      </div>
+      </div></div>
+
+      {/* Optimization Warning */}
+      {impositionResult && !impositionResult.optimal && impositionResult.pagesPerSide > 0 && (
+        <div style={{
+          background: 'rgba(244, 63, 94, 0.15)',
+          border: '1px solid rgba(244, 63, 94, 0.3)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--space-3)',
+          marginBottom: 'var(--space-4)',
+          display: 'flex',
+          gap: 'var(--space-2)',
+          alignItems: 'flex-start'
+        }}>
+          <span style={{ fontSize: '18px', lineHeight: 1 }}>⚠️</span>
+          <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-rose-400)' }}>
+            <strong>Disposición no óptima.</strong> Esta rotación genera más merma o ubica menos páginas que la orientación inversa.
+          </p>
+        </div>
+      )}
 
       {/* SVG Diagram */}
       <div className="imposition-svg-container">

@@ -82,6 +82,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   pageHeight_mm: defaultDims.height,
   bleed_mm: 3,
   unitSystem: 'metric',
+  pageOrientation: 'auto',
 
   // Substrate
   substrateId: DEFAULT_SUBSTRATE,
@@ -135,6 +136,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   setUnitSystem: (unitSystem) => {
     set({ unitSystem });
+  },
+
+  setPageOrientation: (orientation) => {
+    set({ pageOrientation: orientation });
+    get().recalculate();
   },
 
   setSubstrate: (substrateId) => {
@@ -228,7 +234,8 @@ export const useBookStore = create<BookStore>((set, get) => ({
       pageWithBleedW,
       pageWithBleedH,
       sheet.width,
-      sheet.height
+      sheet.height,
+      state.pageOrientation
     );
 
     const caliper = getCaliper(state.substrateId, state.selectedGrammage, state.customGrammages);

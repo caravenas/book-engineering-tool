@@ -78,13 +78,15 @@ function generatePlacements(
  * @param pageHeight_mm - Finished page height INCLUDING bleed on both sides
  * @param sheetWidth_mm - Press sheet width
  * @param sheetHeight_mm - Press sheet height
+ * @param orientation - 'auto' chooses best, 'normal' forces unrotated, 'rotated' forces 90°
  * @returns ImpositionResult with layout details and waste percentage
  */
 export function calculateImposition(
   pageWidth_mm: number,
   pageHeight_mm: number,
   sheetWidth_mm: number,
-  sheetHeight_mm: number
+  sheetHeight_mm: number,
+  orientation: 'auto' | 'normal' | 'rotated' = 'auto'
 ): ImpositionResult {
   // Validate inputs
   if (pageWidth_mm <= 0 || pageHeight_mm <= 0) {
@@ -98,46 +100,61 @@ export function calculateImposition(
   const normal = fitPages(pageWidth_mm, pageHeight_mm, sheetWidth_mm, sheetHeight_mm, false);
   const rotated = fitPages(pageWidth_mm, pageHeight_mm, sheetWidth_mm, sheetHeight_mm, true);
 
-  // Choose the orientation that fits more pages
-  const best = rotated.total > normal.total ? rotated : normal;
+  // The true optimum is whichever fits the most pages
+  const optimum = rotated.total > normal.total ? rotated : normal;
 
-  // If no pages fit at all
-  if (best.total === 0) {
+  // Apply user restriction
+  let selected;
+  if (orientation === 'normal') {
+    selected = normal;
+  } else if (orientation === 'rotated') {
+    selected = rotated;
+  } else {
+    selected = optimum;
+  }
+
+  // Check if chosen one is optimal
+  const isOptimal = selected.total >= optimum.total && selected.total > 0;
+
+  // If no pages fit at all in the chosen orientation
+  if (selected.total === 0) {
     return {
       pagesPerSide: 0,
       cols: 0,
       rows: 0,
-      rotated: false,
+      rotated: selected.rotated,
       wastePercentage: 100,
       usedArea_mm2: 0,
       totalArea_mm2: sheetWidth_mm * sheetHeight_mm,
       placements: [],
+      optimal: false,
     };
   }
 
   // Calculate areas
   const totalArea = sheetWidth_mm * sheetHeight_mm;
   const pageArea = pageWidth_mm * pageHeight_mm;
-  const usedArea = pageArea * best.total;
+  const usedArea = pageArea * selected.total;
   const wastePercentage = ((totalArea - usedArea) / totalArea) * 100;
 
   // Generate placements for visualization
   const placements = generatePlacements(
-    best.cols,
-    best.rows,
+    selected.cols,
+    selected.rows,
     pageWidth_mm,
     pageHeight_mm,
-    best.rotated
+    selected.rotated
   );
 
   return {
-    pagesPerSide: best.total,
-    cols: best.cols,
-    rows: best.rows,
-    rotated: best.rotated,
+    pagesPerSide: selected.total,
+    cols: selected.cols,
+    rows: selected.rows,
+    rotated: selected.rotated,
     wastePercentage,
     usedArea_mm2: usedArea,
     totalArea_mm2: totalArea,
     placements,
+    optimal: isOptimal,
   };
 }

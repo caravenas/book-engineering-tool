@@ -551,6 +551,14 @@ select.form-input {
   fill: rgba(245, 158, 11, 0.25);
 }
 
+.imposition-svg .safe-zone {
+  fill: transparent;
+  stroke: var(--color-rose-400);
+  stroke-width: 1;
+  stroke-dasharray: 4,4;
+  opacity: 0.6;
+}
+
 .imposition-svg .waste-area {
   fill: rgba(244, 63, 94, 0.06);
 }
