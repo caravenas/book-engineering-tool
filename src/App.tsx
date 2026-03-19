@@ -16,7 +16,8 @@ export default function App() {
   return (
     <div className="page-wrapper">
       <div className="header-section">
-        <header className="app-header">
+        <header className="app-header" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '7rem', width: 'auto' }} />
           <h1 className="app-logo">PliegoStack</h1>
         </header>
       </div>
