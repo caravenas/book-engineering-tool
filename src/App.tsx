@@ -17,23 +17,19 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-logo">PliegoStack</h1>
-        <p className="app-tagline">Book Engineering Tool · Ingeniería Editorial</p>
       </header>
 
       <main className="app-grid">
-        {/* Left Panel: Design & Paper */}
-        <div className="app-column">
+        <div className="app-cell cell-tl">
           <CanvasDesigner />
-          <SubstrateSelector />
         </div>
-
-        {/* Center Panel: Imposition Visualizer */}
-        <div className="app-column">
+        <div className="app-cell cell-tr">
           <ImpositionVisualizer />
         </div>
-
-        {/* Right Panel: Spine & Weight */}
-        <div className="app-column">
+        <div className="app-cell cell-bl">
+          <SubstrateSelector />
+        </div>
+        <div className="app-cell cell-br">
           <SpineCalculator />
         </div>
       </main>

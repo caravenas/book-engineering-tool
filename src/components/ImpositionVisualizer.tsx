@@ -4,8 +4,8 @@ import { roundTo } from '../engine/units';
 
 export function ImpositionVisualizer() {
   const {
-    impositionResult, 
-    sheetSizeId, 
+    impositionResult,
+    sheetSizeId,
     customSheetSizes,
     pageOrientation,
     bleed_mm,
@@ -26,7 +26,7 @@ export function ImpositionVisualizer() {
   const handleAddCustom = () => {
     const wVal = parseInt(customW, 10);
     const hVal = parseInt(customH, 10);
-    
+
     if (wVal > 0 && hVal > 0) {
       addCustomSheetSize(customName.trim(), wVal, hVal);
       setShowCustomForm(false);
@@ -80,7 +80,7 @@ export function ImpositionVisualizer() {
           const safeY = p.y + bleed_mm;
           const safeW = p.width - bleed_mm * 2;
           const safeH = p.height - bleed_mm * 2;
-          
+
           return (
             <g key={i}>
               {/* Full page including bleed */}
@@ -127,21 +127,20 @@ export function ImpositionVisualizer() {
   const wasteLevel = !impositionResult
     ? 'high'
     : impositionResult.wastePercentage <= 15
-    ? 'low'
-    : impositionResult.wastePercentage <= 30
-    ? 'medium'
-    : 'high';
+      ? 'low'
+      : impositionResult.wastePercentage <= 30
+        ? 'medium'
+        : 'high';
 
   const wasteLabel = wasteLevel === 'low'
     ? 'Excelente aprovechamiento'
     : wasteLevel === 'medium'
-    ? 'Aprovechamiento aceptable'
-    : 'Alta merma — considere otro pliego';
+      ? 'Aprovechamiento aceptable'
+      : 'Alta merma — considere otro pliego';
 
   return (
     <div className="panel" id="imposition-visualizer">
       <h2 className="panel-title">
-        <span className="icon">🖨️</span>
         Motor de Imposición
       </h2>
 
@@ -163,116 +162,111 @@ export function ImpositionVisualizer() {
         <div className="form-group">
           <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>Tamaño pliego</span>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setShowCustomForm(!showCustomForm)}
               style={{
-                background: 'none', border: 'none', color: 'var(--color-amber-400)', 
+                background: 'none', border: 'none', color: 'var(--color-amber-400)',
                 cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600
               }}
             >
               {showCustomForm ? 'Cancelar' : '+ Person.'}
             </button>
           </label>
-        
-        {showCustomForm ? (
-          <div style={{ 
-            background: 'rgba(0,0,0,0.2)', 
-            padding: 'var(--space-3)', 
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-border)',
-            marginBottom: 'var(--space-3)'
-          }}>
-            <div style={{ marginBottom: 'var(--space-3)' }}>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Nombre (opcional)"
-                value={customName}
-                onChange={e => setCustomName(e.target.value)}
-              />
-            </div>
-            <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-              <div className="input-with-unit">
+
+          {showCustomForm ? (
+            <div style={{
+              background: 'transparent',
+              border: 'none',
+              marginBottom: 'var(--space-3)'
+            }}>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
                 <input
-                  type="number"
+                  type="text"
                   className="form-input"
-                  placeholder="Ancho"
-                  value={customW}
-                  onChange={e => setCustomW(e.target.value)}
-                  min="1"
+                  placeholder="Nombre (opcional)"
+                  value={customName}
+                  onChange={e => setCustomName(e.target.value)}
                 />
-                <span className="input-unit">mm</span>
               </div>
-              <div className="input-with-unit">
-                <input
-                  type="number"
-                  className="form-input"
-                  placeholder="Alto"
-                  value={customH}
-                  onChange={e => setCustomH(e.target.value)}
-                  min="1"
-                />
-                <span className="input-unit">mm</span>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div className="input-with-unit">
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Ancho"
+                    value={customW}
+                    onChange={e => setCustomW(e.target.value)}
+                    min="1"
+                  />
+                  <span className="input-unit">mm</span>
+                </div>
+                <div className="input-with-unit">
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Alto"
+                    value={customH}
+                    onChange={e => setCustomH(e.target.value)}
+                    min="1"
+                  />
+                  <span className="input-unit">mm</span>
+                </div>
               </div>
-            </div>
-            <button 
-              onClick={handleAddCustom}
-              style={{
-                width: '100%',
-                padding: 'var(--space-2)',
-                background: 'var(--color-amber-500)',
-                color: '#000',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Crear Pliego
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select
-              className="form-input"
-              value={sheetSizeId}
-              onChange={e => setSheetSize(e.target.value)}
-              id="select-sheet-size"
-              style={{ flex: 1 }}
-            >
-              {allSheets.map(s => {
-                const isCustom = customSheetSizes.some(cs => cs.id === s.id);
-                return (
-                  <option key={s.id} value={s.id}>
-                    {isCustom ? '⭐ ' : ''}{s.name} ({s.width_mm}×{s.height_mm} mm)
-                  </option>
-                );
-              })}
-            </select>
-            {customSheetSizes.some(cs => cs.id === sheetSizeId) && (
               <button
-                onClick={() => removeCustomSheetSize(sheetSizeId)}
-                title="Eliminar pliego personalizado"
+                onClick={handleAddCustom}
                 style={{
-                  background: 'rgba(244, 63, 94, 0.15)',
-                  color: 'var(--color-rose-400)',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  width: '42px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '18px'
+                  width: '100%',
+                  padding: 'var(--space-2)',
+                  background: 'var(--color-text-primary)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
                 }}
               >
-                ×
+                Crear Pliego
               </button>
-            )}
-          </div>
-        )}
-      </div></div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                className="form-input"
+                value={sheetSizeId}
+                onChange={e => setSheetSize(e.target.value)}
+                id="select-sheet-size"
+                style={{ flex: 1 }}
+              >
+                {allSheets.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.width_mm}×{s.height_mm} mm)
+                  </option>
+                ))}
+              </select>
+              {customSheetSizes.some(cs => cs.id === sheetSizeId) && (
+                <button
+                  onClick={() => removeCustomSheetSize(sheetSizeId)}
+                  title="Eliminar pliego personalizado"
+                  style={{
+                    background: 'rgba(244, 63, 94, 0.15)',
+                    color: 'var(--color-rose-400)',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    width: '42px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px'
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+        </div></div>
 
       {/* Optimization Warning */}
       {impositionResult && !impositionResult.optimal && impositionResult.pagesPerSide > 0 && (
@@ -286,7 +280,6 @@ export function ImpositionVisualizer() {
           gap: 'var(--space-2)',
           alignItems: 'flex-start'
         }}>
-          <span style={{ fontSize: '18px', lineHeight: 1 }}>⚠️</span>
           <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-rose-400)' }}>
             <strong>Disposición no óptima.</strong> Esta rotación genera más merma o ubica menos páginas que la orientación inversa.
           </p>
@@ -305,35 +298,37 @@ export function ImpositionVisualizer() {
       {/* Stats */}
       {impositionResult && (
         <>
-          <div className="stat-grid" style={{ marginTop: 'var(--space-4)' }}>
-            <div className="stat-card">
-              <div className="stat-value amber">{impositionResult.pagesPerSide}</div>
-              <div className="stat-label">Pags / cara</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', marginTop: 'var(--space-6)' }}>
+            <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{impositionResult.pagesPerSide}</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--color-text-primary)' }}>Pags / cara</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value sky">
+            <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                 {impositionResult.cols} × {impositionResult.rows}
               </div>
-              <div className="stat-label">Disposición</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--color-text-primary)' }}>Disposición</div>
             </div>
-            <div className="stat-card">
-              <div className={`stat-value ${wasteLevel === 'low' ? 'emerald' : wasteLevel === 'medium' ? 'amber' : 'rose'}`}>
+            <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                 {roundTo(impositionResult.wastePercentage, 1)}%
               </div>
-              <div className="stat-label">Merma</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--color-text-primary)' }}>Merma</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value emerald">
+            <div style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
                 {impositionResult.rotated ? 'Rotada' : 'Normal'}
               </div>
-              <div className="stat-label">Orientación</div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--color-text-primary)' }}>Orientación</div>
             </div>
           </div>
 
           {/* Waste indicator */}
-          <div className={`waste-indicator ${wasteLevel}`}>
-            <div className="waste-dot" />
-            <span className="waste-text">{wasteLabel}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: wasteLevel === 'low' ? '#10b981' : wasteLevel === 'medium' ? '#f59e0b' : '#E63946' }} />
+            <span style={{ fontSize: '12px', color: wasteLevel === 'low' ? '#10b981' : wasteLevel === 'medium' ? '#f59e0b' : '#E63946', fontWeight: 500 }}>
+              {wasteLabel}
+            </span>
           </div>
         </>
       )}

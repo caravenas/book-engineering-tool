@@ -3,11 +3,11 @@ import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
 import { SUBSTRATES } from '../data/substrates';
 
 export function SubstrateSelector() {
-  const { 
-    substrateId, 
-    selectedGrammage, 
+  const {
+    substrateId,
+    selectedGrammage,
     customGrammages,
-    setSubstrate, 
+    setSubstrate,
     setGrammage,
     addCustomGrammage,
     removeCustomGrammage
@@ -30,7 +30,7 @@ export function SubstrateSelector() {
         const avgRatio = currentSubstrate.options.reduce(
           (sum, opt) => sum + (opt.caliper / opt.grammage), 0
         ) / currentSubstrate.options.length;
-        
+
         const estimatedCaliper = Math.round(gVal * avgRatio);
         setCustomCaliper(estimatedCaliper.toString());
       } else {
@@ -44,7 +44,7 @@ export function SubstrateSelector() {
   const handleAddCustom = () => {
     const gVal = parseInt(customG, 10);
     const cVal = parseInt(customCaliper, 10);
-    
+
     if (gVal > 0 && cVal > 0) {
       addCustomGrammage(substrateId, gVal, cVal);
       setShowCustomForm(false);
@@ -56,7 +56,6 @@ export function SubstrateSelector() {
   return (
     <div className="panel" id="substrate-selector">
       <h2 className="panel-title">
-        <span className="icon">📄</span>
         Sustrato (Papel)
       </h2>
 
@@ -94,13 +93,13 @@ export function SubstrateSelector() {
       {/* Grammage */}
       <div className="form-group">
         <label className="form-label">Gramaje</label>
-        <div className="segment-group" style={{ flexWrap: 'wrap', gap: '4px', padding: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginTop: 'var(--space-2)', padding: 'var(--space-2)' }}>
           {allOptions.map(opt => {
             const isCustom = customGrammages.some(cg => cg.grammage === opt.grammage);
+            const isActive = selectedGrammage === opt.grammage;
             return (
               <button
                 key={opt.grammage}
-                className={`segment-btn ${selectedGrammage === opt.grammage ? 'active' : ''}`}
                 onClick={() => setGrammage(opt.grammage)}
                 onContextMenu={(e) => {
                   if (isCustom) {
@@ -110,15 +109,32 @@ export function SubstrateSelector() {
                 }}
                 title={isCustom ? "Click derecho para eliminar" : ""}
                 id={`grammage-${opt.grammage}`}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: isActive ? '3px solid #E63946' : '3px solid transparent',
+                  padding: '0 0 2px 0',
+                  fontSize: '14px',
+                  fontWeight: isActive ? 700 : 500,
+                  color: 'var(--color-text-primary)',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s'
+                }}
               >
                 {opt.grammage}g {isCustom && '*'}
               </button>
             );
           })}
-          <button 
-            className={`segment-btn ${showCustomForm ? 'active' : ''}`}
+          <button
             onClick={() => setShowCustomForm(!showCustomForm)}
-            style={{ flexGrow: 0, minWidth: '40px' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              color: 'var(--color-text-primary)'
+            }}
           >
             +
           </button>
@@ -127,11 +143,9 @@ export function SubstrateSelector() {
 
       {/* Custom Grammage Form */}
       {showCustomForm && (
-        <div className="form-group" style={{ 
-          background: 'rgba(0,0,0,0.2)', 
-          padding: 'var(--space-3)', 
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--color-border)',
+        <div className="form-group" style={{
+          background: 'transparent',
+          border: 'none',
           marginTop: 'var(--space-2)'
         }}>
           <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
@@ -158,13 +172,13 @@ export function SubstrateSelector() {
               <span className="input-unit">μm</span>
             </div>
           </div>
-          <button 
+          <button
             onClick={handleAddCustom}
             style={{
               width: '100%',
               padding: 'var(--space-2)',
-              background: 'var(--color-amber-500)',
-              color: '#000',
+              background: 'var(--color-text-primary)', /* Negro carbón o #000 */
+              color: '#FFFFFF',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               fontWeight: 600,
@@ -178,9 +192,11 @@ export function SubstrateSelector() {
 
       {/* Caliper display */}
       {currentOption && (
-        <div className="stat-card" style={{ marginTop: 'var(--space-4)' }}>
-          <div className="stat-value amber">{currentOption.caliper} μm</div>
-          <div className="stat-label">Calibre (grosor por hoja)</div>
+        <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border)' }}>
+          <div className="stat-label" style={{ marginBottom: 'var(--space-2)' }}>Calibre</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            {currentOption.caliper} <span style={{ fontSize: '2rem' }}>μm</span>
+          </div>
         </div>
       )}
     </div>

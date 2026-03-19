@@ -3,17 +3,17 @@ import { PROPORTIONS } from '../data/substrates';
 import { mmToInches, roundTo } from '../engine/units';
 import type { BookFormat } from '../types';
 
-const FORMAT_OPTIONS: { value: BookFormat; label: string; icon: string }[] = [
-  { value: 'vertical', label: 'Vertical', icon: '📕' },
-  { value: 'landscape', label: 'Apaisado', icon: '📖' },
-  { value: 'square', label: 'Cuadrado', icon: '📓' },
+const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
+  { value: 'vertical', label: 'Vertical' },
+  { value: 'landscape', label: 'Apaisado' },
+  { value: 'square', label: 'Cuadrado' },
 ];
 
 export function CanvasDesigner() {
   const {
     format, proportionId, pageWidth_mm, pageHeight_mm,
     bleed_mm, unitSystem,
-    setFormat, setProportion, setPageDimensions, setBleed, setUnitSystem,
+    setFormat, setProportion, setPageDimensions, setBleed,
   } = useBookStore();
 
   // Convert for display
@@ -33,12 +33,11 @@ export function CanvasDesigner() {
   return (
     <div className="panel" id="canvas-designer">
       <h2 className="panel-title">
-        <span className="icon">🎨</span>
         Canvas Designer
       </h2>
 
       {/* Format selector */}
-      <div className="form-group">
+      <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
         <label className="form-label">Formato</label>
         <div className="segment-group">
           {FORMAT_OPTIONS.map(opt => (
@@ -48,14 +47,14 @@ export function CanvasDesigner() {
               onClick={() => setFormat(opt.value)}
               id={`format-${opt.value}`}
             >
-              {opt.icon} {opt.label}
+              {opt.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* Proportion selector */}
-      <div className="form-group">
+      <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
         <label className="form-label">Proporción</label>
         <div className="segment-group">
           {PROPORTIONS.slice(0, 3).map(prop => (
@@ -74,36 +73,15 @@ export function CanvasDesigner() {
             onClick={() => setProportion(null)}
             id="proportion-custom"
           >
-            ✏️ Manual
+            Manual
           </button>
         </div>
       </div>
 
-      {/* Unit system toggle */}
-      <div className="form-group">
-        <label className="form-label">Unidades</label>
-        <div className="segment-group">
-          <button
-            className={`segment-btn ${unitSystem === 'metric' ? 'active' : ''}`}
-            onClick={() => setUnitSystem('metric')}
-            id="unit-metric"
-          >
-            mm (Métrico)
-          </button>
-          <button
-            className={`segment-btn ${unitSystem === 'imperial' ? 'active' : ''}`}
-            onClick={() => setUnitSystem('imperial')}
-            id="unit-imperial"
-          >
-            ″ (Imperial)
-          </button>
-        </div>
-      </div>
-
-      {/* Dimensions */}
-      <div className="form-group">
-        <label className="form-label">Dimensiones de página</label>
-        <div className="input-row">
+      {/* Dimensions and Units side by side */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Ancho (Cerrado)</label>
           <div className="input-with-unit">
             <input
               type="number"
@@ -117,10 +95,13 @@ export function CanvasDesigner() {
               step={unitSystem === 'imperial' ? 0.125 : 1}
               min={0}
               id="input-width"
-              placeholder="Ancho"
             />
             <span className="input-unit">{unit}</span>
           </div>
+        </div>
+
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Alto (Cerrado)</label>
           <div className="input-with-unit">
             <input
               type="number"
@@ -134,7 +115,6 @@ export function CanvasDesigner() {
               step={unitSystem === 'imperial' ? 0.125 : 1}
               min={0}
               id="input-height"
-              placeholder="Alto"
             />
             <span className="input-unit">{unit}</span>
           </div>
