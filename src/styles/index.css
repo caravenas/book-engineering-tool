@@ -559,7 +559,7 @@ select.form-input {
 .imposition-svg .page-rect {
   fill: #12A9D8;
   /* Tono natural de papel */
-  stroke: var(--color-border);
+  /* stroke: var(--color-border); */
   /* Gris claro */
   stroke-width: 1.5;
   stroke-dasharray: 4, 4;
@@ -604,7 +604,7 @@ select.form-input {
 }
 
 .page-preview {
-  border: 1.5px dashed var(--color-border);
+  /* border: 1.5px dashed var(--color-border); */
   background: #12A9D8;
   position: relative;
   transition: all var(--transition-slow);
