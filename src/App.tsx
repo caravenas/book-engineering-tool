@@ -14,25 +14,29 @@ export default function App() {
   }, [recalculate]);
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1 className="app-logo">PliegoStack</h1>
-      </header>
+    <div className="page-wrapper">
+      <div className="header-section">
+        <header className="app-header">
+          <h1 className="app-logo">PliegoStack</h1>
+        </header>
+      </div>
 
-      <main className="app-grid">
-        <div className="app-cell cell-tl">
-          <CanvasDesigner />
-        </div>
-        <div className="app-cell cell-tr">
-          <ImpositionVisualizer />
-        </div>
-        <div className="app-cell cell-bl">
-          <SubstrateSelector />
-        </div>
-        <div className="app-cell cell-br">
-          <SpineCalculator />
-        </div>
-      </main>
+      <div className="main-section">
+        <main className="app-grid">
+          <div className="app-cell cell-tl">
+            <CanvasDesigner />
+          </div>
+          <div className="app-cell cell-tr">
+            <ImpositionVisualizer />
+          </div>
+          <div className="app-cell cell-bl">
+            <SubstrateSelector />
+          </div>
+          <div className="app-cell cell-br">
+            <SpineCalculator />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -151,16 +151,26 @@ body::before {
 
 /* ─── App Layout ────────────────────────────────────────────────────── */
 
-.app {
-  padding: var(--space-6);
-  max-width: 1440px;
-  margin: 0 auto;
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-.app-header {
+.header-section {
+  background: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
-  padding: var(--space-6) var(--space-6);
+}
+
+.main-section {
+  background: var(--color-bg-secondary);
+  flex: 1;
+}
+
+.app-header {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--space-6);
 }
 
 .app-logo {
@@ -186,7 +196,8 @@ body::before {
   grid-template-columns: 340px 1fr;
   gap: 0;
   align-items: stretch;
-  background: var(--color-bg-secondary);
+  max-width: 1440px;
+  margin: 0 auto;
 }
 
 .app-cell {
@@ -213,10 +224,6 @@ body::before {
 }
 
 @media (max-width: 768px) {
-  .app {
-    padding: var(--space-4);
-  }
-
   .app-grid {
     grid-template-columns: 1fr;
   }
