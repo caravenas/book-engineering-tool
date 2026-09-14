@@ -41,6 +41,7 @@ describe('Imposition Engine', () => {
     
     expect(result.pagesPerSide).toBe(2);
     expect(result.rotated).toBe(true);
+    expect(result.usesBestOrientation).toBe(true);
   });
 
   it('should calculate pages on large press sheet (77×110cm)', () => {
@@ -96,5 +97,40 @@ describe('Imposition Engine', () => {
     expect(() => calculateImposition(0, 210, 216, 279)).toThrow();
     expect(() => calculateImposition(140, 0, 216, 279)).toThrow();
     expect(() => calculateImposition(140, 210, -1, 279)).toThrow();
+  });
+
+  it.each([
+    [Number.NaN, 210, 216, 279],
+    [140, Number.POSITIVE_INFINITY, 216, 279],
+    [140, 210, Number.NEGATIVE_INFINITY, 279],
+    [140, 210, 216, Number.NaN],
+  ])('rejects non-finite dimensions', (pageW, pageH, sheetW, sheetH) => {
+    expect(() => calculateImposition(pageW, pageH, sheetW, sheetH)).toThrow(RangeError);
+  });
+
+  it('rejects unsafe placement arithmetic and non-finite areas', () => {
+    expect(() => calculateImposition(1, 1, Number.MAX_SAFE_INTEGER, 2)).toThrow(RangeError);
+    expect(() => calculateImposition(Number.MAX_VALUE, Number.MAX_VALUE, 1, 1)).toThrow(RangeError);
+  });
+
+  it('reports when a forced orientation is not the better of the two grids', () => {
+    const result = calculateImposition(100, 250, 260, 220, 'normal');
+
+    expect(result.pagesPerSide).toBe(0);
+    expect(result.usesBestOrientation).toBe(false);
+  });
+
+  it('caps only the visual preview at 250 placements', () => {
+    const complete = calculateImposition(1, 1, 25, 10);
+    const partial = calculateImposition(1, 1, 251, 1);
+
+    expect(complete.pagesPerSide).toBe(250);
+    expect(complete.placements).toHaveLength(250);
+    expect(complete.previewTruncated).toBe(false);
+    expect(partial.pagesPerSide).toBe(251);
+    expect(partial.placements).toHaveLength(250);
+    expect(partial.previewTruncated).toBe(true);
+    expect(partial.usedArea_mm2).toBe(251);
+    expect(partial.totalArea_mm2).toBe(251);
   });
 });

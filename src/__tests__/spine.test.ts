@@ -14,16 +14,36 @@ describe('Spine Calculator', () => {
     expect(thickness).toBeCloseTo(3.84, 4);
   });
 
+  it('uses 17 complete sheets for the spine and weight of a 33-page book', () => {
+    const thickness = calculateSpineThickness(33, 120);
+    const weight = calculateWeight(210, 280, 33, 150);
+
+    expect(thickness).toBeCloseTo(17 * 0.12, 4);
+    expect(weight).toBeCloseTo(17 * 0.21 * 0.28 * 150, 2);
+  });
+
   it('should calculate spine for thick book (200 pages Opalina 180g)', () => {
     // Lomo = (200 / 2) × (230 / 1000) = 100 × 0.23 = 23mm
     const thickness = calculateSpineThickness(200, 230);
     expect(thickness).toBeCloseTo(23.0, 4);
   });
 
-  it('should return 0 for invalid inputs', () => {
-    expect(calculateSpineThickness(0, 115)).toBe(0);
-    expect(calculateSpineThickness(32, 0)).toBe(0);
-    expect(calculateSpineThickness(-5, 115)).toBe(0);
+  it('should reject invalid inputs', () => {
+    expect(() => calculateSpineThickness(0, 115)).toThrow(RangeError);
+    expect(() => calculateSpineThickness(32, 0)).toThrow(RangeError);
+    expect(() => calculateSpineThickness(-5, 115)).toThrow(RangeError);
+  });
+
+  it('requires positive safe integer page counts at the safe-integer boundary', () => {
+    expect(Number.isFinite(calculateSpineThickness(Number.MAX_SAFE_INTEGER, 115))).toBe(true);
+    expect(() => calculateSpineThickness(1.5, 115)).toThrow(RangeError);
+    expect(() => calculateSpineThickness(Number.MAX_SAFE_INTEGER + 1, 115)).toThrow(RangeError);
+  });
+
+  it('rejects non-finite inputs and derived overflow', () => {
+    expect(() => calculateSpineThickness(Number.NaN, 115)).toThrow(RangeError);
+    expect(() => calculateSpineThickness(32, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    expect(() => calculateSpineThickness(Number.MAX_VALUE, Number.MAX_VALUE)).toThrow(RangeError);
   });
 });
 
@@ -46,11 +66,25 @@ describe('Weight Calculator', () => {
     expect(weight).toBeCloseTo(31.752, 2);
   });
 
-  it('should return 0 for invalid inputs', () => {
-    expect(calculateWeight(0, 210, 32, 150)).toBe(0);
-    expect(calculateWeight(140, 0, 32, 150)).toBe(0);
-    expect(calculateWeight(140, 210, 0, 150)).toBe(0);
-    expect(calculateWeight(140, 210, 32, 0)).toBe(0);
+  it('should reject invalid inputs', () => {
+    expect(() => calculateWeight(0, 210, 32, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 0, 32, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 210, 0, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 210, 32, 0)).toThrow(RangeError);
+  });
+
+  it('requires positive safe integer page counts at the safe-integer boundary', () => {
+    expect(Number.isFinite(calculateWeight(140, 210, Number.MAX_SAFE_INTEGER, 90))).toBe(true);
+    expect(() => calculateWeight(140, 210, 1.5, 90)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 210, Number.MAX_SAFE_INTEGER + 1, 90)).toThrow(RangeError);
+  });
+
+  it('rejects non-finite inputs and derived overflow', () => {
+    expect(() => calculateWeight(Number.POSITIVE_INFINITY, 210, 32, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, Number.NaN, 32, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 210, Number.NEGATIVE_INFINITY, 150)).toThrow(RangeError);
+    expect(() => calculateWeight(140, 210, 32, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    expect(() => calculateWeight(Number.MAX_VALUE, Number.MAX_VALUE, 2, 2)).toThrow(RangeError);
   });
 });
 

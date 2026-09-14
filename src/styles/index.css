@@ -19,7 +19,7 @@
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #475569;
-  --color-text-muted: #94A3B8;
+  --color-text-muted: #5B6B82;
   --color-text-accent: #12A9D8;
 
   /* ── Accent Colors ── */
@@ -35,6 +35,7 @@
 
   --color-rose-400: #fb7185;
   --color-rose-500: #f43f5e;
+  --color-danger-foreground: #be123c;
   --color-rose-glow: transparent;
 
   --color-sky-400: #38bdf8;
@@ -316,6 +317,29 @@ select.form-input {
   padding-right: 36px;
 }
 
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ─── Segmented Control (Toggle Buttons) ────────────────────────────── */
 
 .segment-group {
@@ -356,6 +380,17 @@ select.form-input {
 
 /* ─── Input Row (side by side) ──────────────────────────────────────── */
 
+.canvas-dimension-grid,
+.spine-calculator-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.spine-calculator-grid {
+  margin-top: var(--space-4);
+}
+
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -372,7 +407,7 @@ select.form-input {
   top: 50%;
   transform: translateY(-50%);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-primary);
   pointer-events: none;
 }
 
@@ -558,9 +593,7 @@ select.form-input {
 
 .imposition-svg .page-rect {
   fill: #12A9D8;
-  /* Tono natural de papel */
-  /* stroke: var(--color-border); */
-  /* Gris claro */
+  stroke: #8A1C30;
   stroke-width: 1.5;
   stroke-dasharray: 4, 4;
   rx: 0;
@@ -568,7 +601,7 @@ select.form-input {
 
 .imposition-svg .safe-zone {
   fill: transparent;
-  stroke: #FFFFFF;
+  stroke: #0F172A;
   stroke-width: 1;
   stroke-dasharray: 4, 4;
   opacity: 0.8;
@@ -579,13 +612,13 @@ select.form-input {
 }
 
 .imposition-svg .dimension-text {
-  fill: var(--color-text-muted);
+  fill: #0F172A;
   font-size: 10px;
   font-family: var(--font-body);
 }
 
 .imposition-svg .page-number {
-  fill: #FFFFFF;
+  fill: #0F172A;
   font-size: 14px;
   font-family: var(--font-body);
   font-weight: 500;
@@ -608,8 +641,6 @@ select.form-input {
   background: #12A9D8;
   position: relative;
   transition: all var(--transition-slow);
-  max-width: 100%;
-  max-height: 160px;
 }
 
 .page-preview .bleed-zone {
@@ -618,21 +649,21 @@ select.form-input {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px dashed rgba(244, 63, 94, 0.4);
+  border: 1px dashed #8A1C30;
   pointer-events: none;
 }
 
 .page-preview .safe-zone {
   position: absolute;
   background: transparent;
-  border: 1.5px dashed #FFFFFF;
+  border: 1.5px dashed #0F172A;
 }
 
 .page-preview-label {
   text-align: center;
   margin-top: var(--space-3);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-primary);
 }
 
 /* ─── Animations ────────────────────────────────────────────────────── */
@@ -689,13 +720,73 @@ select.form-input {
   animation-delay: 0.15s;
 }
 
+.calculation-note,
+.preview-notice,
+.calculation-error {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.calculation-note {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.preview-notice {
+  color: var(--color-text-secondary);
+  margin-top: var(--space-3);
+}
+
+.calculation-error {
+  color: var(--color-danger-foreground);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.grammage-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+}
+
+.grammage-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.remove-grammage-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--color-danger-foreground);
+  cursor: pointer;
+  line-height: 1;
+}
+
 /* ─── Responsive Fine-tuning ────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .imposition-svg .page-number {
+    display: none;
+  }
+}
 
 @media (max-width: 768px) {
   .stat-grid {
     grid-template-columns: 1fr 1fr;
   }
 
+  .canvas-dimension-grid,
+  .spine-calculator-grid,
+  .spine-stat-grid,
   .input-row {
     grid-template-columns: 1fr;
   }

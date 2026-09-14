@@ -1,56 +1,41 @@
 import type { SpineResult } from '../types';
 
-/**
- * Spine & Weight Calculator
- * 
- * Calculates the physical properties of the finished book:
- * - Spine thickness (lomo) based on page count and paper caliper
- * - Total weight based on page area, count, and paper grammage
- */
+function assertPositiveFinite(value: number, label: string): void {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError(`${label} debe ser un número finito mayor que cero`);
+  }
+}
+
+function assertPositiveSafeInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new RangeError(`${label} debe ser un entero seguro mayor que cero`);
+  }
+}
 
 /**
- * Calculate spine thickness.
- * 
- * Formula: Lomo = (totalPages / 2) × (caliper_microns / 1000)
- * 
- * totalPages / 2 = number of physical sheets (each sheet has 2 pages)
- * caliper / 1000 = convert microns to millimeters
- * 
- * @param totalPages     - Total number of pages (front + back of each sheet)
- * @param caliper_microns - Caliper (thickness) per sheet in microns (μm)
- * @returns Spine thickness in mm
+ * Formula: ceil(totalPages / 2) × (caliper_microns / 1000).
+ * An odd final page consumes a complete physical sheet.
  */
 export function calculateSpineThickness(
   totalPages: number,
   caliper_microns: number
 ): number {
-  if (totalPages <= 0 || caliper_microns <= 0) return 0;
-  return (totalPages / 2) * (caliper_microns / 1000);
+  assertPositiveSafeInteger(totalPages, 'El número de páginas');
+  assertPositiveFinite(caliper_microns, 'El calibre');
+
+  const sheets = Math.ceil(totalPages / 2);
+  const caliper_mm = caliper_microns / 1000;
+  assertPositiveFinite(sheets, 'El número derivado de hojas');
+  assertPositiveFinite(caliper_mm, 'El calibre convertido');
+
+  const thickness = sheets * caliper_mm;
+  assertPositiveFinite(thickness, 'El espesor de lomo calculado');
+  return thickness;
 }
 
 /**
- * Calculate the total weight of the book's interior pages.
- * 
- * Formula: Weight_g = (width_m × height_m) × totalPages × grammage_g_m2
- * 
- * Note: grammage is grams per square METER, so we convert mm → m.
- * Each page is one side of a sheet, but the grammage applies to the
- * whole sheet. Since each sheet has 2 pages, we use totalPages/2
- * for the number of sheets, and each sheet has area = width × height.
- * But actually, for weight calculation each page counts individually
- * because the user selects "totalPages" as the total number of
- * printed sides, and the weight of paper is per sheet (2 pages).
- * 
- * Corrected formula:
- * Sheets = totalPages / 2
- * Area_per_sheet = (width_mm / 1000) × (height_mm / 1000) [in m²]
- * Weight = Sheets × Area_per_sheet × grammage
- * 
- * @param pageWidth_mm   - Page width in mm (trim size, no bleed)
- * @param pageHeight_mm  - Page height in mm (trim size, no bleed)
- * @param totalPages     - Total number of pages
- * @param grammage       - Paper grammage in g/m²
- * @returns Total weight in grams
+ * Formula: ceil(totalPages / 2) × width_m × height_m × grammage_g_m2.
+ * An odd final page consumes a complete physical sheet.
  */
 export function calculateWeight(
   pageWidth_mm: number,
@@ -58,15 +43,27 @@ export function calculateWeight(
   totalPages: number,
   grammage: number
 ): number {
-  if (pageWidth_mm <= 0 || pageHeight_mm <= 0 || totalPages <= 0 || grammage <= 0) return 0;
+  assertPositiveFinite(pageWidth_mm, 'El ancho de página');
+  assertPositiveFinite(pageHeight_mm, 'El alto de página');
+  assertPositiveSafeInteger(totalPages, 'El número de páginas');
+  assertPositiveFinite(grammage, 'El gramaje');
 
-  const sheets = totalPages / 2;
-  const areaPerSheet_m2 = (pageWidth_mm / 1000) * (pageHeight_mm / 1000);
-  return sheets * areaPerSheet_m2 * grammage;
+  const sheets = Math.ceil(totalPages / 2);
+  const width_m = pageWidth_mm / 1000;
+  const height_m = pageHeight_mm / 1000;
+  const areaPerSheet_m2 = width_m * height_m;
+  assertPositiveFinite(sheets, 'El número derivado de hojas');
+  assertPositiveFinite(width_m, 'El ancho convertido');
+  assertPositiveFinite(height_m, 'El alto convertido');
+  assertPositiveFinite(areaPerSheet_m2, 'El área derivada por hoja');
+
+  const weight = sheets * areaPerSheet_m2 * grammage;
+  assertPositiveFinite(weight, 'El peso interior calculado');
+  return weight;
 }
 
 /**
- * Calculate both spine thickness and weight at once.
+ * Calculate the preliminary spine and interior-paper weight references.
  */
 export function calculateSpineAndWeight(
   pageWidth_mm: number,

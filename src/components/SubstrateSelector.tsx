@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
 import { SUBSTRATES } from '../data/substrates';
 
@@ -7,46 +7,33 @@ export function SubstrateSelector() {
     substrateId,
     selectedGrammage,
     customGrammages,
+    customGrammageError,
     setSubstrate,
     setGrammage,
     addCustomGrammage,
-    removeCustomGrammage
+    removeCustomGrammage,
+    clearCustomGrammageError,
   } = useBookStore();
 
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customG, setCustomG] = useState('');
   const [customCaliper, setCustomCaliper] = useState('');
 
-  const currentSubstrate = SUBSTRATES.find(s => s.id === substrateId);
+  const currentSubstrate = SUBSTRATES.find(substrate => substrate.id === substrateId);
   const allOptions = getAllGrammageOptions(substrateId, customGrammages);
-  const currentOption = allOptions.find(o => o.grammage === selectedGrammage);
+  const currentOption = allOptions.find(option => option.grammage === selectedGrammage);
 
-  // Auto-calculate caliper when grammage changes
-  useEffect(() => {
-    if (customG && currentSubstrate && currentSubstrate.options.length > 0) {
-      const gVal = parseInt(customG, 10);
-      if (!isNaN(gVal) && gVal > 0) {
-        // Find average ratio (caliper / grammage) for this substrate
-        const avgRatio = currentSubstrate.options.reduce(
-          (sum, opt) => sum + (opt.caliper / opt.grammage), 0
-        ) / currentSubstrate.options.length;
-
-        const estimatedCaliper = Math.round(gVal * avgRatio);
-        setCustomCaliper(estimatedCaliper.toString());
-      } else {
-        setCustomCaliper('');
-      }
-    } else if (!customG) {
-      setCustomCaliper('');
-    }
-  }, [customG, currentSubstrate]);
+  const handleToggleCustomForm = () => {
+    setShowCustomForm(!showCustomForm);
+    clearCustomGrammageError();
+  };
 
   const handleAddCustom = () => {
-    const gVal = parseInt(customG, 10);
-    const cVal = parseInt(customCaliper, 10);
+    const grammage = Number(customG);
+    const caliper = Number(customCaliper);
+    const added = addCustomGrammage(substrateId, grammage, caliper);
 
-    if (gVal > 0 && cVal > 0) {
-      addCustomGrammage(substrateId, gVal, cVal);
+    if (added) {
       setShowCustomForm(false);
       setCustomG('');
       setCustomCaliper('');
@@ -55,28 +42,24 @@ export function SubstrateSelector() {
 
   return (
     <div className="panel" id="substrate-selector">
-      <h2 className="panel-title">
-        Sustrato (Papel)
-      </h2>
+      <h2 className="panel-title">Sustrato (Papel)</h2>
 
-      {/* Paper type */}
       <div className="form-group">
-        <label className="form-label">Tipo de papel</label>
+        <label className="form-label" htmlFor="select-substrate">Tipo de papel</label>
         <select
           className="form-input"
           value={substrateId}
-          onChange={e => setSubstrate(e.target.value)}
+          onChange={event => setSubstrate(event.target.value)}
           id="select-substrate"
         >
-          {SUBSTRATES.map(s => (
-            <option key={s.id} value={s.id}>
-              {s.name}
+          {SUBSTRATES.map(substrate => (
+            <option key={substrate.id} value={substrate.id}>
+              {substrate.name}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Description */}
       {currentSubstrate && (
         <div className="form-group">
           <p style={{
@@ -90,110 +73,141 @@ export function SubstrateSelector() {
         </div>
       )}
 
-      {/* Grammage */}
-      <div className="form-group">
-        <label className="form-label">Gramaje</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', marginTop: 'var(--space-2)', padding: 'var(--space-2)' }}>
-          {allOptions.map(opt => {
-            const isCustom = customGrammages.some(cg => cg.grammage === opt.grammage);
-            const isActive = selectedGrammage === opt.grammage;
+      <div className="form-group" role="group" aria-labelledby="grammage-group-label">
+        <span className="form-label" id="grammage-group-label">Gramaje</span>
+        <div className="grammage-options">
+          {allOptions.map(option => {
+            const isCustom = customGrammages.some(custom => (
+              custom.substrateId === substrateId && custom.grammage === option.grammage
+            ));
+            const isActive = selectedGrammage === option.grammage;
+
             return (
-              <button
-                key={opt.grammage}
-                onClick={() => setGrammage(opt.grammage)}
-                onContextMenu={(e) => {
-                  if (isCustom) {
-                    e.preventDefault();
-                    removeCustomGrammage(substrateId, opt.grammage);
-                  }
-                }}
-                title={isCustom ? "Click derecho para eliminar" : ""}
-                id={`grammage-${opt.grammage}`}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '3px solid #E63946' : '3px solid transparent',
-                  padding: '0 0 2px 0',
-                  fontSize: '14px',
-                  fontWeight: isActive ? 700 : 500,
-                  color: 'var(--color-text-primary)',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s'
-                }}
-              >
-                {opt.grammage}g {isCustom && '*'}
-              </button>
+              <div className="grammage-option" key={option.grammage}>
+                <button
+                  type="button"
+                  onClick={() => setGrammage(option.grammage)}
+                  aria-pressed={isActive}
+                  id={`grammage-${substrateId}-${option.grammage}`}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: isActive ? '3px solid #E63946' : '3px solid transparent',
+                    padding: '0 0 2px 0',
+                    fontSize: '14px',
+                    fontWeight: isActive ? 700 : 500,
+                    color: 'var(--color-text-primary)',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s',
+                  }}
+                >
+                  {`${option.grammage} g/m²`}{isCustom && ' *'}
+                </button>
+                {isCustom && (
+                  <button
+                    type="button"
+                    className="remove-grammage-button"
+                    onClick={() => removeCustomGrammage(substrateId, option.grammage)}
+                    aria-label={`Eliminar gramaje personalizado de ${option.grammage} gramos por metro cuadrado`}
+                    title={`Eliminar gramaje personalizado de ${option.grammage} gramos por metro cuadrado`}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             );
           })}
           <button
-            onClick={() => setShowCustomForm(!showCustomForm)}
+            type="button"
+            onClick={handleToggleCustomForm}
+            aria-label={showCustomForm ? 'Cancelar gramaje personalizado' : 'Añadir gramaje personalizado'}
+            aria-expanded={showCustomForm}
+            aria-controls="custom-grammage-form"
             style={{
               background: 'transparent',
               border: 'none',
               fontSize: '14px',
               fontWeight: 500,
               cursor: 'pointer',
-              color: 'var(--color-text-primary)'
+              color: 'var(--color-text-primary)',
             }}
           >
-            +
+            {showCustomForm ? 'Cancelar' : '+'}
           </button>
         </div>
       </div>
 
-      {/* Custom Grammage Form */}
       {showCustomForm && (
-        <div className="form-group" style={{
-          background: 'transparent',
-          border: 'none',
-          marginTop: 'var(--space-2)'
-        }}>
+        <div
+          className="form-group"
+          id="custom-grammage-form"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            marginTop: 'var(--space-2)',
+          }}
+        >
+          <p className="calculation-note">
+            Introduce explícitamente el gramaje y el calibre declarado para este sustrato.
+          </p>
           <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-            <div className="input-with-unit">
-              <input
-                type="number"
-                className="form-input"
-                placeholder="Gramaje"
-                value={customG}
-                onChange={e => setCustomG(e.target.value)}
-                min="1"
-              />
-              <span className="input-unit">g</span>
+            <div>
+              <label className="form-label" htmlFor="input-custom-grammage">Gramaje personalizado (g/m²)</label>
+              <div className="input-with-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  value={customG}
+                  onChange={event => setCustomG(event.target.value)}
+                  min="1"
+                  id="input-custom-grammage"
+                  aria-describedby={customGrammageError ? 'custom-grammage-error' : undefined}
+                />
+                <span className="input-unit">g/m²</span>
+              </div>
             </div>
-            <div className="input-with-unit">
-              <input
-                type="number"
-                className="form-input"
-                placeholder="Calibre"
-                value={customCaliper}
-                onChange={e => setCustomCaliper(e.target.value)}
-                min="1"
-              />
-              <span className="input-unit">μm</span>
+            <div>
+              <label className="form-label" htmlFor="input-custom-caliper">Calibre personalizado</label>
+              <div className="input-with-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  value={customCaliper}
+                  onChange={event => setCustomCaliper(event.target.value)}
+                  min="1"
+                  id="input-custom-caliper"
+                  aria-describedby={customGrammageError ? 'custom-grammage-error' : undefined}
+                />
+                <span className="input-unit">μm</span>
+              </div>
             </div>
           </div>
           <button
+            type="button"
             onClick={handleAddCustom}
             style={{
               width: '100%',
               padding: 'var(--space-2)',
-              background: 'var(--color-text-primary)', /* Negro carbón o #000 */
+              background: 'var(--color-text-primary)',
               color: '#FFFFFF',
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               fontWeight: 600,
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
-            Añadir Gramaje
+            Añadir gramaje
           </button>
         </div>
       )}
 
-      {/* Caliper display */}
+      {customGrammageError && (
+        <p className="calculation-error" id="custom-grammage-error" role="alert">{customGrammageError}</p>
+      )}
+
       {currentOption && (
         <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--color-border)' }}>
-          <div className="stat-label" style={{ marginBottom: 'var(--space-2)' }}>Calibre</div>
+          <div className="stat-label" style={{ marginBottom: 'var(--space-2)' }}>Calibre declarado</div>
           <div style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
             {currentOption.caliper} <span style={{ fontSize: '2rem' }}>μm</span>
           </div>
