@@ -36,7 +36,8 @@
 5. Tirada, merma y costo.
 
 El orden sigue las dependencias: las firmas necesitan la configuración de máquinas, la encuadernación restringe las firmas y el lomo, la tapa necesita el lomo final y la tirada necesita pliegos por ejemplar, tapa y encuadernación.
-Solo el incremento 1 está planificado en detalle; los demás se detallan cuando sean el siguiente.
+El incremento 1 está cerrado en `3f8279c`.
+El incremento 2 está planificado en detalle y los demás se detallan cuando sean el siguiente.
 
 ## Incremento 1 — Configuración en runtime
 
@@ -75,14 +76,52 @@ Solo el incremento 1 está planificado en detalle; los demás se detallan cuando
 
 - Revertir el único commit del incremento.
 
+## Incremento 2 — Imposición por firmas
+
+### Objetivo
+
+- Reemplazar la rejilla de páginas sueltas por una imposición por firmas real, que respete la pinza y los márgenes de máquina y numere cada página en el pliego según el esquema de plegado.
+
+### Alcance
+
+- Crear `public/config/maquinas.json` con las prensas: id, nombre, formato máximo de pliego, pinza, márgenes laterales y de cola, calles entre páginas y el campo `source`.
+- Crear `public/config/esquemas.json` con los esquemas de plegado: id, nombre, páginas por firma, rejilla de cada cara y el orden de páginas por cara, indicando para cada posición el número de página y su rotación.
+- Validar que cada esquema cubra exactamente una vez todas las páginas de la firma entre tiro y retiro, que la rejilla coincida con el número de posiciones y que las rotaciones sean 0 o 180 grados.
+- Escribir `src/engine/signatures.ts` como motor puro que, a partir del tamaño de página con sangrado, el pliego, la máquina y los esquemas disponibles, calcule qué esquemas caben, páginas por pliego, firmas por ejemplar, páginas en blanco para completar la última firma, pliegos por ejemplar y si el pliego se imprime en tiro y retiro o con planchas separadas.
+- Elegir por defecto el esquema que menos papel desperdicia y permitir elegir otro manualmente.
+- Añadir al store la máquina, el esquema y el modo de impresión, conservando la actualización atómica de entradas y resultados y los errores explícitos.
+- Mostrar la vista previa de una cara con el número de página y la rotación de cada posición, más un resumen con firmas, blancos y pliegos por ejemplar.
+- Documentar los dos archivos nuevos en `docs/CONFIG.md`.
+
+### No objetivos
+
+- Restricciones de encuadernación, que llegan en el incremento 3.
+- Tapa, tirada, merma y costos.
+- Exportar un PDF de imposición.
+- Imponer trabajos combinados con páginas de distintos tamaños en un mismo pliego.
+
+### Aceptación
+
+- `npm test` y `npm run build` terminan con código 0 y no se añade ninguna dependencia.
+- Un esquema al que le falte una página, le sobre una o tenga una rejilla incoherente produce un error con archivo y ruta del campo.
+- Con 32 páginas y un esquema de 16 que cabe en el pliego, el resultado es 2 firmas, 0 páginas en blanco y 2 pliegos por ejemplar, y un test lo demuestra.
+- Con 30 páginas y ese mismo esquema, el resultado es 2 firmas y 2 páginas en blanco, y un test lo demuestra.
+- Un esquema que no cabe una vez descontadas la pinza y los márgenes no se ofrece como opción, y un test lo demuestra.
+- La vista previa numera las páginas según el esquema seleccionado, verificado en un navegador real.
+- Editar el orden de páginas en `dist/config/esquemas.json` cambia la numeración mostrada tras recargar, sin recompilar.
+
+### Rollback
+
+- Revertir el único commit del incremento.
+
 ## Incrementos siguientes
 
-- **2 — Imposición por firmas:** configuración de máquinas (formato máximo, pinza, márgenes, calles) y esquemas de plegado; cálculo de firmas por libro, páginas blancas para completar firmas, pliegos por ejemplar y esquema de tiro y retiro, reemplazando la rejilla de páginas sueltas.
 - **3 — Tipos de encuadernación:** configuración de grapa, hotmelt, PUR y cosido con múltiplos de páginas válidos, mínimos y máximos, compensación por corrimiento en grapa y aporte al lomo.
 - **4 — Tapa blanda y dura:** medidas de tapa con lomo final, sangrado, solapas opcionales y, en tapa dura, cartón, cejas, bisagra y doblez configurables; peso de tapa y plantilla visual con cotas.
 - **5 — Tirada, merma y costo:** pliegos y kilos de papel por tirada con merma configurable por proceso, y costo desglosado de papel, impresión y encuadernación a partir de precios y moneda configurables.
 
 ## Decisiones pendientes
 
-- Ninguna bloquea el incremento 1.
-- Antes del incremento 2 hay que decidir si la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado o solo la geometría y los conteos.
+- Ninguna bloquea el incremento 2.
+- Chris decidió el 2026-09-15 que la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado, además de la geometría y los conteos.
+- Quedan pendientes, sin bloquear: tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
