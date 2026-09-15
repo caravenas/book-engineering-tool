@@ -8,6 +8,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: [],
+    // Agent worktrees live in .claude/worktrees inside the repository, so
+    // their copies of the suite would run alongside this one.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**'],
     cache: false,
     pool: 'threads',
     poolOptions: {
