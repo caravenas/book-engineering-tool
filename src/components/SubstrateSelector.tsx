@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
-import { SUBSTRATES } from '../data/substrates';
 
 export function SubstrateSelector() {
   const {
@@ -8,6 +7,7 @@ export function SubstrateSelector() {
     selectedGrammage,
     customGrammages,
     customGrammageError,
+    catalog,
     setSubstrate,
     setGrammage,
     addCustomGrammage,
@@ -19,9 +19,13 @@ export function SubstrateSelector() {
   const [customG, setCustomG] = useState('');
   const [customCaliper, setCustomCaliper] = useState('');
 
-  const currentSubstrate = SUBSTRATES.find(substrate => substrate.id === substrateId);
-  const allOptions = getAllGrammageOptions(substrateId, customGrammages);
+  const substrates = catalog ? catalog.substrates : [];
+  const currentSubstrate = substrates.find(substrate => substrate.id === substrateId);
+  const allOptions = catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : [];
   const currentOption = allOptions.find(option => option.grammage === selectedGrammage);
+  const isSelectedGrammageCustom = customGrammages.some(custom => (
+    custom.substrateId === substrateId && custom.grammage === selectedGrammage
+  ));
 
   const handleToggleCustomForm = () => {
     setShowCustomForm(!showCustomForm);
@@ -52,7 +56,7 @@ export function SubstrateSelector() {
           onChange={event => setSubstrate(event.target.value)}
           id="select-substrate"
         >
-          {SUBSTRATES.map(substrate => (
+          {substrates.map(substrate => (
             <option key={substrate.id} value={substrate.id}>
               {substrate.name}
             </option>
@@ -211,6 +215,11 @@ export function SubstrateSelector() {
           <div style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
             {currentOption.caliper} <span style={{ fontSize: '2rem' }}>μm</span>
           </div>
+          {isSelectedGrammageCustom ? (
+            <p className="config-source-note">Fuente: gramaje personalizado</p>
+          ) : catalog && (
+            <p className="config-source-note">Fuente: {catalog.substratesSource} (config/sustratos.json)</p>
+          )}
         </div>
       )}
     </div>

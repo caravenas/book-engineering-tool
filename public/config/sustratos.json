@@ -1,0 +1,84 @@
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "substrates": [
+    {
+      "id": "bond",
+      "name": "Bond",
+      "type": "bond",
+      "description": "Papel de escritura/impresión estándar. Económico y versátil.",
+      "options": [
+        { "grammage": 75, "caliper": 95 },
+        { "grammage": 90, "caliper": 115 },
+        { "grammage": 120, "caliper": 150 }
+      ]
+    },
+    {
+      "id": "couche_matte",
+      "name": "Couché Mate",
+      "type": "couche_matte",
+      "description": "Papel estucado mate. Ideal para fotografía e ilustración sin reflejos.",
+      "options": [
+        { "grammage": 90, "caliper": 75 },
+        { "grammage": 115, "caliper": 90 },
+        { "grammage": 150, "caliper": 120 },
+        { "grammage": 200, "caliper": 160 },
+        { "grammage": 300, "caliper": 250 }
+      ]
+    },
+    {
+      "id": "couche_gloss",
+      "name": "Couché Brillo",
+      "type": "couche_gloss",
+      "description": "Papel estucado brillante. Colores vibrantes y alto contraste.",
+      "options": [
+        { "grammage": 90, "caliper": 70 },
+        { "grammage": 115, "caliper": 85 },
+        { "grammage": 150, "caliper": 110 },
+        { "grammage": 200, "caliper": 150 },
+        { "grammage": 300, "caliper": 240 }
+      ]
+    },
+    {
+      "id": "opalina",
+      "name": "Opalina",
+      "type": "opalina",
+      "description": "Papel texturado premium. Tacto suave y elegante.",
+      "options": [
+        { "grammage": 120, "caliper": 155 },
+        { "grammage": 180, "caliper": 230 },
+        { "grammage": 225, "caliper": 290 }
+      ]
+    },
+    {
+      "id": "cardboard_sulfate",
+      "name": "Cartulina Sulfato",
+      "type": "cardboard_sulfate",
+      "description": "Cartulina rígida para tapas duras y carpetas.",
+      "options": [
+        { "grammage": 250, "caliper": 350 },
+        { "grammage": 300, "caliper": 420 },
+        { "grammage": 350, "caliper": 490 }
+      ]
+    },
+    {
+      "id": "cardboard_c1s",
+      "name": "Cartulina C1S",
+      "type": "cardboard_c1s",
+      "description": "Cartulina estucada una cara. Ideal para portadas.",
+      "options": [
+        { "grammage": 250, "caliper": 330 },
+        { "grammage": 300, "caliper": 400 }
+      ]
+    },
+    {
+      "id": "cardboard_c2s",
+      "name": "Cartulina C2S",
+      "type": "cardboard_c2s",
+      "description": "Cartulina estucada dos caras. Impresión de alta calidad ambos lados.",
+      "options": [
+        { "grammage": 250, "caliper": 310 },
+        { "grammage": 300, "caliper": 380 }
+      ]
+    }
+  ]
+}

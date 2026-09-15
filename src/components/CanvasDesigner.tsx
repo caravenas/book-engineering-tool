@@ -1,5 +1,4 @@
 import { useBookStore } from '../store/useBookStore';
-import { PROPORTIONS } from '../data/substrates';
 import { mmToInches, roundTo } from '../engine/units';
 import type { BookFormat } from '../types';
 
@@ -30,9 +29,11 @@ function toDisplayValue(value_mm: number, unitSystem: 'metric' | 'imperial', dec
 export function CanvasDesigner() {
   const {
     format, proportionId, pageWidth_mm, pageHeight_mm,
-    bleed_mm, unitSystem,
+    bleed_mm, unitSystem, catalog,
     setFormat, setProportion, setPageDimensions, setBleed,
   } = useBookStore();
+
+  const proportionOptions = catalog ? catalog.proportions.slice(0, 3) : [];
 
   // Convert finite values for display without passing invalid geometry to number inputs.
   const displayW = toDisplayValue(pageWidth_mm, unitSystem, unitSystem === 'imperial' ? 2 : 1);
@@ -132,7 +133,7 @@ export function CanvasDesigner() {
       >
         <span className="form-label" id="proportion-group-label">Proporción</span>
         <div className="segment-group">
-          {PROPORTIONS.slice(0, 3).map(prop => (
+          {proportionOptions.map(prop => (
             <button
               key={prop.label}
               type="button"

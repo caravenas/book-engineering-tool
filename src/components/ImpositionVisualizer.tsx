@@ -207,6 +207,7 @@ export function ImpositionVisualizer() {
     customSheetSizes,
     pageOrientation,
     bleed_mm,
+    catalog,
     setSheetSize,
     addCustomSheetSize,
     removeCustomSheetSize,
@@ -221,8 +222,9 @@ export function ImpositionVisualizer() {
 
   const customWidthIsValid = isPositiveFinite(Number(customW));
   const customHeightIsValid = isPositiveFinite(Number(customH));
-  const allSheets = getAllSheetSizes(customSheetSizes);
+  const allSheets = catalog ? getAllSheetSizes(catalog, customSheetSizes) : customSheetSizes;
   const currentSheet = allSheets.find(sheet => sheet.id === sheetSizeId);
+  const isSelectedSheetCustom = customSheetSizes.some(sheet => sheet.id === sheetSizeId);
 
   const handleAddCustom = () => {
     const width = Number(customW);
@@ -461,6 +463,11 @@ export function ImpositionVisualizer() {
                 </button>
               )}
             </div>
+          )}
+          {isSelectedSheetCustom ? (
+            <p className="config-source-note">Fuente: pliego personalizado</p>
+          ) : catalog && (
+            <p className="config-source-note">Fuente: {catalog.sheetSizesSource} (config/pliegos.json)</p>
           )}
         </div>
       </div>

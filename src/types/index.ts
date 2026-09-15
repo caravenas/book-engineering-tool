@@ -10,15 +10,6 @@ export interface Proportion {
 
 // ─── Paper / Substrate ───────────────────────────────────────────────────
 
-export type PaperType =
-  | 'bond'
-  | 'couche_matte'
-  | 'couche_gloss'
-  | 'opalina'
-  | 'cardboard_sulfate'
-  | 'cardboard_c1s'
-  | 'cardboard_c2s';
-
 export interface GrammageOption {
   grammage: number;   // g/m²
   caliper: number;    // microns (μm) per sheet
@@ -31,7 +22,7 @@ export interface CustomGrammageOption extends GrammageOption {
 export interface Substrate {
   id: string;
   name: string;
-  type: PaperType;
+  type: string;
   description: string;
   options: GrammageOption[];
 }
@@ -43,6 +34,27 @@ export interface SheetSize {
   name: string;
   width_mm: number;
   height_mm: number;
+}
+
+// ─── Runtime Catalog Configuration ───────────────────────────────────────
+
+export interface CatalogDefaults {
+  substrateId: string;
+  grammage: number;
+  sheetSizeId: string;
+  pageWidth_mm: number;
+  proportionId: string;
+  bleed_mm: number;
+  totalPages: number;
+}
+
+export interface Catalog {
+  substrates: Substrate[];
+  substratesSource: string;
+  sheetSizes: SheetSize[];
+  sheetSizesSource: string;
+  proportions: Proportion[];
+  defaults: CatalogDefaults;
 }
 
 // ─── Imposition Engine Results ───────────────────────────────────────────
@@ -107,6 +119,9 @@ export interface BookConfig {
 }
 
 export interface BookStore extends BookConfig {
+  // Runtime configuration catalog (null until loaded)
+  catalog: Catalog | null;
+
   // Computed results
   impositionResult: ImpositionResult | null;
   impositionError: string | null;
@@ -115,6 +130,7 @@ export interface BookStore extends BookConfig {
   customGrammageError: string | null;
 
   // Actions
+  initialize: (catalog: Catalog) => void;
   setFormat: (format: BookFormat) => void;
   setProportion: (proportionId: string | null) => void;
   setPageDimensions: (width_mm: number, height_mm: number) => void;

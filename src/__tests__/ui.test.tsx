@@ -6,7 +6,9 @@ import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { SpineCalculator } from '../components/SpineCalculator';
 import { SubstrateSelector } from '../components/SubstrateSelector';
 import { useBookStore } from '../store/useBookStore';
+import { loadShippedCatalog } from './testCatalog';
 
+useBookStore.getState().initialize(loadShippedCatalog());
 const initialState = useBookStore.getState();
 
 afterEach(() => {
@@ -398,5 +400,27 @@ describe('Honest and recoverable UI', () => {
     ));
     expect(formulaCopy.textContent).toContain('Lomo estimado = 17 hojas × calibre');
     expect(formulaCopy.textContent).toContain('× 17 hojas × 150 g/m²');
+  });
+
+  it('shows the config source for a shipped grammage and the custom-source note for a custom one', () => {
+    const substrateSelector = render(<SubstrateSelector />);
+    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/sustratos.json');
+    substrateSelector.unmount();
+
+    useBookStore.getState().addCustomGrammage('couche_matte', 999, 100);
+    render(<SubstrateSelector />);
+    expect(screen.getByText('Fuente: gramaje personalizado')).toBeTruthy();
+    expect(screen.queryByText(/config\/sustratos\.json/)).toBeNull();
+  });
+
+  it('shows the config source for a shipped sheet size and the custom-source note for a custom one', () => {
+    const impositionVisualizer = render(<ImpositionVisualizer />);
+    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/pliegos.json');
+    impositionVisualizer.unmount();
+
+    useBookStore.getState().addCustomSheetSize('Pliego personalizado', 500, 700);
+    render(<ImpositionVisualizer />);
+    expect(screen.getByText('Fuente: pliego personalizado')).toBeTruthy();
+    expect(screen.queryByText(/config\/pliegos\.json/)).toBeNull();
   });
 });

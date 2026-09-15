@@ -1,32 +1,35 @@
 import { create } from 'zustand';
 import type {
   BookConfig,
+  BookFormat,
   BookStore,
+  Catalog,
   CustomGrammageOption,
   GrammageOption,
   ImpositionResult,
+  Proportion,
   SheetSize,
   SpineResult,
 } from '../types';
-import { SUBSTRATES, SHEET_SIZES, PROPORTIONS } from '../data/substrates';
 import { calculateImposition } from '../engine/imposition';
 import { calculateSpineAndWeight } from '../engine/spine';
 
 /**
- * Get all sheet sizes (built-in + custom).
+ * Get all sheet sizes (catalog + custom).
  */
-function getAllSheetSizes(customSheetSizes: SheetSize[]): SheetSize[] {
-  return [...SHEET_SIZES, ...customSheetSizes];
+function getAllSheetSizes(catalog: Catalog, customSheetSizes: SheetSize[]): SheetSize[] {
+  return [...catalog.sheetSizes, ...customSheetSizes];
 }
 
 /**
- * Get all grammage options for a substrate (built-in + custom).
+ * Get all grammage options for a substrate (catalog + custom).
  */
 function getAllGrammageOptions(
+  catalog: Catalog,
   substrateId: string,
   customGrammages: CustomGrammageOption[]
 ): GrammageOption[] {
-  const substrate = SUBSTRATES.find(s => s.id === substrateId);
+  const substrate = catalog.substrates.find(s => s.id === substrateId);
   const builtIn = substrate ? substrate.options : [];
   const custom = customGrammages.filter(option => option.substrateId === substrateId);
   return [...builtIn, ...custom];
@@ -36,11 +39,12 @@ function getAllGrammageOptions(
  * Get the caliper for a given substrate + grammage combination.
  */
 function getCaliper(
+  catalog: Catalog,
   substrateId: string,
   grammage: number,
   customGrammages: CustomGrammageOption[]
 ): number {
-  const allOptions = getAllGrammageOptions(substrateId, customGrammages);
+  const allOptions = getAllGrammageOptions(catalog, substrateId, customGrammages);
   const option = allOptions.find(o => o.grammage === grammage);
   return option ? option.caliper : 0;
 }
@@ -48,8 +52,8 @@ function getCaliper(
 /**
  * Get sheet dimensions by ID.
  */
-function getSheetDimensions(sheetSizeId: string, customSheetSizes: SheetSize[]) {
-  const allSheets = getAllSheetSizes(customSheetSizes);
+function getSheetDimensions(catalog: Catalog, sheetSizeId: string, customSheetSizes: SheetSize[]) {
+  const allSheets = getAllSheetSizes(catalog, customSheetSizes);
   const sheet = allSheets.find(s => s.id === sheetSizeId);
   return sheet ? { width: sheet.width_mm, height: sheet.height_mm } : { width: 0, height: 0 };
 }
@@ -63,7 +67,7 @@ type CalculationResults = Pick<
   'impositionResult' | 'impositionError' | 'spineResult' | 'spineError'
 >;
 
-function calculateResults(state: BookConfig): CalculationResults {
+function calculateResults(state: BookConfig, catalog: Catalog): CalculationResults {
   let impositionResult: ImpositionResult | null = null;
   let impositionError: string | null = null;
   let spineResult: SpineResult | null = null;
@@ -96,7 +100,7 @@ function calculateResults(state: BookConfig): CalculationResults {
       throw new RangeError('El sangrado pierde su contribución por precisión numérica');
     }
 
-    const sheet = getSheetDimensions(state.sheetSizeId, state.customSheetSizes);
+    const sheet = getSheetDimensions(catalog, state.sheetSizeId, state.customSheetSizes);
 
     impositionResult = calculateImposition(
       pageWithBleedW,
@@ -111,6 +115,7 @@ function calculateResults(state: BookConfig): CalculationResults {
 
   try {
     const caliper = getCaliper(
+      catalog,
       state.substrateId,
       state.selectedGrammage,
       state.customGrammages
@@ -131,11 +136,12 @@ function calculateResults(state: BookConfig): CalculationResults {
 
 function withUpdatedCalculations(
   state: BookStore,
+  catalog: Catalog,
   inputPatch: Partial<BookConfig>
 ): Partial<BookStore> {
   return {
     ...inputPatch,
-    ...calculateResults({ ...state, ...inputPatch }),
+    ...calculateResults({ ...state, ...inputPatch }, catalog),
   };
 }
 
@@ -143,11 +149,12 @@ function withUpdatedCalculations(
  * Calculate page dimensions from a proportion and base dimension.
  */
 function dimensionsFromProportion(
+  proportions: Proportion[],
   proportionId: string,
-  format: 'vertical' | 'landscape' | 'square',
+  format: BookFormat,
   baseWidth: number
 ): { width: number; height: number } {
-  const prop = PROPORTIONS.find(p => p.label === proportionId);
+  const prop = proportions.find(p => p.label === proportionId);
   if (!prop) return { width: baseWidth, height: baseWidth };
 
   const [rw, rh] = prop.ratio;
@@ -163,39 +170,32 @@ function dimensionsFromProportion(
   return { width: baseWidth, height: baseWidth * (rw / rh) };
 }
 
-// ─── Default values ──────────────────────────────────────────────────────
-
-const DEFAULT_SUBSTRATE = 'couche_matte';
-const DEFAULT_GRAMMAGE = 150;
-const DEFAULT_SHEET = 'tabloide';
-const DEFAULT_WIDTH = 140;
-const DEFAULT_PROPORTION = '2:3';
-
-const defaultDims = dimensionsFromProportion(DEFAULT_PROPORTION, 'vertical', DEFAULT_WIDTH);
-
 let customSheetCounter = 0;
 
 export const useBookStore = create<BookStore>((set, get) => ({
+  // Runtime configuration catalog
+  catalog: null,
+
   // Canvas Designer
   format: 'vertical',
-  proportionId: DEFAULT_PROPORTION,
-  pageWidth_mm: defaultDims.width,
-  pageHeight_mm: defaultDims.height,
-  bleed_mm: 3,
+  proportionId: null,
+  pageWidth_mm: 0,
+  pageHeight_mm: 0,
+  bleed_mm: 0,
   unitSystem: 'metric',
   pageOrientation: 'auto',
 
   // Substrate
-  substrateId: DEFAULT_SUBSTRATE,
-  selectedGrammage: DEFAULT_GRAMMAGE,
+  substrateId: '',
+  selectedGrammage: 0,
   customGrammages: [],
 
   // Imposition
-  sheetSizeId: DEFAULT_SHEET,
+  sheetSizeId: '',
   customSheetSizes: [],
 
   // Spine
-  totalPages: 32,
+  totalPages: 0,
 
   // Computed
   impositionResult: null,
@@ -206,18 +206,50 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   // ─── Actions ─────────────────────────────────────────────────────
 
+  initialize: (catalog) => {
+    set(state => {
+      const { defaults } = catalog;
+      const dimensions = dimensionsFromProportion(
+        catalog.proportions,
+        defaults.proportionId,
+        state.format,
+        defaults.pageWidth_mm
+      );
+      const inputPatch: Partial<BookConfig> = {
+        proportionId: defaults.proportionId,
+        pageWidth_mm: dimensions.width,
+        pageHeight_mm: dimensions.height,
+        bleed_mm: defaults.bleed_mm,
+        substrateId: defaults.substrateId,
+        selectedGrammage: defaults.grammage,
+        customGrammages: [],
+        sheetSizeId: defaults.sheetSizeId,
+        customSheetSizes: [],
+        totalPages: defaults.totalPages,
+      };
+
+      return {
+        catalog,
+        ...withUpdatedCalculations(state, catalog, inputPatch),
+      };
+    });
+  },
+
   setFormat: (format) => {
     set(state => {
+      if (!state.catalog) return state;
+
       if (!state.proportionId) {
-        return withUpdatedCalculations(state, { format });
+        return withUpdatedCalculations(state, state.catalog, { format });
       }
 
       const dimensions = dimensionsFromProportion(
+        state.catalog.proportions,
         state.proportionId,
         format,
         state.pageWidth_mm
       );
-      return withUpdatedCalculations(state, {
+      return withUpdatedCalculations(state, state.catalog, {
         format,
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
@@ -227,16 +259,19 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   setProportion: (proportionId) => {
     set(state => {
+      if (!state.catalog) return state;
+
       if (!proportionId) {
-        return withUpdatedCalculations(state, { proportionId });
+        return withUpdatedCalculations(state, state.catalog, { proportionId });
       }
 
       const dimensions = dimensionsFromProportion(
+        state.catalog.proportions,
         proportionId,
         state.format,
         state.pageWidth_mm
       );
-      return withUpdatedCalculations(state, {
+      return withUpdatedCalculations(state, state.catalog, {
         proportionId,
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
@@ -245,54 +280,76 @@ export const useBookStore = create<BookStore>((set, get) => ({
   },
 
   setPageDimensions: (width_mm, height_mm) => {
-    set(state => withUpdatedCalculations(state, {
-      pageWidth_mm: width_mm,
-      pageHeight_mm: height_mm,
-      proportionId: null,
-    }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, {
+        pageWidth_mm: width_mm,
+        pageHeight_mm: height_mm,
+        proportionId: null,
+      });
+    });
   },
 
   setBleed: (bleed_mm) => {
-    set(state => withUpdatedCalculations(state, { bleed_mm }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { bleed_mm });
+    });
   },
 
   setUnitSystem: (unitSystem) => {
-    set({ unitSystem });
+    set(state => (state.catalog ? { unitSystem } : state));
   },
 
   setPageOrientation: (pageOrientation) => {
-    set(state => withUpdatedCalculations(state, { pageOrientation }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { pageOrientation });
+    });
   },
 
   setSubstrate: (substrateId) => {
     set(state => {
-      const substrate = SUBSTRATES.find(s => s.id === substrateId);
+      if (!state.catalog) return state;
+
+      const substrate = state.catalog.substrates.find(s => s.id === substrateId);
       const inputPatch: Partial<BookConfig> = substrate && substrate.options.length > 0
         ? { substrateId, selectedGrammage: substrate.options[0].grammage }
         : { substrateId };
 
       return {
-        ...withUpdatedCalculations(state, inputPatch),
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customGrammageError: null,
       };
     });
   },
 
   setGrammage: (selectedGrammage) => {
-    set(state => withUpdatedCalculations(state, { selectedGrammage }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { selectedGrammage });
+    });
   },
 
   setSheetSize: (sheetSizeId) => {
-    set(state => withUpdatedCalculations(state, { sheetSizeId }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { sheetSizeId });
+    });
   },
 
   setTotalPages: (totalPages) => {
-    set(state => withUpdatedCalculations(state, { totalPages }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { totalPages });
+    });
   },
 
   // ─── Custom Sheet Sizes ──────────────────────────────────────────
 
   addCustomSheetSize: (name, width_mm, height_mm) => {
+    if (!get().catalog) return false;
+
     if (!Number.isFinite(width_mm) || width_mm <= 0
       || !Number.isFinite(height_mm) || height_mm <= 0) {
       return false;
@@ -306,15 +363,19 @@ export const useBookStore = create<BookStore>((set, get) => ({
       height_mm,
     };
 
-    set(state => withUpdatedCalculations(state, {
-      customSheetSizes: [...state.customSheetSizes, newSheet],
-      sheetSizeId: id,
-    }));
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, {
+        customSheetSizes: [...state.customSheetSizes, newSheet],
+        sheetSizeId: id,
+      });
+    });
     return true;
   },
 
   removeCustomSheetSize: (id) => {
     set(state => {
+      if (!state.catalog) return state;
       if (!state.customSheetSizes.some(sheet => sheet.id === id)) {
         return state;
       }
@@ -323,10 +384,10 @@ export const useBookStore = create<BookStore>((set, get) => ({
         customSheetSizes: state.customSheetSizes.filter(sheet => sheet.id !== id),
       };
       if (state.sheetSizeId === id) {
-        inputPatch.sheetSizeId = SHEET_SIZES[0].id;
+        inputPatch.sheetSizeId = state.catalog.sheetSizes[0].id;
       }
 
-      return withUpdatedCalculations(state, inputPatch);
+      return withUpdatedCalculations(state, state.catalog, inputPatch);
     });
   },
 
@@ -334,7 +395,9 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   addCustomGrammage: (substrateId, grammage, caliper) => {
     const state = get();
-    const substrate = SUBSTRATES.find(s => s.id === substrateId);
+    if (!state.catalog) return false;
+
+    const substrate = state.catalog.substrates.find(s => s.id === substrateId);
 
     if (!substrate) {
       set({ customGrammageError: 'Selecciona un sustrato válido y vuelve a intentarlo.' });
@@ -348,7 +411,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
       return false;
     }
 
-    const duplicate = getAllGrammageOptions(substrateId, state.customGrammages)
+    const duplicate = getAllGrammageOptions(state.catalog, substrateId, state.customGrammages)
       .some(option => option.grammage === grammage);
     if (duplicate) {
       set({
@@ -358,23 +421,28 @@ export const useBookStore = create<BookStore>((set, get) => ({
     }
 
     const newOption: CustomGrammageOption = { substrateId, grammage, caliper };
-    set(currentState => ({
-      ...withUpdatedCalculations(currentState, {
-        substrateId,
-        customGrammages: [...currentState.customGrammages, newOption],
-        selectedGrammage: grammage,
-      }),
-      customGrammageError: null,
-    }));
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      return {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          substrateId,
+          customGrammages: [...currentState.customGrammages, newOption],
+          selectedGrammage: grammage,
+        }),
+        customGrammageError: null,
+      };
+    });
     return true;
   },
 
   clearCustomGrammageError: () => {
-    set({ customGrammageError: null });
+    set(state => (state.catalog ? { customGrammageError: null } : state));
   },
 
   removeCustomGrammage: (substrateId, grammage) => {
     set(state => {
+      if (!state.catalog) return state;
+
       const hasExactCustomOption = state.customGrammages.some(option => (
         option.substrateId === substrateId && option.grammage === grammage
       ));
@@ -389,14 +457,14 @@ export const useBookStore = create<BookStore>((set, get) => ({
       };
 
       if (state.substrateId === substrateId && state.selectedGrammage === grammage) {
-        const substrate = SUBSTRATES.find(s => s.id === substrateId);
+        const substrate = state.catalog.substrates.find(s => s.id === substrateId);
         if (substrate && substrate.options.length > 0) {
           inputPatch.selectedGrammage = substrate.options[0].grammage;
         }
       }
 
       return {
-        ...withUpdatedCalculations(state, inputPatch),
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customGrammageError: null,
       };
     });
@@ -405,7 +473,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   // ─── Recalculate ─────────────────────────────────────────────────
 
   recalculate: () => {
-    set(state => calculateResults(state));
+    set(state => (state.catalog ? calculateResults(state, state.catalog) : state));
   },
 }));
 

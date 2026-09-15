@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getAllGrammageOptions, useBookStore } from '../store/useBookStore';
+import { loadShippedCatalog } from './testCatalog';
 
 const initialState = useBookStore.getState();
+const catalog = loadShippedCatalog();
 
 beforeEach(() => {
   useBookStore.setState(initialState);
+  useBookStore.getState().initialize(catalog);
 });
 
 describe('Book store recovery', () => {
@@ -169,11 +172,11 @@ describe('Custom grammages', () => {
     expect(useBookStore.getState().addCustomGrammage('couche_matte', 160, 130)).toBe(true);
 
     useBookStore.getState().setSubstrate('bond');
-    expect(getAllGrammageOptions('bond', useBookStore.getState().customGrammages))
+    expect(getAllGrammageOptions(catalog, 'bond', useBookStore.getState().customGrammages))
       .toContainEqual({ substrateId: 'bond', grammage: 160, caliper: 205 });
 
     useBookStore.getState().setSubstrate('couche_matte');
-    expect(getAllGrammageOptions('couche_matte', useBookStore.getState().customGrammages))
+    expect(getAllGrammageOptions(catalog, 'couche_matte', useBookStore.getState().customGrammages))
       .toContainEqual({ substrateId: 'couche_matte', grammage: 160, caliper: 130 });
     expect(useBookStore.getState().customGrammages).toHaveLength(2);
   });
@@ -247,5 +250,40 @@ describe('Custom sheet sizes', () => {
     expect(useBookStore.getState().sheetSizeId).toMatch(/^custom_sheet_/);
     expect(useBookStore.getState().customSheetSizes).toHaveLength(1);
     expect(useBookStore.getState().impositionResult).not.toBeNull();
+  });
+});
+
+describe('Actions before initialize', () => {
+  it('are no-ops that do not throw while the catalog is null', () => {
+    useBookStore.setState(initialState);
+    const before = useBookStore.getState();
+    expect(before.catalog).toBeNull();
+
+    let addedSheet = true;
+    let addedGrammage = true;
+
+    expect(() => {
+      before.setFormat('landscape');
+      before.setProportion('2:3');
+      before.setPageDimensions(100, 100);
+      before.setBleed(5);
+      before.setUnitSystem('imperial');
+      before.setPageOrientation('normal');
+      before.setSubstrate('bond');
+      before.setGrammage(90);
+      before.setSheetSize('carta');
+      before.setTotalPages(10);
+      addedSheet = before.addCustomSheetSize('Custom', 100, 100);
+      before.removeCustomSheetSize('anything');
+      addedGrammage = before.addCustomGrammage('bond', 90, 100);
+      before.removeCustomGrammage('bond', 90);
+      before.clearCustomGrammageError();
+      before.recalculate();
+    }).not.toThrow();
+
+    expect(addedSheet).toBe(false);
+    expect(addedGrammage).toBe(false);
+    // A genuine no-op never produces a new state object, not just equal values.
+    expect(useBookStore.getState()).toBe(before);
   });
 });

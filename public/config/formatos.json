@@ -1,0 +1,18 @@
+{
+  "proportions": [
+    { "label": "1:1", "ratio": [1, 1], "description": "Cuadrado perfecto" },
+    { "label": "2:3", "ratio": [2, 3], "description": "Proporción clásica editorial" },
+    { "label": "3:5 (Áurea)", "ratio": [3, 5], "description": "Proporción áurea aproximada (φ ≈ 1.618)" },
+    { "label": "3:4", "ratio": [3, 4], "description": "Formato estándar fotográfico" },
+    { "label": "1:√2 (ISO)", "ratio": [1, 1.4142], "description": "Proporción ISO (A4, A3, etc.)" }
+  ],
+  "defaults": {
+    "substrateId": "couche_matte",
+    "grammage": 150,
+    "sheetSizeId": "tabloide",
+    "pageWidth_mm": 140,
+    "proportionId": "2:3",
+    "bleed_mm": 3,
+    "totalPages": 32
+  }
+}
