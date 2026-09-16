@@ -154,12 +154,56 @@ El incremento 3 está planificado en detalle y los demás se detallan cuando sea
 
 ## Incrementos siguientes
 
-- **4 — Tapa blanda y dura:** medidas de tapa con lomo final, sangrado, solapas opcionales y, en tapa dura, cartón, cejas, bisagra y doblez configurables; peso de tapa y plantilla visual con cotas.
+- **4 — Tapa blanda y dura:** ver la sección detallada más abajo.
 - **5 — Tirada, merma y costo:** pliegos y kilos de papel por tirada con merma configurable por proceso, y costo desglosado de papel, impresión y encuadernación a partir de precios y moneda configurables.
+
+## Incremento 4 — Tapa blanda y dura
+
+### Objetivo
+
+- Calcular las medidas y el peso de la tapa a partir del lomo final que ya produce la encuadernación, distinguiendo la tapa blanda de la dura, y mostrarlas como una plantilla con cotas.
+
+### Alcance
+
+- Crear `public/config/tapas.json` con los tipos de tapa: id, nombre, si es blanda o dura, ancho de solapa, ceja, canal de bisagra, doblez de forro, grosor de cartón, gramaje del material de tapa, y el campo `source`.
+- Añadir `defaults.coverId` a `public/config/formatos.json`, referenciando un tipo existente.
+- Resolver el `spineType` diferido en el incremento 3: cada método de encuadernación declara si produce un lomo plano o solo un pliegue, y la tapa solo ofrece los tipos compatibles con el método elegido.
+- Validar los tipos de tapa con las mismas reglas del resto del catálogo, incluida la regla de que una tapa dura exige cartón, ceja, canal y doblez mayores que cero, y una blanda no los usa.
+- Escribir `src/engine/cover.ts` como motor puro que calcule, para tapa blanda, el ancho y alto del pliego de tapa con lomo, sangrado y solapas opcionales; y para tapa dura, las medidas de cada cartón, el cartón de lomo, y el forro con sus dobleces y canales.
+- Calcular el peso de la tapa a partir de su superficie y su gramaje, y sumar el cartón cuando la tapa es dura.
+- Añadir al store el tipo de tapa elegido, su resultado y su error, conservando la actualización atómica.
+- Mostrar en la interfaz un panel de Tapa con las medidas, el peso y una plantilla proporcional con cotas legibles.
+- Documentar el archivo nuevo en `docs/CONFIG.md`.
+
+### No objetivos
+
+- Exportar un PDF o líneas de troquel.
+- Sobrecubiertas, camisas y fajas.
+- Tolerancias de producción del encajado, que dependen de cada taller.
+- Tirada, merma y costos, que son el incremento 5.
+
+### Aceptación
+
+- `npm test` y `npm run build` terminan con código 0 y no se añade ninguna dependencia.
+- Un método sin lomo plano no ofrece tapa dura, y un test lo demuestra.
+- Con un libro de 32 páginas, couché mate de 150 g y tapa blanda sin solapas, el ancho del pliego de tapa es dos veces el ancho de página más el lomo final más el sangrado de ambos lados, y un test fija el valor.
+- Con solapas, el ancho incluye dos veces el ancho de solapa, y un test fija el valor.
+- En tapa dura, el forro mide dos veces el cartón más el cartón de lomo, más los canales y los dobleces, y un test fija cada componente por separado.
+- El peso de la tapa se muestra separado del peso del interior, y un test fija ambos.
+- Editar una ceja o un doblez en `dist/config/tapas.json` cambia las medidas tras recargar, sin recompilar.
+- La plantilla con cotas se verifica en un navegador real.
+
+### Rollback
+
+- Revertir el único commit del incremento.
 
 ## Decisiones pendientes
 
-- Ninguna bloquea el incremento 3.
+- Ninguna bloquea el incremento 4.
+- 2026-09-16: la revisión de UX en `docs/UX-REVIEW.md` está aprobada, y se ejecuta después del incremento 4, empezando por sus tres primeros incrementos y dejando la capa de personalización al final.
+- 2026-09-16, pendiente de confirmar con una imprenta real: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema de plegado elegido.
+  Si un cuadernillo grapado se arma anidando pliegos plegados de 16 páginas, la unidad no es 4 y el corrimiento queda sobreestimado.
+  Hasta confirmarlo, el valor mostrado debe leerse como una referencia preliminar más.
 - Chris decidió el 2026-09-15 que la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado, además de la geometría y los conteos.
 - Quedan pendientes, sin bloquear: tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
 - Los esquemas de plegado entregados son ejemplos construidos a mano: su emparejamiento de páginas está verificado, pero su convención de plegado debe confirmarse contra un pliego doblado real.
