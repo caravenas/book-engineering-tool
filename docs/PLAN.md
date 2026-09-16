@@ -36,8 +36,8 @@
 5. Tirada, merma y costo.
 
 El orden sigue las dependencias: las firmas necesitan la configuración de máquinas, la encuadernación restringe las firmas y el lomo, la tapa necesita el lomo final y la tirada necesita pliegos por ejemplar, tapa y encuadernación.
-El incremento 1 está cerrado en `3f8279c`.
-El incremento 2 está planificado en detalle y los demás se detallan cuando sean el siguiente.
+El incremento 1 está cerrado en `3f8279c` y el incremento 2 en `2f1b7f4`.
+El incremento 3 está planificado en detalle y los demás se detallan cuando sean el siguiente.
 
 ## Incremento 1 — Configuración en runtime
 
@@ -114,14 +114,52 @@ El incremento 2 está planificado en detalle y los demás se detallan cuando sea
 
 - Revertir el único commit del incremento.
 
+## Incremento 3 — Tipos de encuadernación
+
+### Objetivo
+
+- Hacer que el tipo de encuadernación restrinja el número de páginas válido, aporte su parte al lomo y exponga la compensación por corrimiento cuando el método la necesita.
+
+### Alcance
+
+- Crear `public/config/encuadernaciones.json` con los métodos: id, nombre, múltiplo de páginas exigido, mínimo y máximo de páginas, aporte al lomo en milímetros, corrimiento por hoja en milímetros, si exige que las páginas sean múltiplo del tamaño de firma, y el campo `source`.
+- Entregar como ejemplo grapa, hotmelt, PUR y cosido, con la misma advertencia de datos de ejemplo que los demás archivos.
+- Añadir `defaults.bindingId` a `public/config/formatos.json`, referenciando un método existente.
+- Validar los métodos con las mismas reglas del resto del catálogo: ids limpios y únicos, múltiplos y límites como enteros positivos, mínimo menor o igual que máximo, aportes y corrimientos finitos no negativos, y la referencia por defecto existente.
+- Escribir `src/engine/binding.ts` como motor puro que valide un número de páginas contra un método, calcule el lomo final sumando el aporte del método al lomo del papel interior, y calcule la compensación por corrimiento a partir del calibre y del número de hojas.
+- Añadir al store el método elegido, su resultado y su error, conservando la actualización atómica de entradas y resultados.
+- Mostrar en la interfaz el selector de método, un mensaje explícito cuando el número de páginas no es válido para ese método, el lomo final junto al lomo interior, y el corrimiento cuando corresponde.
+- Documentar el archivo nuevo en `docs/CONFIG.md`.
+
+### No objetivos
+
+- Tapa, tirada, merma y costos.
+- Cambiar la imposición por firmas o los motores de lomo y aprovechamiento existentes, más allá de consumir su resultado.
+- Proponer automáticamente un método de encuadernación según el lomo.
+
+### Aceptación
+
+- `npm test` y `npm run build` terminan con código 0 y no se añade ninguna dependencia.
+- Un número de páginas que no cumple el múltiplo del método produce un mensaje que nombra los números válidos más cercanos, y un test lo demuestra.
+- Un número de páginas por debajo del mínimo o por encima del máximo del método produce un mensaje explícito, y un test lo demuestra.
+- El lomo final suma el aporte del método al lomo del papel interior, ambos visibles por separado, y un test fija el valor esperado.
+- La compensación por corrimiento se calcula solo para los métodos que la declaran, con un valor fijado por un test a partir del calibre y del número de hojas.
+- Editar `dist/config/encuadernaciones.json` cambia los números de página aceptados tras recargar, sin recompilar.
+- La interfaz muestra el método, el lomo final y el mensaje de páginas inválidas, verificado en un navegador real.
+
+### Rollback
+
+- Revertir el único commit del incremento.
+
 ## Incrementos siguientes
 
-- **3 — Tipos de encuadernación:** configuración de grapa, hotmelt, PUR y cosido con múltiplos de páginas válidos, mínimos y máximos, compensación por corrimiento en grapa y aporte al lomo.
 - **4 — Tapa blanda y dura:** medidas de tapa con lomo final, sangrado, solapas opcionales y, en tapa dura, cartón, cejas, bisagra y doblez configurables; peso de tapa y plantilla visual con cotas.
 - **5 — Tirada, merma y costo:** pliegos y kilos de papel por tirada con merma configurable por proceso, y costo desglosado de papel, impresión y encuadernación a partir de precios y moneda configurables.
 
 ## Decisiones pendientes
 
-- Ninguna bloquea el incremento 2.
+- Ninguna bloquea el incremento 3.
 - Chris decidió el 2026-09-15 que la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado, además de la geometría y los conteos.
 - Quedan pendientes, sin bloquear: tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
+- Los esquemas de plegado entregados son ejemplos construidos a mano: su emparejamiento de páginas está verificado, pero su convención de plegado debe confirmarse contra un pliego doblado real.
+- El motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego, lo que desaprovecha pliegos grandes con páginas pequeñas; es candidato a un incremento posterior.
