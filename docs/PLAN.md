@@ -126,7 +126,8 @@ El incremento 3 está planificado en detalle y los demás se detallan cuando sea
 - Entregar como ejemplo grapa, hotmelt, PUR y cosido, con la misma advertencia de datos de ejemplo que los demás archivos.
 - Añadir `defaults.bindingId` a `public/config/formatos.json`, referenciando un método existente.
 - Validar los métodos con las mismas reglas del resto del catálogo: ids limpios y únicos, múltiplos y límites como enteros positivos, mínimo menor o igual que máximo, aportes y corrimientos finitos no negativos, y la referencia por defecto existente.
-- Escribir `src/engine/binding.ts` como motor puro que valide un número de páginas contra un método, calcule el lomo final sumando el aporte del método al lomo del papel interior, y calcule la compensación por corrimiento a partir del calibre y del número de hojas.
+- Escribir `src/engine/binding.ts` como motor puro que valide un número de páginas contra un método, calcule el lomo final sumando el aporte del método al lomo del papel interior, y calcule la compensación por corrimiento a partir del calibre y del número de pliegos plegados que se anidan.
+- El corrimiento existe porque los pliegos de un método anidado se meten uno dentro de otro, así que se cuentan pliegos plegados y no hojas finales: un libro de 64 páginas anida 16 pliegos, no 32 hojas.
 - Añadir al store el método elegido, su resultado y su error, conservando la actualización atómica de entradas y resultados.
 - Mostrar en la interfaz el selector de método, un mensaje explícito cuando el número de páginas no es válido para ese método, el lomo final junto al lomo interior, y el corrimiento cuando corresponde.
 - Documentar el archivo nuevo en `docs/CONFIG.md`.
@@ -143,7 +144,7 @@ El incremento 3 está planificado en detalle y los demás se detallan cuando sea
 - Un número de páginas que no cumple el múltiplo del método produce un mensaje que nombra los números válidos más cercanos, y un test lo demuestra.
 - Un número de páginas por debajo del mínimo o por encima del máximo del método produce un mensaje explícito, y un test lo demuestra.
 - El lomo final suma el aporte del método al lomo del papel interior, ambos visibles por separado, y un test fija el valor esperado.
-- La compensación por corrimiento se calcula solo para los métodos que la declaran, con un valor fijado por un test a partir del calibre y del número de hojas.
+- La compensación por corrimiento se calcula solo para los métodos que anidan sus pliegos, con un valor fijado por un test a partir del calibre y del número de pliegos anidados.
 - Editar `dist/config/encuadernaciones.json` cambia los números de página aceptados tras recargar, sin recompilar.
 - La interfaz muestra el método, el lomo final y el mensaje de páginas inválidas, verificado en un navegador real.
 
