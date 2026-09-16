@@ -11,12 +11,13 @@
 
 ## Estado actual
 
-- `4fb1888` endureció los cálculos preliminares: entradas no finitas rechazadas, store atómico, gramajes personalizados por sustrato, vista previa limitada a 250 ubicaciones y copy honesto.
-- El 2026-09-15 se verificó con Node v22.22.2 que `npm test` (65 tests) y `npm run build` terminan con código 0 y que no cambió ninguna dependencia.
-- La imposición actual ubica páginas sueltas en una rejilla uniforme del pliego, comparando orientación normal y rotada, sin firmas, pinza, calles ni tiro y retiro.
-- El lomo es `ceil(páginas / 2) × calibre` y el peso cubre solo el papel interior.
-- No existen cálculo de tapa, tipos de encuadernación, tirada, merma ni costos.
-- Proporciones, pliegos, sustratos con calibres y valores por defecto están escritos en `src/data/substrates.ts` y `src/store/useBookStore.ts`.
+- Los incrementos 1, 2 y 3 están cerrados; el siguiente es el incremento 4, tapa blanda y dura.
+- El 2026-09-16 se verificó con Node v22.22.2, sobre `86e4f57`, que `npm test` (213 tests) y `npm run build` terminan con código 0.
+- Todo el catálogo y los valores por defecto se leen en runtime desde seis archivos de `public/config/`, validados al iniciar y documentados en `docs/CONFIG.md`.
+- La imposición por firmas vive en `src/engine/signatures.ts`: respeta pinza, márgenes y calles de la máquina, numera las páginas según el esquema de plegado y calcula firmas, blancos y pliegos por ejemplar.
+- La encuadernación vive en `src/engine/binding.ts`: restringe el número de páginas por método, suma el aporte del método al lomo del papel interior y calcula el corrimiento solo para los métodos con `nests: true`.
+- El peso cubre solo el papel interior.
+- No existen cálculo de tapa, tirada, merma ni costos.
 
 ## Principios comunes a todos los incrementos
 
@@ -36,8 +37,8 @@
 5. Tirada, merma y costo.
 
 El orden sigue las dependencias: las firmas necesitan la configuración de máquinas, la encuadernación restringe las firmas y el lomo, la tapa necesita el lomo final y la tirada necesita pliegos por ejemplar, tapa y encuadernación.
-El incremento 1 está cerrado en `3f8279c` y el incremento 2 en `2f1b7f4`.
-El incremento 3 está planificado en detalle y los demás se detallan cuando sean el siguiente.
+El incremento 1 está cerrado en `3f8279c`, el incremento 2 en `2f1b7f4` y el incremento 3 en `8fefcdd`.
+El incremento 4 está planificado en detalle y es el siguiente; el 5 se detalla cuando sea el siguiente.
 
 ## Incremento 1 — Configuración en runtime
 
@@ -167,10 +168,13 @@ El incremento 3 está planificado en detalle y los demás se detallan cuando sea
 
 - Crear `public/config/tapas.json` con los tipos de tapa: id, nombre, si es blanda o dura, ancho de solapa, ceja, canal de bisagra, doblez de forro, grosor de cartón, gramaje del material de tapa, y el campo `source`.
 - Añadir `defaults.coverId` a `public/config/formatos.json`, referenciando un tipo existente.
-- Resolver el `spineType` diferido en el incremento 3: cada método de encuadernación declara si produce un lomo plano o solo un pliegue, y la tapa solo ofrece los tipos compatibles con el método elegido.
+- Usar el campo `nests` de `encuadernaciones.json` para saber si un método produce lomo plano o solo un pliegue, sin añadir un campo nuevo: un método con `nests: true` produce un pliegue y uno con `nests: false` produce lomo plano, igual que ya lo interpreta `src/components/SpineCalculator.tsx`.
+- La tapa solo ofrece los tipos compatibles con el método elegido: un método sin lomo plano no ofrece tapa dura.
 - Validar los tipos de tapa con las mismas reglas del resto del catálogo, incluida la regla de que una tapa dura exige cartón, ceja, canal y doblez mayores que cero, y una blanda no los usa.
 - Escribir `src/engine/cover.ts` como motor puro que calcule, para tapa blanda, el ancho y alto del pliego de tapa con lomo, sangrado y solapas opcionales; y para tapa dura, las medidas de cada cartón, el cartón de lomo, y el forro con sus dobleces y canales.
-- Calcular el peso de la tapa a partir de su superficie y su gramaje, y sumar el cartón cuando la tapa es dura.
+- Calcular el peso del papel de tapa a partir de su superficie y su gramaje.
+- En tapa dura, devolver además la superficie de cartón, pero no su peso: el catálogo no declara la densidad del cartón, y estimarla sería inventar un número.
+- Queda pendiente, para cuando se necesite, añadir esa densidad al catálogo y con ella el peso del cartón.
 - Añadir al store el tipo de tapa elegido, su resultado y su error, conservando la actualización atómica.
 - Mostrar en la interfaz un panel de Tapa con las medidas, el peso y una plantilla proporcional con cotas legibles.
 - Documentar el archivo nuevo en `docs/CONFIG.md`.
@@ -200,6 +204,7 @@ El incremento 3 está planificado en detalle y los demás se detallan cuando sea
 ## Decisiones pendientes
 
 - Ninguna bloquea el incremento 4.
+- Chris decidió el 2026-09-16 no añadir un `spineType` a la encuadernación: el lomo plano se deriva de `nests`, que ya existe.
 - 2026-09-16: la revisión de UX en `docs/UX-REVIEW.md` está aprobada, y se ejecuta después del incremento 4, empezando por sus tres primeros incrementos y dejando la capa de personalización al final.
 - 2026-09-16, pendiente de confirmar con una imprenta real: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema de plegado elegido.
   Si un cuadernillo grapado se arma anidando pliegos plegados de 16 páginas, la unidad no es 4 y el corrimiento queda sobreestimado.
