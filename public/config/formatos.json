@@ -15,6 +15,7 @@
     "bleed_mm": 3,
     "totalPages": 32,
     "pressId": "prensa_70x100",
-    "bindingId": "grapa"
+    "bindingId": "grapa",
+    "coverId": "blanda_simple"
   }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  BindingSpineResult,
   BookConfig,
   BookFormat,
   BookStore,
@@ -17,6 +18,7 @@ import { calculateImposition } from '../engine/imposition';
 import { calculateSpineAndWeight } from '../engine/spine';
 import { planSignatures } from '../engine/signatures';
 import { creepCompensation, spineWithBinding, validatePageCount } from '../engine/binding';
+import { planCover } from '../engine/cover';
 
 /**
  * Get all sheet sizes (catalog + custom).
@@ -79,6 +81,7 @@ type CalculationResults = Pick<
   | 'signaturePlan' | 'signatureError'
   | 'spineResult' | 'spineError'
   | 'bindingPageCount' | 'bindingSpine' | 'bindingCreep' | 'bindingError'
+  | 'coverPlan' | 'coverError'
 >;
 
 /**
@@ -214,6 +217,57 @@ function calculateBindingResults(
   return { bindingPageCount, bindingSpine, bindingCreep, bindingError };
 }
 
+type CoverResults = Pick<CalculationResults, 'coverPlan' | 'coverError'>;
+
+/**
+ * Compute the cover geometry and weight from this same calculation pass'
+ * freshly computed binding spine, never a stale previous one.
+ *
+ * `planCover` returning `{ ok: false, reason, message }` for a hard cover
+ * paired with a binding that has no flat spine is a normal, displayable
+ * result (the same precedent as `validatePageCount`), not an exception: it
+ * is returned as `coverPlan` with `coverError` left `null`. The try/catch
+ * here only guards genuine input problems (a missing cover/binding id, a
+ * spine that failed to compute, or a `planCover` validation failure).
+ */
+function calculateCoverResult(
+  state: BookConfig,
+  catalog: Catalog,
+  bindingSpine: BindingSpineResult | null
+): CoverResults {
+  try {
+    const cover = catalog.covers.find(c => c.id === state.coverId);
+    if (!cover) {
+      throw new RangeError(`La tapa "${state.coverId}" no existe en la configuración`);
+    }
+
+    const binding = catalog.bindings.find(b => b.id === state.bindingId);
+    if (!binding) {
+      throw new RangeError(`La encuadernación "${state.bindingId}" no existe en la configuración`);
+    }
+
+    if (!bindingSpine) {
+      throw new RangeError('No hay un lomo final calculado para dimensionar la tapa');
+    }
+
+    const coverPlan = planCover({
+      pageWidth_mm: state.pageWidth_mm,
+      pageHeight_mm: state.pageHeight_mm,
+      bleed_mm: state.bleed_mm,
+      spineTotal_mm: bindingSpine.total_mm,
+      bindingHasFlatSpine: !binding.nests,
+      cover,
+    });
+
+    return { coverPlan, coverError: null };
+  } catch (error) {
+    return {
+      coverPlan: null,
+      coverError: `No se pudo calcular la tapa: ${getErrorMessage(error)}. Corrige dimensiones, sangrado, encuadernación o tapa.`,
+    };
+  }
+}
+
 function calculateResults(state: BookStore, catalog: Catalog): CalculationResults {
   let impositionResult: ImpositionResult | null = null;
   let impositionError: string | null = null;
@@ -288,11 +342,14 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
     pagesPerSignature
   );
 
+  const { coverPlan, coverError } = calculateCoverResult(state, catalog, bindingSpine);
+
   return {
     impositionResult, impositionError,
     signaturePlan, signatureError,
     spineResult, spineError,
     bindingPageCount, bindingSpine, bindingCreep, bindingError,
+    coverPlan, coverError,
   };
 }
 
@@ -366,6 +423,9 @@ export const useBookStore = create<BookStore>((set, get) => ({
   // Binding
   bindingId: '',
 
+  // Cover
+  coverId: '',
+
   // Computed
   impositionResult: null,
   impositionError: null,
@@ -377,6 +437,8 @@ export const useBookStore = create<BookStore>((set, get) => ({
   bindingSpine: null,
   bindingCreep: null,
   bindingError: null,
+  coverPlan: null,
+  coverError: null,
   customGrammageError: null,
 
   // ─── Actions ─────────────────────────────────────────────────────
@@ -404,6 +466,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
         foldingSchemeId: null,
         totalPages: defaults.totalPages,
         bindingId: defaults.bindingId,
+        coverId: defaults.coverId,
       };
 
       return {
@@ -541,6 +604,13 @@ export const useBookStore = create<BookStore>((set, get) => ({
     set(state => {
       if (!state.catalog) return state;
       return withUpdatedCalculations(state, state.catalog, { bindingId });
+    });
+  },
+
+  setCover: (coverId) => {
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { coverId });
     });
   },
 

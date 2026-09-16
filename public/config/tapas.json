@@ -1,0 +1,41 @@
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "covers": [
+    {
+      "id": "blanda_simple",
+      "name": "Tapa blanda sin solapas",
+      "kind": "blanda",
+      "substrateId": "couche_matte",
+      "grammage": 300,
+      "flapWidth_mm": 0,
+      "squares_mm": 0,
+      "hingeGap_mm": 0,
+      "turnIn_mm": 0,
+      "boardThickness_mm": 0
+    },
+    {
+      "id": "blanda_solapas",
+      "name": "Tapa blanda con solapas",
+      "kind": "blanda",
+      "substrateId": "couche_matte",
+      "grammage": 300,
+      "flapWidth_mm": 80,
+      "squares_mm": 0,
+      "hingeGap_mm": 0,
+      "turnIn_mm": 0,
+      "boardThickness_mm": 0
+    },
+    {
+      "id": "dura_estandar",
+      "name": "Tapa dura estándar",
+      "kind": "dura",
+      "substrateId": "couche_gloss",
+      "grammage": 150,
+      "flapWidth_mm": 0,
+      "squares_mm": 3,
+      "hingeGap_mm": 6,
+      "turnIn_mm": 15,
+      "boardThickness_mm": 2.5
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import pliegosRaw from '../../public/config/pliegos.json?raw';
 import maquinasRaw from '../../public/config/maquinas.json?raw';
 import esquemasRaw from '../../public/config/esquemas.json?raw';
 import encuadernacionesRaw from '../../public/config/encuadernaciones.json?raw';
+import tapasRaw from '../../public/config/tapas.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { StrictMode } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -17,6 +18,7 @@ const RAW_CONFIG_FILES: Record<string, string> = {
   'maquinas.json': maquinasRaw,
   'esquemas.json': esquemasRaw,
   'encuadernaciones.json': encuadernacionesRaw,
+  'tapas.json': tapasRaw,
   'formatos.json': formatosRaw,
 };
 
@@ -95,6 +97,7 @@ describe('App runtime config loading', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
       if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(readConfigFile('encuadernaciones.json'));
+      if (url.endsWith('tapas.json')) return jsonResponse(readConfigFile('tapas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);
@@ -115,6 +118,7 @@ describe('App runtime config loading', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
       if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(readConfigFile('encuadernaciones.json'));
+      if (url.endsWith('tapas.json')) return jsonResponse(readConfigFile('tapas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);

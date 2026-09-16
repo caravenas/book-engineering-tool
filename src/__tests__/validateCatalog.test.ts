@@ -100,6 +100,26 @@ function validEncuadernaciones() {
   };
 }
 
+function validTapas() {
+  return {
+    source: 'Datos de prueba.',
+    covers: [
+      {
+        id: 'blanda',
+        name: 'Tapa blanda',
+        kind: 'blanda',
+        substrateId: 'bond',
+        grammage: 90,
+        flapWidth_mm: 0,
+        squares_mm: 0,
+        hingeGap_mm: 0,
+        turnIn_mm: 0,
+        boardThickness_mm: 0,
+      },
+    ],
+  };
+}
+
 function validFormatos() {
   return {
     proportions: [
@@ -118,6 +138,7 @@ function validFormatos() {
       totalPages: 32,
       pressId: 'prensa1',
       bindingId: 'grapa',
+      coverId: 'blanda',
     },
   };
 }
@@ -129,6 +150,7 @@ function validInput(): CatalogFiles {
     'maquinas.json': validMaquinas(),
     'esquemas.json': validEsquemas(),
     'encuadernaciones.json': validEncuadernaciones(),
+    'tapas.json': validTapas(),
     'formatos.json': validFormatos(),
   };
 }
@@ -148,10 +170,13 @@ describe('validateCatalog', () => {
     expect(result.catalog.foldingSchemesSource).toBe('Datos de prueba.');
     expect(result.catalog.bindings).toHaveLength(1);
     expect(result.catalog.bindingsSource).toBe('Datos de prueba.');
+    expect(result.catalog.covers).toHaveLength(1);
+    expect(result.catalog.coversSource).toBe('Datos de prueba.');
     expect(result.catalog.proportions).toHaveLength(4);
     expect(result.catalog.defaults.substrateId).toBe('bond');
     expect(result.catalog.defaults.pressId).toBe('prensa1');
     expect(result.catalog.defaults.bindingId).toBe('grapa');
+    expect(result.catalog.defaults.coverId).toBe('blanda');
   });
 
   it('reports a malformed top-level structure for each file', () => {
@@ -161,6 +186,7 @@ describe('validateCatalog', () => {
       'maquinas.json': 42,
       'esquemas.json': 'not an object',
       'encuadernaciones.json': 'not an object',
+      'tapas.json': 'not an object',
       'formatos.json': 'not an object',
     });
 
@@ -171,6 +197,7 @@ describe('validateCatalog', () => {
     assertError(result.errors, 'maquinas.json', '');
     assertError(result.errors, 'esquemas.json', '');
     assertError(result.errors, 'encuadernaciones.json', '');
+    assertError(result.errors, 'tapas.json', '');
     assertError(result.errors, 'formatos.json', '');
   });
 
@@ -416,7 +443,7 @@ describe('validateCatalog', () => {
     expect(result.errors.some(error => error.path === 'defaults.substrateId')).toBe(false);
   });
 
-  it('rejects defaults that reference a nonexistent substrate id, grammage, sheet id, proportion, press id, and binding id', () => {
+  it('rejects defaults that reference a nonexistent substrate id, grammage, sheet id, proportion, press id, binding id, and cover id', () => {
     const input = validInput();
     input['formatos.json'] = {
       proportions: validFormatos().proportions,
@@ -430,6 +457,7 @@ describe('validateCatalog', () => {
         totalPages: 32,
         pressId: 'missing-press',
         bindingId: 'missing-binding',
+        coverId: 'missing-cover',
       },
     };
 
@@ -441,6 +469,7 @@ describe('validateCatalog', () => {
     assertError(result.errors, 'formatos.json', 'defaults.proportionId');
     assertError(result.errors, 'formatos.json', 'defaults.pressId');
     assertError(result.errors, 'formatos.json', 'defaults.bindingId');
+    assertError(result.errors, 'formatos.json', 'defaults.coverId');
   });
 
   it('rejects a default grammage that does not exist for the referenced substrate', () => {
@@ -502,6 +531,7 @@ describe('validateCatalog', () => {
       'maquinas.json': validMaquinas(),
       'esquemas.json': validEsquemas(),
       'encuadernaciones.json': validEncuadernaciones(),
+      'tapas.json': validTapas(),
       'formatos.json': {
         proportions: [],
         defaults: {
@@ -514,6 +544,7 @@ describe('validateCatalog', () => {
           totalPages: 0,
           pressId: '',
           bindingId: '',
+          coverId: '',
         },
       },
     });
@@ -528,6 +559,7 @@ describe('validateCatalog', () => {
     expect(paths).toEqual([
       'formatos.json:defaults.bindingId',
       'formatos.json:defaults.bleed_mm',
+      'formatos.json:defaults.coverId',
       'formatos.json:defaults.grammage',
       'formatos.json:defaults.pageWidth_mm',
       'formatos.json:defaults.pressId',
@@ -540,6 +572,7 @@ describe('validateCatalog', () => {
       'pliegos.json:source',
       'sustratos.json:source',
       'sustratos.json:substrates',
+      'tapas.json:covers[0].substrateId',
     ]);
   });
 
@@ -588,6 +621,7 @@ describe('validateCatalog', () => {
       'maquinas.json': validMaquinas(),
       'esquemas.json': validEsquemas(),
       'encuadernaciones.json': validEncuadernaciones(),
+      'tapas.json': validTapas(),
       'formatos.json': validFormatos(),
     });
 
@@ -1058,6 +1092,266 @@ describe('validateCatalog', () => {
       if (result.ok) return;
       assertError(result.errors, 'encuadernaciones.json', 'bindings[0].name');
       expect(result.errors.some(error => error.path === 'defaults.bindingId')).toBe(false);
+    });
+
+  });
+
+  describe('covers (tapas.json)', () => {
+    function makeCover(overrides: Partial<ReturnType<typeof validTapas>['covers'][0]> = {}) {
+      return { ...validTapas().covers[0], ...overrides };
+    }
+
+    it('rejects a missing "source" field', () => {
+      const input = validInput();
+      input['tapas.json'] = { covers: validTapas().covers };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'source');
+    });
+
+    it('rejects a duplicate cover id', () => {
+      const input = validInput();
+      const cover = validTapas().covers[0];
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [cover, { ...cover, name: 'Duplicada' }] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[1].id');
+    });
+
+    it('rejects a negative millimetre field', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ flapWidth_mm: -1 })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].flapWidth_mm');
+    });
+
+    it('rejects a substrateId that does not exist in sustratos.json', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ substrateId: 'missing-substrate' })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].substrateId');
+    });
+
+    it('rejects a grammage that does not exist for the referenced substrate', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ grammage: 999 })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].grammage');
+    });
+
+    it('rejects a soft cover with a non-zero board thickness', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ kind: 'blanda', boardThickness_mm: 2 })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].boardThickness_mm');
+    });
+
+    it('rejects a hard cover with a zero hinge gap', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({
+          kind: 'dura', squares_mm: 3, hingeGap_mm: 0, turnIn_mm: 15, boardThickness_mm: 2.5,
+        })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].hingeGap_mm');
+    });
+
+    it('rejects a hard cover with flaps', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({
+          kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5, flapWidth_mm: 80,
+        })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].flapWidth_mm');
+    });
+
+    it('rejects a default coverId that does not exist', () => {
+      const input = validInput();
+      input['formatos.json'] = {
+        ...validFormatos(),
+        defaults: { ...validFormatos().defaults, coverId: 'missing-cover' },
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'formatos.json', 'defaults.coverId');
+    });
+
+    it('does not report a false "no existe" for defaults.coverId when the referenced cover has an invalid name', () => {
+      const input = validInput();
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ name: '' })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].name');
+      expect(result.errors.some(error => error.path === 'defaults.coverId')).toBe(false);
+    });
+
+    it('rejects a "covers" that is not an array', () => {
+      const input = validInput();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: 'not an array' };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers');
+    });
+
+    it('rejects an empty "covers" array', () => {
+      const input = validInput();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers');
+    });
+
+    it('rejects a null and a non-object entry in covers', () => {
+      const input = validInput();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [null, 42, validTapas().covers[0]] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0]');
+      assertError(result.errors, 'tapas.json', 'covers[1]');
+    });
+
+    it('rejects a missing "kind" field', () => {
+      const input = validInput();
+      const { kind: _kind, ...rest } = makeCover();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [rest] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].kind');
+    });
+
+    it('rejects an unknown "kind" value', () => {
+      const input = validInput();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [makeCover({ kind: 'rigida' })] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'tapas.json', 'covers[0].kind');
+    });
+
+    it('reports a single message for a cover with grammage: 0, not two on the same path', () => {
+      const input = validInput();
+      input['tapas.json'] = { source: 'Datos de prueba.', covers: [makeCover({ grammage: 0 })] };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      const grammageErrors = result.errors.filter(error => error.file === 'tapas.json' && error.path === 'covers[0].grammage');
+      expect(grammageErrors).toHaveLength(1);
+    });
+
+    it('does not report a false "no existe" for defaults.coverId when tapas.json is unavailable', () => {
+      const input = validInput();
+      input['sustratos.json'] = { ...validSustratos(), source: '' }; // force an unrelated error so result.ok is false
+
+      const result = validateCatalog(input, new Set(['tapas.json']));
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'sustratos.json', 'source');
+      expect(result.errors.some(error => error.file === 'tapas.json')).toBe(false);
+      expect(result.errors.some(error => error.path === 'defaults.coverId')).toBe(false);
+    });
+
+    it('rejects a default coverId naming a hard cover when the default binding nests its sheets', () => {
+      const input = validInput();
+      // validFormatos().defaults.coverId is 'blanda' and .bindingId is 'grapa'
+      // (nests: true): pairing a hard cover with it is contradictory, since a
+      // hard case needs a flat, square spine.
+      input['tapas.json'] = {
+        source: 'Datos de prueba.',
+        covers: [makeCover({ kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5 })],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'formatos.json', 'defaults.coverId');
+    });
+
+    describe.each(['squares_mm', 'hingeGap_mm', 'turnIn_mm'] as const)('a soft cover with a non-zero %s', field => {
+      it('is rejected', () => {
+        const input = validInput();
+        input['tapas.json'] = {
+          source: 'Datos de prueba.',
+          covers: [makeCover({ kind: 'blanda', [field]: 1 })],
+        };
+
+        const result = validateCatalog(input);
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        assertError(result.errors, 'tapas.json', `covers[0].${field}`);
+      });
+    });
+
+    describe.each(['squares_mm', 'turnIn_mm', 'boardThickness_mm'] as const)('a hard cover with a zero %s', field => {
+      it('is rejected', () => {
+        const input = validInput();
+        input['tapas.json'] = {
+          source: 'Datos de prueba.',
+          covers: [makeCover({
+            kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5, [field]: 0,
+          })],
+        };
+
+        const result = validateCatalog(input);
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        assertError(result.errors, 'tapas.json', `covers[0].${field}`);
+      });
     });
   });
 

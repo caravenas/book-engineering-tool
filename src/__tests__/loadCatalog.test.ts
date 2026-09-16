@@ -52,23 +52,31 @@ const validEncuadernaciones = {
     spineAllowance_mm: 0, nests: true, requiresSignatureMultiple: false,
   }],
 };
+const validTapas = {
+  source: 'Datos de prueba.',
+  covers: [{
+    id: 'blanda', name: 'Tapa blanda', kind: 'blanda', substrateId: 'bond', grammage: 90,
+    flapWidth_mm: 0, squares_mm: 0, hingeGap_mm: 0, turnIn_mm: 0, boardThickness_mm: 0,
+  }],
+};
 const validFormatos = {
   proportions: [{ label: '2:3', ratio: [2, 3], description: 'Clásica' }],
   defaults: {
     substrateId: 'bond', grammage: 90, sheetSizeId: 'carta',
     pageWidth_mm: 140, proportionId: '2:3', bleed_mm: 3, totalPages: 32,
-    pressId: 'prensa1', bindingId: 'grapa',
+    pressId: 'prensa1', bindingId: 'grapa', coverId: 'blanda',
   },
 };
 
 describe('loadCatalog', () => {
-  it('validates the catalog when all six files load successfully', async () => {
+  it('validates the catalog when all seven files load successfully', async () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -83,6 +91,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -102,6 +111,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -128,6 +138,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validPliegos);
     };
 
@@ -148,6 +159,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -170,9 +182,9 @@ describe('loadCatalog', () => {
     const result = await loadCatalog(fetchStub as typeof fetch, 5);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors).toHaveLength(6);
+    expect(result.errors).toHaveLength(7);
     expect(result.errors.map(error => error.file).sort()).toEqual([
-      'encuadernaciones.json', 'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json',
+      'encuadernaciones.json', 'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json', 'tapas.json',
     ]);
     for (const error of result.errors) {
       expect(error.path).toBe('');
@@ -195,9 +207,9 @@ describe('loadCatalog', () => {
     const result = await loadCatalog(fetchStub as typeof fetch, 5);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors).toHaveLength(6);
+    expect(result.errors).toHaveLength(7);
     expect(result.errors.map(error => error.file).sort()).toEqual([
-      'encuadernaciones.json', 'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json',
+      'encuadernaciones.json', 'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json', 'tapas.json',
     ]);
     for (const error of result.errors) {
       expect(error.path).toBe('');
@@ -213,6 +225,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -232,6 +245,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -253,6 +267,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -260,6 +275,68 @@ describe('loadCatalog', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     const error = result.errors.find(e => e.file === 'encuadernaciones.json');
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('HTML');
+    expect(error?.message).not.toMatch(/JSON válido/);
+  });
+
+  it('reports a ConfigError with an empty path for a network failure on tapas.json', async () => {
+    const fetchStub = async (url: string) => {
+      if (url.endsWith('tapas.json')) throw new TypeError('Failed to fetch');
+      if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      return jsonResponse(validFormatos);
+    };
+
+    const result = await loadCatalog(fetchStub as typeof fetch);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    const error = result.errors.find(e => e.file === 'tapas.json');
+    expect(error).toBeDefined();
+    expect(error?.path).toBe('');
+    expect(error?.message).not.toMatch(/Failed to fetch/);
+  });
+
+  it('reports a ConfigError for a 404 response on tapas.json', async () => {
+    const fetchStub = async (url: string) => {
+      if (url.endsWith('tapas.json')) return jsonResponse(null, { ok: false, status: 404 });
+      if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      return jsonResponse(validFormatos);
+    };
+
+    const result = await loadCatalog(fetchStub as typeof fetch);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    const error = result.errors.find(e => e.file === 'tapas.json');
+    expect(error).toBeDefined();
+    expect(error?.path).toBe('');
+    expect(error?.message).toContain('404');
+  });
+
+  it('reports "no encontrado" when the server returns an HTML fallback page for tapas.json', async () => {
+    const fetchStub = async (url: string) => {
+      if (url.endsWith('tapas.json')) {
+        return jsonResponse({}, { contentType: 'text/html; charset=utf-8' });
+      }
+      if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
+      if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      return jsonResponse(validFormatos);
+    };
+
+    const result = await loadCatalog(fetchStub as typeof fetch);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    const error = result.errors.find(e => e.file === 'tapas.json');
     expect(error).toBeDefined();
     expect(error?.message).toContain('HTML');
     expect(error?.message).not.toMatch(/JSON válido/);
@@ -280,6 +357,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 
@@ -298,6 +376,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
       if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       if (url.endsWith('encuadernaciones.json')) return jsonResponse(validEncuadernaciones);
+      if (url.endsWith('tapas.json')) return jsonResponse(validTapas);
       return jsonResponse(validFormatos);
     };
 

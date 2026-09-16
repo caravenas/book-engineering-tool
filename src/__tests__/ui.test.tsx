@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CanvasDesigner } from '../components/CanvasDesigner';
 import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { SpineCalculator } from '../components/SpineCalculator';
 import { SubstrateSelector } from '../components/SubstrateSelector';
+import { CoverPanel } from '../components/CoverPanel';
 import { useBookStore } from '../store/useBookStore';
 import { loadShippedCatalog } from './testCatalog';
 
@@ -423,5 +424,103 @@ describe('Signature imposition preview', () => {
 
     expect(screen.getByText(/config\/maquinas\.json/)).toBeTruthy();
     expect(screen.getByText(/config\/esquemas\.json/)).toBeTruthy();
+  });
+});
+
+describe('Cover panel', () => {
+  it('only offers the two soft covers as selectable with the shipped default (saddle-stitch) binding, and switching changes the displayed measurements', () => {
+    render(<CoverPanel />);
+    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
+
+    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
+      'blanda_simple', 'blanda_solapas',
+    ]);
+    expect(select.value).toBe('blanda_simple');
+    // grapa (the shipped default binding) has no flat spine, so blanda_simple's
+    // sheet is 2*0 + 2*140 + 0 + 2*3 = 286.
+    expect(screen.getByText('Ancho del pliego de tapa (mm)').previousSibling?.textContent).toBe('286');
+
+    fireEvent.change(select, { target: { value: 'blanda_solapas' } });
+
+    expect(useBookStore.getState().coverId).toBe('blanda_solapas');
+    expect(screen.getByText('Ancho del pliego de tapa (mm)').previousSibling?.textContent).not.toBe('286');
+  });
+
+  it('offers all three covers as selectable with a flat-spine binding', () => {
+    useBookStore.getState().setBinding('hotmelt');
+    render(<CoverPanel />);
+    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
+
+    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
+      'blanda_simple', 'blanda_solapas', 'dura_estandar',
+    ]);
+    for (const option of Array.from(select.options)) {
+      expect(option.disabled).toBe(false);
+    }
+  });
+
+  it('keeps an incompatible cover as a disabled option instead of removing it, when the binding changes underneath it', () => {
+    useBookStore.getState().setBinding('hotmelt');
+    useBookStore.getState().setCover('dura_estandar');
+    render(<CoverPanel />);
+    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
+
+    act(() => {
+      useBookStore.getState().setBinding('grapa');
+    });
+
+    expect(useBookStore.getState().coverId).toBe('dura_estandar');
+    expect(select.value).toBe('dura_estandar');
+    const durastandarOption = Array.from(select.options).find(option => option.value === 'dura_estandar');
+    expect(durastandarOption).toBeTruthy();
+    expect(durastandarOption?.disabled).toBe(true);
+    expect(durastandarOption?.textContent).toBe('Tapa dura estándar');
+    expect(screen.getByText(/no admite una tapa dura/).textContent?.length).toBeGreaterThan(0);
+  });
+
+  it('shows the five sections in order for a soft cover', () => {
+    render(<CoverPanel />);
+    const list = screen.getByLabelText('Secciones del pliego de tapa');
+    const items = within(list).getAllByRole('listitem').map(item => item.textContent);
+
+    // grapa has no flat spine, so the shipped default has no spine panel.
+    expect(items).toEqual([
+      'Solapa: 0 mm',
+      'Contratapa: 143 mm',
+      'Lomo: 0 mm',
+      'Portada: 143 mm',
+      'Solapa: 0 mm',
+    ]);
+  });
+
+  it('shows boards, spine board, and wrap for a hard cover paired with a flat-spine binding', () => {
+    useBookStore.getState().setBinding('hotmelt');
+    useBookStore.getState().setCover('dura_estandar');
+    render(<CoverPanel />);
+
+    expect(useBookStore.getState().coverPlan?.ok).toBe(true);
+    expect(screen.getByText('Ancho del cartón lateral (mm)')).toBeTruthy();
+    expect(screen.getByText('Alto del cartón (mm)')).toBeTruthy();
+    expect(screen.getByText('Ancho del cartón de lomo (mm)')).toBeTruthy();
+    expect(screen.getByText('Ancho del forro (mm)')).toBeTruthy();
+    expect(screen.getByText('Alto del forro (mm)')).toBeTruthy();
+    expect(screen.getByText('Área de cartón lateral (m²)')).toBeTruthy();
+    expect(screen.getByText('Área de cartón de lomo (m²)')).toBeTruthy();
+    expect(screen.getByText('Área total de cartón (m²)')).toBeTruthy();
+    expect(screen.getByText(/No se calcula el peso del cartón/)).toBeTruthy();
+  });
+
+  it('shows the engine message for a hard cover paired with the saddle-stitch binding', () => {
+    useBookStore.getState().setCover('dura_estandar');
+    render(<CoverPanel />);
+
+    expect(useBookStore.getState().coverPlan).toMatchObject({ ok: false, reason: 'binding-has-no-flat-spine' });
+    expect(screen.getByText(/no admite una tapa dura/).textContent?.length).toBeGreaterThan(0);
+    expect(screen.queryByText('Ancho del cartón lateral (mm)')).toBeNull();
+  });
+
+  it('shows the config source note for the cover catalog', () => {
+    render(<CoverPanel />);
+    expect(screen.getByText(/config\/tapas\.json/)).toBeTruthy();
   });
 });

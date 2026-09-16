@@ -107,6 +107,76 @@ export interface CreepCompensationResult {
   innermostShift_mm: number;
 }
 
+// ─── Cover (Tapa) ─────────────────────────────────────────────────────────
+
+export type CoverKind = 'blanda' | 'dura';
+
+export interface Cover {
+  id: string;
+  name: string;
+  kind: CoverKind;
+  substrateId: string;
+  grammage: number;
+  flapWidth_mm: number;
+  squares_mm: number;
+  hingeGap_mm: number;
+  turnIn_mm: number;
+  boardThickness_mm: number;
+}
+
+// ─── Cover Engine Results ─────────────────────────────────────────────────
+
+export interface CoverPlanInput {
+  pageWidth_mm: number;
+  pageHeight_mm: number;
+  bleed_mm: number;
+  spineTotal_mm: number;
+  bindingHasFlatSpine: boolean;
+  cover: Cover;
+}
+
+export type CoverPlanReason = 'binding-has-no-flat-spine' | 'hinge-exceeds-board' | 'flap-exceeds-page';
+
+export interface SoftCoverSections {
+  flapLeft_mm: number;
+  back_mm: number;
+  spine_mm: number;
+  front_mm: number;
+  flapRight_mm: number;
+}
+
+export interface SoftCoverResult {
+  kind: 'blanda';
+  sheetWidth_mm: number;
+  sheetHeight_mm: number;
+  sections: SoftCoverSections;
+  paperArea_m2: number;
+  paperWeight_g: number;
+}
+
+export interface HardCoverResult {
+  kind: 'dura';
+  boardWidth_mm: number;
+  boardHeight_mm: number;
+  spineBoardWidth_mm: number;
+  wrapWidth_mm: number;
+  wrapHeight_mm: number;
+  paperArea_m2: number;
+  paperWeight_g: number;
+  // Areas in m², split because the spine inlay is usually a different
+  // material from the side boards and increment 5 will cost them
+  // separately. No board weight is derived from any of them: the catalog
+  // does not declare a board density, and inventing one would be a
+  // fabricated number.
+  sideBoardArea_m2: number;
+  spineBoardArea_m2: number;
+  boardArea_m2: number;
+}
+
+export type CoverPlanResult =
+  | { ok: true; cover: SoftCoverResult | HardCoverResult }
+  | { ok: false; reason: CoverPlanReason; message: string };
+
 // ─── Runtime Catalog Configuration ───────────────────────────────────────
 
 export interface CatalogDefaults {
@@ -119,6 +189,7 @@ export interface CatalogDefaults {
   totalPages: number;
   pressId: string;
   bindingId: string;
+  coverId: string;
 }
 
 export interface Catalog {
@@ -132,6 +203,8 @@ export interface Catalog {
   foldingSchemesSource: string;
   bindings: Binding[];
   bindingsSource: string;
+  covers: Cover[];
+  coversSource: string;
   proportions: Proportion[];
   defaults: CatalogDefaults;
 }
@@ -259,6 +332,9 @@ export interface BookConfig {
 
   // Binding
   bindingId: string;
+
+  // Cover
+  coverId: string;
 }
 
 export interface BookStore extends BookConfig {
@@ -276,6 +352,8 @@ export interface BookStore extends BookConfig {
   bindingSpine: BindingSpineResult | null;
   bindingCreep: CreepCompensationResult | null;
   bindingError: string | null;
+  coverPlan: CoverPlanResult | null;
+  coverError: string | null;
   customGrammageError: string | null;
 
   // Actions
@@ -293,6 +371,7 @@ export interface BookStore extends BookConfig {
   setFoldingScheme: (foldingSchemeId: string | null) => void;
   setTotalPages: (pages: number) => void;
   setBinding: (bindingId: string) => void;
+  setCover: (coverId: string) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;
   removeCustomSheetSize: (id: string) => void;
   addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => boolean;

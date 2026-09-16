@@ -9,7 +9,7 @@ Deben reemplazarse por datos reales de una imprenta antes de usar la herramienta
 
 ## Archivos
 
-La aplicación carga los seis archivos en paralelo al iniciar, usando `import.meta.env.BASE_URL` como prefijo para que funcione también en despliegues bajo una subruta.
+La aplicación carga los siete archivos en paralelo al iniciar, usando `import.meta.env.BASE_URL` como prefijo para que funcione también en despliegues bajo una subruta.
 Cada solicitud se hace con `cache: 'no-cache'`, para que una recarga siempre vuelva a pedir el archivo al servidor en vez de servir una copia local desactualizada.
 Cada solicitud tiene un límite de 10 segundos; si el servidor no responde a tiempo, la aplicación cancela la solicitud y reporta ese archivo como fallido en vez de dejar "Cargando configuración…" indefinidamente.
 Si algún archivo falta, no responde a tiempo, devuelve un código distinto de 2xx, o no contiene JSON válido, la aplicación muestra un estado de error accesible en vez de quedar en blanco.
@@ -194,8 +194,59 @@ Contiene los métodos de encuadernación disponibles: sus límites de páginas, 
   Los métodos que cosen o pegan el lomo (por ejemplo hotmelt, PUR o cosido a hilo) declaran un valor mayor que cero aquí.
 - `nests`: booleano que indica si las hojas plegadas del método se anidan una dentro de otra, como ocurre en la grapa (caballete).
   Cuando es `true`, el motor calcula el corrimiento (creep o shingling) como un calibre de papel por cada hoja anidada entre esa hoja y el centro del cuadernillo, usando el calibre del gramaje seleccionado en el panel de sustrato; los métodos que apilan las firmas en vez de anidarlas, como los que pegan o cosen el lomo, declaran `false` aquí porque no tienen corrimiento que compensar.
+  No hay un campo aparte para indicar si el método produce un lomo plano y cuadrado o solo un pliegue: se deriva de este mismo campo.
+  Un método con `nests: true` produce un pliegue, no un lomo cuadrado, porque anida pliegos plegados uno dentro de otro; un método con `nests: false`, como hotmelt, PUR o cosido a hilo, produce un lomo plano y cuadrado.
+  La tapa dura solo se ofrece como compatible con un método cuyo `nests` sea `false`.
 - `requiresSignatureMultiple`: booleano que indica si el método, además del múltiplo de `pageMultiple`, exige que el número de páginas sea múltiplo del tamaño de la firma.
   Esta regla se aplica contra el esquema de plegado realmente seleccionado en cada momento, no contra un tamaño de firma fijo: si todavía no hay un esquema seleccionado, la regla simplemente no se evalúa.
+
+### `public/config/tapas.json`
+
+Contiene los tipos de tapa disponibles, blandos y duros, con las medidas que el motor de tapa necesita para calcular el pliego o el forro.
+
+```json
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "covers": [
+    {
+      "id": "blanda_simple",
+      "name": "Tapa blanda sin solapas",
+      "kind": "blanda",
+      "substrateId": "couche_matte",
+      "grammage": 300,
+      "flapWidth_mm": 0,
+      "squares_mm": 0,
+      "hingeGap_mm": 0,
+      "turnIn_mm": 0,
+      "boardThickness_mm": 0
+    }
+  ]
+}
+```
+
+- `source`: texto no vacío que describe el origen de estos datos.
+  La aplicación lo muestra tal cual, junto al selector de tapa, como "Fuente: `<source>` (config/tapas.json)".
+- `covers`: arreglo no vacío de tipos de tapa.
+- `id`: identificador único del tipo de tapa, usado como referencia desde `formatos.json` (`defaults.coverId`) y desde el store.
+- `name`: nombre visible en el selector de tapa.
+- `kind`: `"blanda"` o `"dura"`.
+  Determina qué campos exige el resto de la entrada y si el tipo de tapa se ofrece para un método de encuadernación dado.
+- `substrateId`: id de un sustrato existente en `sustratos.json`, para el material de la tapa (o del forro, en una tapa dura).
+  La tapa no declara su propio papel: reutiliza el calibre y el peso ya definidos para ese sustrato.
+- `grammage`: gramaje del material de tapa, en g/m², que debe existir entre las opciones del sustrato referenciado.
+- `flapWidth_mm`: ancho de cada solapa, en milímetros.
+  Una tapa blanda admite un valor mayor o igual que cero; una tapa dura, sin solapas en este modelo, exige exactamente 0.
+- `squares_mm`: ceja, el saliente del cartón sobre las páginas en cabeza, pie y corte, en milímetros.
+  Una tapa dura exige un valor mayor que cero; una tapa blanda, sin cartón, exige exactamente 0.
+- `hingeGap_mm`: canal de bisagra, el hueco entre el cartón lateral y el cartón de lomo, en milímetros.
+  Una tapa dura exige un valor mayor que cero; una tapa blanda exige exactamente 0.
+- `turnIn_mm`: doblez de forro sobre el canto del cartón, en milímetros.
+  Una tapa dura exige un valor mayor que cero; una tapa blanda exige exactamente 0.
+- `boardThickness_mm`: grosor del cartón, en milímetros.
+  Una tapa dura exige un valor mayor que cero; una tapa blanda, sin cartón, exige exactamente 0.
+
+El motor de tapa dura ignora el sangrado del libro: el doblez de forro (`turnIn_mm`) cumple ese rol, envolviendo el canto del cartón en vez de dejar un margen de corte.
+El motor no calcula el peso del cartón: el catálogo no declara una densidad de cartón, y estimar una produciría un número inventado; solo se calcula y muestra su área.
 
 ### `public/config/formatos.json`
 
@@ -215,7 +266,8 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
     "bleed_mm": 3,
     "totalPages": 32,
     "pressId": "prensa_70x100",
-    "bindingId": "grapa"
+    "bindingId": "grapa",
+    "coverId": "blanda_simple"
   }
 }
 ```
@@ -238,22 +290,23 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
 - `defaults.pressId`: id de una prensa existente en `maquinas.json`, usada para la imposición por firmas.
   No existe un esquema de plegado por defecto: la aplicación elige automáticamente, al arrancar, el esquema disponible que menos papel desperdicia para la prensa y el pliego iniciales.
 - `defaults.bindingId`: id de un método de encuadernación existente en `encuadernaciones.json`, usado como método inicial en el selector de encuadernación.
+- `defaults.coverId`: id de un tipo de tapa existente en `tapas.json`, usado como tipo inicial en el selector de tapa.
 
 El formato (`vertical`, `apaisado`, `cuadrado`), el sistema de unidades y la orientación de rotación manual no vienen de `formatos.json`: quedan en sus valores por defecto del código (`vertical`, métrico, automática) porque no dependen de datos de imprenta.
 
 ## Reglas de validación
 
-Antes de usar los seis archivos, la aplicación los valida con un validador propio, sin dependencias externas.
+Antes de usar los siete archivos, la aplicación los valida con un validador propio, sin dependencias externas.
 El validador recorre todo el contenido y acumula todos los errores encontrados, en vez de detenerse en el primero.
 Cada error reportado incluye el archivo, la ruta del campo (por ejemplo `substrates[2].options[0].caliper`) y el motivo.
 
 Reglas aplicadas:
 
-- Los arreglos de sustratos, pliegos, prensas, esquemas de plegado, encuadernaciones, proporciones y opciones de gramaje no pueden estar vacíos.
-- El campo `source` de `sustratos.json`, `pliegos.json`, `maquinas.json`, `esquemas.json` y `encuadernaciones.json` no puede estar vacío.
+- Los arreglos de sustratos, pliegos, prensas, esquemas de plegado, encuadernaciones, tapas, proporciones y opciones de gramaje no pueden estar vacíos.
+- El campo `source` de `sustratos.json`, `pliegos.json`, `maquinas.json`, `esquemas.json`, `encuadernaciones.json` y `tapas.json` no puede estar vacío.
 - Los campos de texto libres (nombre, tipo, descripción) no pueden estar vacíos.
-- Los identificadores y etiquetas (id de sustrato, id de pliego, id de prensa, id de esquema, id de encuadernación, etiqueta de proporción, y las referencias `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId`) no pueden estar vacíos ni tener espacios al inicio o al final.
-- Los id de sustrato, los id de pliego, los id de prensa, los id de esquema, los id de encuadernación y las etiquetas de proporción deben ser únicos dentro de su archivo; un id se considera visto para efectos de duplicado y de referencia en cuanto está bien formado, aunque otro campo de esa misma entrada sea inválido.
+- Los identificadores y etiquetas (id de sustrato, id de pliego, id de prensa, id de esquema, id de encuadernación, id de tapa, etiqueta de proporción, y las referencias `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId`, `defaults.coverId`) no pueden estar vacíos ni tener espacios al inicio o al final.
+- Los id de sustrato, los id de pliego, los id de prensa, los id de esquema, los id de encuadernación, los id de tapa y las etiquetas de proporción deben ser únicos dentro de su archivo; un id se considera visto para efectos de duplicado y de referencia en cuanto está bien formado, aunque otro campo de esa misma entrada sea inválido.
 - El gramaje debe ser único dentro de cada sustrato, con la misma regla: un gramaje bien formado cuenta para detectar duplicados aunque su calibre sea inválido.
 - Las dimensiones (`width_mm`, `height_mm`, `maxSheetWidth_mm`, `maxSheetHeight_mm`), el gramaje, el calibre, los componentes de `ratio` y `pageWidth_mm` deben ser números finitos mayores que cero.
 - El sangrado (`bleed_mm`) debe ser un número finito mayor o igual que cero.
@@ -266,13 +319,16 @@ Reglas aplicadas:
 - `pageMultiple`, `minPages` y `maxPages` deben ser enteros seguros mayores que cero; `pageMultiple` debe además ser par; `minPages` y `maxPages` deben ser múltiplos de `pageMultiple`, y `minPages` debe ser menor o igual que `maxPages`.
 - `spineAllowance_mm` debe ser un número finito mayor o igual que cero, y `nests` debe ser un valor booleano.
 - `requiresSignatureMultiple` debe ser un valor booleano.
-- `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId` y `defaults.bindingId` deben referenciar un id o etiqueta existente en su catálogo correspondiente, y `defaults.grammage` debe existir entre las opciones del sustrato referenciado; una entrada inválida por otro motivo no hace que su id o gramaje, si están bien formados, se reporten como inexistentes.
+- `kind` debe ser `"blanda"` o `"dura"`.
+- `substrateId` de una tapa debe referenciar un id de sustrato existente en `sustratos.json`, y su `grammage` debe existir entre las opciones de ese sustrato.
+- Todos los campos en milímetros de una tapa (`flapWidth_mm`, `squares_mm`, `hingeGap_mm`, `turnIn_mm`, `boardThickness_mm`) deben ser números finitos mayores o iguales que cero; además, una tapa `"blanda"` exige que `squares_mm`, `hingeGap_mm`, `turnIn_mm` y `boardThickness_mm` sean exactamente 0, y una tapa `"dura"` exige que esos mismos cuatro campos sean mayores que cero y que `flapWidth_mm` sea exactamente 0.
+- `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId` y `defaults.coverId` deben referenciar un id o etiqueta existente en su catálogo correspondiente, y `defaults.grammage` debe existir entre las opciones del sustrato referenciado; una entrada inválida por otro motivo no hace que su id o gramaje, si están bien formados, se reporten como inexistentes.
 - `defaults.proportionId` debe estar además entre las tres primeras proporciones de `proportions`, para que siempre haya un botón visible que la seleccione.
 
 Si algún archivo falla al cargarse (fallo de red, tiempo de espera agotado, código distinto de 2xx, HTML en vez de JSON, o JSON inválido) o si la validación encuentra errores, la aplicación muestra un bloque con `role="alert"` que lista cada problema, en vez de quedar en blanco o mostrar datos parciales.
 
 ## Editar la configuración después de compilar
 
-Los seis archivos se copian tal cual a `dist/config/` al ejecutar `npm run build`, porque viven en `public/`.
+Los siete archivos se copian tal cual a `dist/config/` al ejecutar `npm run build`, porque viven en `public/`.
 Para cambiar un dato (por ejemplo, el calibre de un sustrato) sin recompilar, basta con editar el archivo correspondiente dentro de `dist/config/` y recargar el navegador: la aplicación vuelve a leerlo en cada carga de página, no lo empaqueta en el JavaScript compilado.
 Esto es lo que permite, en `npm run preview`, cambiar `dist/config/sustratos.json` y ver el lomo recalculado sin volver a construir la aplicación.

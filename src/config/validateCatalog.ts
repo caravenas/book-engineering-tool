@@ -2,6 +2,8 @@ import type {
   Binding,
   Catalog,
   CatalogDefaults,
+  Cover,
+  CoverKind,
   FoldingScheme,
   GrammageOption,
   Press,
@@ -27,6 +29,7 @@ export interface CatalogFiles {
   'maquinas.json': unknown;
   'esquemas.json': unknown;
   'encuadernaciones.json': unknown;
+  'tapas.json': unknown;
   'formatos.json': unknown;
 }
 
@@ -37,6 +40,7 @@ const PLIEGOS_FILE = 'pliegos.json';
 const MAQUINAS_FILE = 'maquinas.json';
 const ESQUEMAS_FILE = 'esquemas.json';
 const ENCUADERNACIONES_FILE = 'encuadernaciones.json';
+const TAPAS_FILE = 'tapas.json';
 const FORMATOS_FILE = 'formatos.json';
 const VISIBLE_PROPORTIONS_COUNT = 3;
 // Real signatures never approach this size; the cap exists to reject
@@ -62,6 +66,10 @@ function isNonEmptyString(value: unknown): value is string {
 /** Non-empty, with no leading/trailing whitespace: required for ids, labels, and default references. */
 function isCleanIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.trim() === value;
+}
+
+function isCoverKind(value: unknown): value is CoverKind {
+  return value === 'blanda' || value === 'dura';
 }
 
 function isPositiveSafeInteger(value: unknown): value is number {
@@ -725,6 +733,8 @@ interface BindingsValidation {
   source: string | undefined;
   /** Ids seen well-formed, regardless of other fields on that entry, for duplicate/reference checks. */
   knownIds: Set<string>;
+  /** `nests` seen well-formed per binding id, regardless of other field validity, for the defaults.coverId/bindingId compatibility check. */
+  knownNestsById: Map<string, boolean>;
 }
 
 /**
@@ -732,14 +742,15 @@ interface BindingsValidation {
  */
 function validateBindings(raw: unknown, available: boolean, errors: ConfigError[]): BindingsValidation {
   const knownIds = new Set<string>();
+  const knownNestsById = new Map<string, boolean>();
 
   if (!available) {
-    return { bindings: [], source: undefined, knownIds };
+    return { bindings: [], source: undefined, knownIds, knownNestsById };
   }
 
   if (!isPlainObject(raw)) {
     errors.push({ file: ENCUADERNACIONES_FILE, path: '', message: 'El archivo debe contener un objeto JSON.' });
-    return { bindings: [], source: undefined, knownIds };
+    return { bindings: [], source: undefined, knownIds, knownNestsById };
   }
 
   const { bindings, source } = raw;
@@ -750,7 +761,7 @@ function validateBindings(raw: unknown, available: boolean, errors: ConfigError[
 
   if (!Array.isArray(bindings)) {
     errors.push({ file: ENCUADERNACIONES_FILE, path: 'bindings', message: 'El campo "bindings" debe ser un arreglo.' });
-    return { bindings: [], source: isNonEmptyString(source) ? source : undefined, knownIds };
+    return { bindings: [], source: isNonEmptyString(source) ? source : undefined, knownIds, knownNestsById };
   }
   if (bindings.length === 0) {
     errors.push({ file: ENCUADERNACIONES_FILE, path: 'bindings', message: 'El catálogo de encuadernaciones no puede estar vacío.' });
@@ -842,6 +853,12 @@ function validateBindings(raw: unknown, available: boolean, errors: ConfigError[
 
     if (isCleanIdentifier(id)) {
       knownIds.add(id);
+      if (typeof nests === 'boolean' && !knownNestsById.has(id)) {
+        // Only register the first copy's value: a later duplicate id must
+        // not overwrite (and thus corrupt) the nests value already known for
+        // this id.
+        knownNestsById.set(id, nests);
+      }
     }
 
     if (valid && isCleanIdentifier(id) && isNonEmptyString(name)
@@ -861,7 +878,215 @@ function validateBindings(raw: unknown, available: boolean, errors: ConfigError[
     }
   });
 
-  return { bindings: result, source: isNonEmptyString(source) ? source : undefined, knownIds };
+  return { bindings: result, source: isNonEmptyString(source) ? source : undefined, knownIds, knownNestsById };
+}
+
+interface CoversValidation {
+  covers: Cover[];
+  source: string | undefined;
+  /** Ids seen well-formed, regardless of other fields on that entry, for duplicate/reference checks. */
+  knownIds: Set<string>;
+  /** `kind` seen well-formed per cover id, regardless of other field validity, for the defaults.coverId/bindingId compatibility check. */
+  knownKindById: Map<string, CoverKind>;
+}
+
+/**
+ * Validate `tapas.json` and collect every structural or semantic error found.
+ * Each cover's `substrateId`/`grammage` must reference an existing substrate
+ * and grammage option in `sustratos.json`, so this needs that file's
+ * well-formed ids/grammages (skipped, like other cross-file checks, when
+ * `sustratos.json` itself failed to load).
+ */
+function validateCovers(
+  raw: unknown,
+  available: boolean,
+  substratesAvailable: boolean,
+  knownSubstrateIds: Set<string>,
+  knownGrammagesById: Map<string, Set<number>>,
+  errors: ConfigError[]
+): CoversValidation {
+  const knownIds = new Set<string>();
+  const knownKindById = new Map<string, CoverKind>();
+
+  if (!available) {
+    return { covers: [], source: undefined, knownIds, knownKindById };
+  }
+
+  if (!isPlainObject(raw)) {
+    errors.push({ file: TAPAS_FILE, path: '', message: 'El archivo debe contener un objeto JSON.' });
+    return { covers: [], source: undefined, knownIds, knownKindById };
+  }
+
+  const { covers, source } = raw;
+
+  if (!isNonEmptyString(source)) {
+    errors.push({ file: TAPAS_FILE, path: 'source', message: 'El campo "source" debe ser un texto no vacío que indique el origen de los datos.' });
+  }
+
+  if (!Array.isArray(covers)) {
+    errors.push({ file: TAPAS_FILE, path: 'covers', message: 'El campo "covers" debe ser un arreglo.' });
+    return { covers: [], source: isNonEmptyString(source) ? source : undefined, knownIds, knownKindById };
+  }
+  if (covers.length === 0) {
+    errors.push({ file: TAPAS_FILE, path: 'covers', message: 'El catálogo de tapas no puede estar vacío.' });
+  }
+
+  const result: Cover[] = [];
+
+  covers.forEach((rawCover, index) => {
+    const path = `covers[${index}]`;
+    if (!isPlainObject(rawCover)) {
+      errors.push({ file: TAPAS_FILE, path, message: 'Cada tapa debe ser un objeto.' });
+      return;
+    }
+
+    const {
+      id, name, kind, substrateId, grammage,
+      flapWidth_mm, squares_mm, hingeGap_mm, turnIn_mm, boardThickness_mm,
+    } = rawCover;
+    let valid = true;
+
+    if (!isCleanIdentifier(id)) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.id`, message: 'El id de la tapa debe ser un texto no vacío, sin espacios al inicio o al final.' });
+      valid = false;
+    } else if (knownIds.has(id)) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.id`, message: `El id de tapa "${id}" está duplicado.` });
+      valid = false;
+    }
+
+    if (!isNonEmptyString(name)) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.name`, message: 'El nombre de la tapa debe ser un texto no vacío.' });
+      valid = false;
+    }
+
+    const kindValid = isCoverKind(kind);
+    if (!kindValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.kind`, message: 'El tipo de tapa debe ser "blanda" o "dura".' });
+      valid = false;
+    }
+
+    if (!isCleanIdentifier(substrateId)) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.substrateId`, message: 'El sustrato de la tapa debe ser un texto no vacío, sin espacios al inicio o al final.' });
+      valid = false;
+    } else if (substratesAvailable) {
+      if (!knownSubstrateIds.has(substrateId)) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.substrateId`, message: `El sustrato "${substrateId}" no existe en sustratos.json.` });
+        valid = false;
+      } else if (isFiniteNumber(grammage) && grammage > 0) {
+        const grammages = knownGrammagesById.get(substrateId);
+        if (!grammages || !grammages.has(grammage)) {
+          errors.push({ file: TAPAS_FILE, path: `${path}.grammage`, message: `El gramaje ${grammage} no existe para el sustrato "${substrateId}".` });
+          valid = false;
+        }
+      }
+    }
+
+    if (!isFiniteNumber(grammage) || grammage <= 0) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.grammage`, message: 'El gramaje del material de tapa debe ser un número finito mayor que cero.' });
+      valid = false;
+    }
+
+    const flapValid = isFiniteNumber(flapWidth_mm) && flapWidth_mm >= 0;
+    if (!flapValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.flapWidth_mm`, message: 'El ancho de solapa debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    const squaresValid = isFiniteNumber(squares_mm) && squares_mm >= 0;
+    if (!squaresValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.squares_mm`, message: 'La ceja debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    const hingeValid = isFiniteNumber(hingeGap_mm) && hingeGap_mm >= 0;
+    if (!hingeValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.hingeGap_mm`, message: 'El canal de bisagra debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    const turnInValid = isFiniteNumber(turnIn_mm) && turnIn_mm >= 0;
+    if (!turnInValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.turnIn_mm`, message: 'El doblez de forro debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    const boardValid = isFiniteNumber(boardThickness_mm) && boardThickness_mm >= 0;
+    if (!boardValid) {
+      errors.push({ file: TAPAS_FILE, path: `${path}.boardThickness_mm`, message: 'El grosor de cartón debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    // Field rules by kind: a softcover has no boards, so squares/hinge/turn-in/board
+    // must be exactly 0; a hardcover in this model has no flaps, and its
+    // boards/hinge/squares/turn-in must be strictly positive.
+    if (kindValid && kind === 'blanda') {
+      if (squaresValid && squares_mm !== 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.squares_mm`, message: 'Una tapa blanda no usa ceja: "squares_mm" debe ser exactamente 0.' });
+        valid = false;
+      }
+      if (hingeValid && hingeGap_mm !== 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.hingeGap_mm`, message: 'Una tapa blanda no usa canal de bisagra: "hingeGap_mm" debe ser exactamente 0.' });
+        valid = false;
+      }
+      if (turnInValid && turnIn_mm !== 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.turnIn_mm`, message: 'Una tapa blanda no usa doblez de forro: "turnIn_mm" debe ser exactamente 0.' });
+        valid = false;
+      }
+      if (boardValid && boardThickness_mm !== 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.boardThickness_mm`, message: 'Una tapa blanda no usa cartón: "boardThickness_mm" debe ser exactamente 0.' });
+        valid = false;
+      }
+    } else if (kindValid && kind === 'dura') {
+      if (squaresValid && squares_mm <= 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.squares_mm`, message: 'Una tapa dura exige una ceja mayor que cero.' });
+        valid = false;
+      }
+      if (hingeValid && hingeGap_mm <= 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.hingeGap_mm`, message: 'Una tapa dura exige un canal de bisagra mayor que cero.' });
+        valid = false;
+      }
+      if (turnInValid && turnIn_mm <= 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.turnIn_mm`, message: 'Una tapa dura exige un doblez de forro mayor que cero.' });
+        valid = false;
+      }
+      if (boardValid && boardThickness_mm <= 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.boardThickness_mm`, message: 'Una tapa dura exige un grosor de cartón mayor que cero.' });
+        valid = false;
+      }
+      if (flapValid && flapWidth_mm !== 0) {
+        errors.push({ file: TAPAS_FILE, path: `${path}.flapWidth_mm`, message: 'Una tapa dura no usa solapas: "flapWidth_mm" debe ser exactamente 0.' });
+        valid = false;
+      }
+    }
+
+    if (isCleanIdentifier(id)) {
+      knownIds.add(id);
+      if (isCoverKind(kind) && !knownKindById.has(id)) {
+        // Only register the first copy's kind: a later duplicate id must
+        // not overwrite (and thus corrupt) the kind already known for it.
+        knownKindById.set(id, kind);
+      }
+    }
+
+    if (valid && isCleanIdentifier(id) && isNonEmptyString(name) && isCoverKind(kind)
+      && isCleanIdentifier(substrateId) && isFiniteNumber(grammage)
+      && flapValid && squaresValid && hingeValid && turnInValid && boardValid) {
+      result.push({
+        id,
+        name,
+        kind,
+        substrateId,
+        grammage,
+        flapWidth_mm,
+        squares_mm,
+        hingeGap_mm,
+        turnIn_mm,
+        boardThickness_mm,
+      });
+    }
+  });
+
+  return { covers: result, source: isNonEmptyString(source) ? source : undefined, knownIds, knownKindById };
 }
 
 interface ProportionsValidation {
@@ -947,7 +1172,7 @@ function validateDefaults(raw: unknown, errors: ConfigError[]): CatalogDefaults 
   }
 
   const {
-    substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId,
+    substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId, coverId,
   } = raw;
   let valid = true;
 
@@ -987,15 +1212,20 @@ function validateDefaults(raw: unknown, errors: ConfigError[]): CatalogDefaults 
     errors.push({ file: FORMATOS_FILE, path: 'defaults.bindingId', message: 'La encuadernación por defecto debe ser un texto no vacío, sin espacios al inicio o al final.' });
     valid = false;
   }
+  if (!isCleanIdentifier(coverId)) {
+    errors.push({ file: FORMATOS_FILE, path: 'defaults.coverId', message: 'La tapa por defecto debe ser un texto no vacío, sin espacios al inicio o al final.' });
+    valid = false;
+  }
 
   if (!valid || !isCleanIdentifier(substrateId) || !isFiniteNumber(grammage)
     || !isCleanIdentifier(sheetSizeId) || !isFiniteNumber(pageWidth_mm)
     || !isCleanIdentifier(proportionId) || !isFiniteNumber(bleed_mm)
-    || !isPositiveSafeInteger(totalPages) || !isCleanIdentifier(pressId) || !isCleanIdentifier(bindingId)) {
+    || !isPositiveSafeInteger(totalPages) || !isCleanIdentifier(pressId) || !isCleanIdentifier(bindingId)
+    || !isCleanIdentifier(coverId)) {
     return undefined;
   }
 
-  return { substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId };
+  return { substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId, coverId };
 }
 
 /**
@@ -1015,10 +1245,14 @@ function validateDefaultsReferences(
   knownProportionLabels: Set<string>,
   knownPressIds: Set<string>,
   knownBindingIds: Set<string>,
+  knownCoverIds: Set<string>,
+  knownNestsById: Map<string, boolean>,
+  knownKindById: Map<string, CoverKind>,
   substratesAvailable: boolean,
   sheetSizesAvailable: boolean,
   pressesAvailable: boolean,
   bindingsAvailable: boolean,
+  coversAvailable: boolean,
   errors: ConfigError[]
 ): void {
   if (substratesAvailable) {
@@ -1079,10 +1313,32 @@ function validateDefaultsReferences(
       message: `La encuadernación por defecto "${defaults.bindingId}" no existe en encuadernaciones.json.`,
     });
   }
+
+  if (coversAvailable && !knownCoverIds.has(defaults.coverId)) {
+    errors.push({
+      file: FORMATOS_FILE,
+      path: 'defaults.coverId',
+      message: `La tapa por defecto "${defaults.coverId}" no existe en tapas.json.`,
+    });
+  } else if (coversAvailable && bindingsAvailable && knownBindingIds.has(defaults.bindingId)) {
+    // A hard cover paired with a binding whose sheets nest doesn't produce a
+    // flat spine: the app would boot straight into planCover's "no admite
+    // una tapa dura" result instead of a working default, so it is reported
+    // here as a config error instead.
+    const coverKind = knownKindById.get(defaults.coverId);
+    const bindingNests = knownNestsById.get(defaults.bindingId);
+    if (coverKind === 'dura' && bindingNests === true) {
+      errors.push({
+        file: FORMATOS_FILE,
+        path: 'defaults.coverId',
+        message: `La tapa por defecto "${defaults.coverId}" es dura, pero la encuadernación por defecto "${defaults.bindingId}" anida sus pliegos ("nests": true); una tapa dura no es compatible con un método cuyos pliegos se anidan.`,
+      });
+    }
+  }
 }
 
 /**
- * Validate the six parsed catalog files together and collect every error found,
+ * Validate the seven parsed catalog files together and collect every error found,
  * instead of stopping at the first one. A file whose raw value is `undefined`
  * failed to load upstream: pass its name in `unavailableFiles` so its own
  * structural checks are skipped (the loader already reported why) instead of
@@ -1103,6 +1359,7 @@ export function validateCatalog(
   const pressesAvailable = !unavailableFiles.has(MAQUINAS_FILE);
   const foldingSchemesAvailable = !unavailableFiles.has(ESQUEMAS_FILE);
   const bindingsAvailable = !unavailableFiles.has(ENCUADERNACIONES_FILE);
+  const coversAvailable = !unavailableFiles.has(TAPAS_FILE);
   const formatosAvailable = !unavailableFiles.has(FORMATOS_FILE);
 
   const sustratos = validateSustratos(input[SUSTRATOS_FILE], substratesAvailable, errors);
@@ -1110,6 +1367,14 @@ export function validateCatalog(
   const maquinas = validatePresses(input[MAQUINAS_FILE], pressesAvailable, errors);
   const esquemas = validateFoldingSchemes(input[ESQUEMAS_FILE], foldingSchemesAvailable, errors);
   const encuadernaciones = validateBindings(input[ENCUADERNACIONES_FILE], bindingsAvailable, errors);
+  const tapas = validateCovers(
+    input[TAPAS_FILE],
+    coversAvailable,
+    substratesAvailable,
+    sustratos.knownIds,
+    sustratos.knownGrammagesById,
+    errors
+  );
 
   let proportionsResult: ProportionsValidation = { proportions: [], knownLabels: new Set(), visibleLabels: new Set() };
   let defaults: CatalogDefaults | undefined;
@@ -1133,10 +1398,14 @@ export function validateCatalog(
       proportionsResult.knownLabels,
       maquinas.knownIds,
       encuadernaciones.knownIds,
+      tapas.knownIds,
+      encuadernaciones.knownNestsById,
+      tapas.knownKindById,
       substratesAvailable,
       sheetSizesAvailable,
       pressesAvailable,
       bindingsAvailable,
+      coversAvailable,
       errors
     );
   }
@@ -1159,6 +1428,8 @@ export function validateCatalog(
       foldingSchemesSource: esquemas.source as string,
       bindings: encuadernaciones.bindings,
       bindingsSource: encuadernaciones.source as string,
+      covers: tapas.covers,
+      coversSource: tapas.source as string,
       proportions: proportionsResult.proportions,
       defaults: defaults as CatalogDefaults,
     },

@@ -321,6 +321,86 @@ describe('Binding rules', () => {
   });
 });
 
+describe('Cover rules', () => {
+  it('computes the cover plan for the shipped defaults', () => {
+    const state = useBookStore.getState();
+
+    expect(state.coverId).toBe('blanda_simple');
+    expect(state.coverError).toBeNull();
+    expect(state.coverPlan?.ok).toBe(true);
+    if (!state.coverPlan?.ok) return;
+    expect(state.coverPlan.cover.kind).toBe('blanda');
+    if (state.coverPlan.cover.kind !== 'blanda') return;
+
+    // The shipped default binding is grapa (saddle stitch, nests: true),
+    // so the cover has no spine panel: sheetWidth = 2*0 + 2*140 + 0 + 2*3 = 286
+    expect(state.coverPlan.cover.sheetWidth_mm).toBe(286);
+    expect(state.coverPlan.cover.sheetHeight_mm).toBe(216);
+    expect(state.coverPlan.cover.sections).toEqual({
+      flapLeft_mm: 0, back_mm: 143, spine_mm: 0, front_mm: 143, flapRight_mm: 0,
+    });
+    // paperArea_m2 = (286 * 216) / 1e6 = 0.061776; paperWeight_g = *300
+    expect(state.coverPlan.cover.paperArea_m2).toBeCloseTo(0.061776, 9);
+    expect(state.coverPlan.cover.paperWeight_g).toBeCloseTo(18.5328, 9);
+  });
+
+  it('recomputes the cover plan on page size, bleed, total pages, binding, and cover changes', () => {
+    const initialPlan = useBookStore.getState().coverPlan;
+
+    useBookStore.getState().setBleed(5);
+    let state = useBookStore.getState();
+    expect(state.coverPlan).not.toBe(initialPlan);
+    expect(state.coverPlan?.ok && state.coverPlan.cover.kind === 'blanda'
+      ? state.coverPlan.cover.sheetHeight_mm : null).toBe(220); // 210 + 2*5
+
+    const afterBleed = state.coverPlan;
+    useBookStore.getState().setPageDimensions(150, 220);
+    state = useBookStore.getState();
+    expect(state.coverPlan).not.toBe(afterBleed);
+    expect(state.coverPlan?.ok && state.coverPlan.cover.kind === 'blanda'
+      ? state.coverPlan.cover.sheetHeight_mm : null).toBe(230); // 220 + 2*5
+
+    const afterDimensions = state.coverPlan;
+    useBookStore.getState().setTotalPages(40);
+    state = useBookStore.getState();
+    expect(state.coverPlan).not.toBe(afterDimensions);
+
+    const afterPages = state.coverPlan;
+    useBookStore.getState().setBinding('hotmelt');
+    state = useBookStore.getState();
+    expect(state.coverPlan).not.toBe(afterPages);
+
+    const afterBinding = state.coverPlan;
+    useBookStore.getState().setCover('dura_estandar');
+    state = useBookStore.getState();
+    expect(state.coverPlan).not.toBe(afterBinding);
+    expect(state.coverPlan?.ok).toBe(true); // hotmelt declares nests: false
+  });
+
+  it('reports a hard cover paired with the saddle-stitch binding as a normal incompatible result, not an error, and keeps the selection', () => {
+    useBookStore.getState().setCover('dura_estandar');
+    const state = useBookStore.getState();
+
+    expect(state.coverId).toBe('dura_estandar');
+    expect(state.coverPlan).toEqual({
+      ok: false,
+      reason: 'binding-has-no-flat-spine',
+      message: expect.any(String),
+    });
+    expect(state.coverError).toBeNull();
+  });
+
+  it('setCover is a no-op while the catalog is null', () => {
+    useBookStore.setState(initialState);
+    const before = useBookStore.getState();
+    expect(before.catalog).toBeNull();
+
+    expect(() => before.setCover('blanda_simple')).not.toThrow();
+
+    expect(useBookStore.getState()).toBe(before);
+  });
+});
+
 describe('Custom grammages', () => {
   it('rejects built-in and custom duplicates in the same substrate', () => {
     expect(useBookStore.getState().addCustomGrammage('couche_matte', 150, 130)).toBe(false);
