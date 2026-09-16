@@ -1,5 +1,7 @@
 import sustratosRaw from '../../public/config/sustratos.json?raw';
 import pliegosRaw from '../../public/config/pliegos.json?raw';
+import maquinasRaw from '../../public/config/maquinas.json?raw';
+import esquemasRaw from '../../public/config/esquemas.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { StrictMode } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -11,6 +13,8 @@ import * as loadCatalogModule from '../config/loadCatalog';
 const RAW_CONFIG_FILES: Record<string, string> = {
   'sustratos.json': sustratosRaw,
   'pliegos.json': pliegosRaw,
+  'maquinas.json': maquinasRaw,
+  'esquemas.json': esquemasRaw,
   'formatos.json': formatosRaw,
 };
 
@@ -47,6 +51,8 @@ describe('App runtime config loading', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(null, { ok: false, status: 404 });
       if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);
@@ -68,6 +74,8 @@ describe('App runtime config loading', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(brokenSustratos);
       if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);
@@ -82,6 +90,8 @@ describe('App runtime config loading', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(readConfigFile('sustratos.json'));
       if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);
@@ -99,6 +109,8 @@ describe('App runtime config loading', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(readConfigFile('sustratos.json'));
       if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
       return jsonResponse(readConfigFile('formatos.json'));
     };
     vi.stubGlobal('fetch', fetchStub);

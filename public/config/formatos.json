@@ -9,10 +9,11 @@
   "defaults": {
     "substrateId": "couche_matte",
     "grammage": 150,
-    "sheetSizeId": "tabloide",
+    "sheetSizeId": "pliego_70x100",
     "pageWidth_mm": 140,
     "proportionId": "2:3",
     "bleed_mm": 3,
-    "totalPages": 32
+    "totalPages": 32,
+    "pressId": "prensa_70x100"
   }
 }

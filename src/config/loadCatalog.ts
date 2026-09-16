@@ -1,7 +1,7 @@
 import type { ConfigError, ValidateCatalogResult } from './validateCatalog';
 import { validateCatalog } from './validateCatalog';
 
-const FILE_NAMES = ['sustratos.json', 'pliegos.json', 'formatos.json'] as const;
+const FILE_NAMES = ['sustratos.json', 'pliegos.json', 'maquinas.json', 'esquemas.json', 'formatos.json'] as const;
 type FileName = typeof FILE_NAMES[number];
 
 type FetchLike = typeof fetch;
@@ -106,6 +106,8 @@ export async function loadCatalog(fetchImpl: FetchLike = fetch, timeoutMs: numbe
   const result = validateCatalog({
     'sustratos.json': values['sustratos.json'],
     'pliegos.json': values['pliegos.json'],
+    'maquinas.json': values['maquinas.json'],
+    'esquemas.json': values['esquemas.json'],
     'formatos.json': values['formatos.json'],
   }, unavailableFiles);
 

@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CanvasDesigner } from '../components/CanvasDesigner';
-import { calculateImposition } from '../engine/imposition';
 import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { SpineCalculator } from '../components/SpineCalculator';
 import { SubstrateSelector } from '../components/SubstrateSelector';
@@ -17,117 +16,15 @@ afterEach(() => {
 });
 
 describe('Honest and recoverable UI', () => {
-  it('describes the bounded comparison and announces a partial preview', () => {
-    useBookStore.setState({
-      bleed_mm: 0,
-      impositionResult: calculateImposition(1, 1, 251, 1),
-      impositionError: null,
-    });
-
-    render(<ImpositionVisualizer />);
-
-    expect(screen.getByRole('heading', { name: 'Aprovechamiento geométrico' })).toBeTruthy();
-    expect(screen.getByText(/Compara dos rejillas uniformes/)).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toContain(
-      'Vista previa parcial: se muestran 250 de 251 ubicaciones.'
-    );
-    expect(screen.getByRole('status').textContent).toContain(
-      'Los cálculos conservan el total completo.'
-    );
-  });
-
-  it('omits unreadable page numbers without hiding placements or totals', () => {
-    useBookStore.setState({
-      bleed_mm: 0,
-      impositionResult: calculateImposition(1, 1, 251, 1),
-      impositionError: null,
-    });
-
-    const denseLayout = render(<ImpositionVisualizer />);
-
-    expect(denseLayout.container.querySelectorAll('.page-number')).toHaveLength(0);
-    expect(denseLayout.container.querySelectorAll('.page-rect')).toHaveLength(250);
-    expect(screen.getByText('251')).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toContain(
-      'Vista previa parcial: se muestran 250 de 251 ubicaciones.'
-    );
-    denseLayout.unmount();
-
-    useBookStore.setState({
-      bleed_mm: 0,
-      impositionResult: calculateImposition(140, 210, 432, 279),
-      impositionError: null,
-    });
-
-    const normalLayout = render(<ImpositionVisualizer />);
-
-    expect(normalLayout.container.querySelectorAll('.page-number').length).toBeGreaterThan(0);
-  });
-
-  it('withholds malformed SVG geometry from injected state', () => {
-    useBookStore.setState({
-      bleed_mm: 5,
-      impositionResult: {
-        pagesPerSide: 1,
-        cols: 1,
-        rows: 1,
-        rotated: false,
-        wastePercentage: 0,
-        usedArea_mm2: 100,
-        totalArea_mm2: 100,
-        placements: [{ x: 0, y: 0, width: 10, height: 10, rotated: false }],
-        previewTruncated: false,
-        usesBestOrientation: true,
-      },
-      impositionError: null,
-    });
-
-    const imposition = render(<ImpositionVisualizer />);
-
-    expect(imposition.container.querySelector('.imposition-svg')).toBeNull();
-    expect(screen.getByText(/Completa valores válidos para ver la referencia geométrica/)).toBeTruthy();
-  });
-
-  it('withholds SVG geometry when transformed bleed insets collapse', () => {
-    useBookStore.setState({
-      sheetSizeId: 'precision-sheet',
-      customSheetSizes: [{
-        id: 'precision-sheet',
-        name: 'Pliego de precisión',
-        width_mm: 1e20,
-        height_mm: 1e20,
-      }],
-      bleed_mm: 3,
-      impositionResult: {
-        pagesPerSide: 1,
-        cols: 1,
-        rows: 1,
-        rotated: false,
-        wastePercentage: 0,
-        usedArea_mm2: 4_000_000,
-        totalArea_mm2: 1e40,
-        placements: [{ x: 1, y: 1, width: 2000, height: 2000, rotated: false }],
-        previewTruncated: false,
-        usesBestOrientation: true,
-      },
-      impositionError: null,
-    });
-
-    const imposition = render(<ImpositionVisualizer />);
-
-    expect(imposition.container.querySelector('.imposition-svg')).toBeNull();
-    expect(screen.getByText(/Completa valores válidos para ver la referencia geométrica/)).toBeTruthy();
-  });
-
   it('exposes independent calculation failures as alerts without zero results', () => {
     useBookStore.setState({
-      impositionResult: null,
-      impositionError: 'Corrige las dimensiones para recuperar el aprovechamiento geométrico.',
+      signaturePlan: null,
+      signatureError: 'Corrige las dimensiones para recuperar la imposición por firmas.',
     });
     const layout = render(<ImpositionVisualizer />);
 
     expect(screen.getByRole('alert').textContent).toContain('Corrige las dimensiones');
-    expect(layout.container.textContent).not.toContain('Ubicaciones / cara');
+    expect(layout.container.textContent).not.toContain('Páginas / cara del pliego');
     layout.unmount();
 
     useBookStore.setState({
@@ -219,7 +116,9 @@ describe('Honest and recoverable UI', () => {
   it('keeps the sheet-size group named and its controls labelled across disclosure states', () => {
     render(<ImpositionVisualizer />);
 
-    expect(screen.getByLabelText('Rotación')).toBeTruthy();
+    expect(screen.getByLabelText('Prensa')).toBeTruthy();
+    expect(screen.getByLabelText('Esquema de plegado')).toBeTruthy();
+    expect(screen.getByLabelText('Cara mostrada')).toBeTruthy();
     const collapsedGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
     const sheetSelect = within(collapsedGroup).getByLabelText('Pliego seleccionado');
     const sheetSelectLabel = within(collapsedGroup).getByText('Pliego seleccionado', {
@@ -296,7 +195,6 @@ describe('Honest and recoverable UI', () => {
 
   it('preserves an invalid custom-sheet draft selection and recovers after valid dimensions', () => {
     useBookStore.getState().recalculate();
-    const originalResult = useBookStore.getState().impositionResult;
     render(<ImpositionVisualizer />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
@@ -309,8 +207,7 @@ describe('Honest and recoverable UI', () => {
     expect(widthInput.getAttribute('aria-describedby')).toBe('custom-sheet-error');
     expect(heightInput.getAttribute('aria-invalid')).toBe('true');
     expect(heightInput.getAttribute('aria-describedby')).toBe('custom-sheet-error');
-    expect(useBookStore.getState().sheetSizeId).toBe('tabloide');
-    expect(useBookStore.getState().impositionResult).toBe(originalResult);
+    expect(useBookStore.getState().sheetSizeId).toBe('pliego_70x100');
 
     fireEvent.change(widthInput, { target: { value: '500' } });
     expect(widthInput.getAttribute('aria-invalid')).toBe('false');
@@ -324,7 +221,6 @@ describe('Honest and recoverable UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
 
     expect(useBookStore.getState().sheetSizeId).toMatch(/^custom_sheet_/);
-    expect(useBookStore.getState().impositionResult).not.toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -415,12 +311,65 @@ describe('Honest and recoverable UI', () => {
 
   it('shows the config source for a shipped sheet size and the custom-source note for a custom one', () => {
     const impositionVisualizer = render(<ImpositionVisualizer />);
-    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/pliegos.json');
+    expect(screen.getByText(/config\/pliegos\.json/)).toBeTruthy();
     impositionVisualizer.unmount();
 
     useBookStore.getState().addCustomSheetSize('Pliego personalizado', 500, 700);
     render(<ImpositionVisualizer />);
     expect(screen.getByText('Fuente: pliego personalizado')).toBeTruthy();
     expect(screen.queryByText(/config\/pliegos\.json/)).toBeNull();
+  });
+});
+
+describe('Signature imposition preview', () => {
+  it('renders the page numbers of the selected side', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+
+    expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_16pp');
+    expect(screen.getByText('16')).toBeTruthy();
+    expect(screen.getByText('1')).toBeTruthy();
+  });
+
+  it("switches to the back's numbers with the side toggle", () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+
+    expect(screen.queryByText('9')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Cara mostrada'), { target: { value: 'back' } });
+    expect(screen.getByText('9')).toBeTruthy();
+    expect(screen.queryByText('16')).toBeNull();
+  });
+
+  it('changes the numbers when a different folding scheme is chosen', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+    const svg = () => document.querySelector('.imposition-svg') as HTMLElement;
+
+    expect(within(svg()).queryByText('8')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Esquema de plegado'), { target: { value: 'esquema_8pp' } });
+
+    expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_8pp');
+    expect(within(svg()).getByText('8')).toBeTruthy();
+  });
+
+  it('shows an accessible message instead of an empty preview when nothing fits', () => {
+    // A custom sheet far too small for either shipped folding scheme's
+    // printable area, regardless of press: forces the no-fit state explicitly
+    // instead of relying on which sheet the shipped defaults happen to use.
+    useBookStore.getState().addCustomSheetSize('Diminuto', 100, 100);
+    expect(useBookStore.getState().signaturePlan?.selected).toBeNull();
+
+    render(<ImpositionVisualizer />);
+
+    expect(screen.getByRole('status').textContent).toContain('Ningún esquema de plegado');
+    expect(document.querySelector('.imposition-svg')).toBeNull();
+  });
+
+  it('shows the source notes for the press and folding-scheme catalogs', () => {
+    render(<ImpositionVisualizer />);
+
+    expect(screen.getByText(/config\/maquinas\.json/)).toBeTruthy();
+    expect(screen.getByText(/config\/esquemas\.json/)).toBeTruthy();
   });
 });

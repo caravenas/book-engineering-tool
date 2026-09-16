@@ -21,19 +21,46 @@ const validPliegos = {
   source: 'Datos de prueba.',
   sheetSizes: [{ id: 'carta', name: 'Carta', width_mm: 216, height_mm: 279 }],
 };
+const validMaquinas = {
+  source: 'Datos de prueba.',
+  presses: [{
+    id: 'prensa1', name: 'Prensa 1',
+    maxSheetWidth_mm: 500, maxSheetHeight_mm: 700,
+    gripperMargin_mm: 10, sideMargin_mm: 5, tailMargin_mm: 5, gutter_mm: 3,
+  }],
+};
+const validEsquemas = {
+  source: 'Datos de prueba.',
+  foldingSchemes: [{
+    id: 'esquema1', name: 'Esquema 1', pagesPerSignature: 8, cols: 2, rows: 2,
+    sides: {
+      front: [
+        { page: 8, rotation: 180 }, { page: 1, rotation: 0 },
+        { page: 6, rotation: 180 }, { page: 3, rotation: 0 },
+      ],
+      back: [
+        { page: 2, rotation: 180 }, { page: 7, rotation: 0 },
+        { page: 4, rotation: 180 }, { page: 5, rotation: 0 },
+      ],
+    },
+  }],
+};
 const validFormatos = {
   proportions: [{ label: '2:3', ratio: [2, 3], description: 'Clásica' }],
   defaults: {
     substrateId: 'bond', grammage: 90, sheetSizeId: 'carta',
     pageWidth_mm: 140, proportionId: '2:3', bleed_mm: 3, totalPages: 32,
+    pressId: 'prensa1',
   },
 };
 
 describe('loadCatalog', () => {
-  it('validates the catalog when all three files load successfully', async () => {
+  it('validates the catalog when all five files load successfully', async () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 
@@ -45,6 +72,8 @@ describe('loadCatalog', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) throw new TypeError('Failed to fetch');
       if (url.endsWith('pliegos.json')) return jsonResponse(validPliegos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 
@@ -61,6 +90,8 @@ describe('loadCatalog', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('pliegos.json')) return jsonResponse(null, { ok: false, status: 404 });
       if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 
@@ -84,6 +115,8 @@ describe('loadCatalog', () => {
         } as unknown as Response;
       }
       if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validPliegos);
     };
 
@@ -101,6 +134,8 @@ describe('loadCatalog', () => {
         return jsonResponse({}, { contentType: 'text/html; charset=utf-8' });
       }
       if (url.endsWith('sustratos.json')) return jsonResponse(validSustratos);
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 
@@ -123,7 +158,10 @@ describe('loadCatalog', () => {
     const result = await loadCatalog(fetchStub as typeof fetch, 5);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors).toHaveLength(3);
+    expect(result.errors).toHaveLength(5);
+    expect(result.errors.map(error => error.file).sort()).toEqual([
+      'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json',
+    ]);
     for (const error of result.errors) {
       expect(error.path).toBe('');
       expect(error.message).toContain('no respondió');
@@ -145,7 +183,10 @@ describe('loadCatalog', () => {
     const result = await loadCatalog(fetchStub as typeof fetch, 5);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors).toHaveLength(3);
+    expect(result.errors).toHaveLength(5);
+    expect(result.errors.map(error => error.file).sort()).toEqual([
+      'esquemas.json', 'formatos.json', 'maquinas.json', 'pliegos.json', 'sustratos.json',
+    ]);
     for (const error of result.errors) {
       expect(error.path).toBe('');
       expect(error.message).toContain('no respondió');
@@ -165,6 +206,8 @@ describe('loadCatalog', () => {
           }],
         });
       }
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 
@@ -180,6 +223,8 @@ describe('loadCatalog', () => {
     const fetchStub = async (url: string) => {
       if (url.endsWith('sustratos.json')) throw new TypeError('Failed to fetch');
       if (url.endsWith('pliegos.json')) return jsonResponse(null, { ok: false, status: 500 });
+      if (url.endsWith('maquinas.json')) return jsonResponse(validMaquinas);
+      if (url.endsWith('esquemas.json')) return jsonResponse(validEsquemas);
       return jsonResponse(validFormatos);
     };
 

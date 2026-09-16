@@ -7,12 +7,15 @@ import type {
   CustomGrammageOption,
   GrammageOption,
   ImpositionResult,
+  Press,
   Proportion,
   SheetSize,
+  SignaturePlanResult,
   SpineResult,
 } from '../types';
 import { calculateImposition } from '../engine/imposition';
 import { calculateSpineAndWeight } from '../engine/spine';
+import { planSignatures } from '../engine/signatures';
 
 /**
  * Get all sheet sizes (catalog + custom).
@@ -58,16 +61,88 @@ function getSheetDimensions(catalog: Catalog, sheetSizeId: string, customSheetSi
   return sheet ? { width: sheet.width_mm, height: sheet.height_mm } : { width: 0, height: 0 };
 }
 
+/**
+ * Get a press by ID.
+ */
+function getPress(catalog: Catalog, pressId: string): Press | undefined {
+  return catalog.presses.find(p => p.id === pressId);
+}
+
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Ocurrió un error desconocido';
 }
 
 type CalculationResults = Pick<
   BookStore,
-  'impositionResult' | 'impositionError' | 'spineResult' | 'spineError'
+  'impositionResult' | 'impositionError' | 'signaturePlan' | 'signatureError' | 'spineResult' | 'spineError'
 >;
 
-function calculateResults(state: BookConfig, catalog: Catalog): CalculationResults {
+/**
+ * Compute the signature imposition plan. When `foldingSchemeId` is `null`, the
+ * automatic (least-waste) selection from `planSignatures` is used as-is. When
+ * it names a specific scheme, that scheme's option is selected if it fits;
+ * if it doesn't fit or doesn't exist, the previous `selected` option (from
+ * `previousPlan`) is kept instead of silently switching schemes, while
+ * `options` still reflects the current inputs and `signatureError` explains why.
+ */
+function calculateSignaturePlan(
+  state: BookConfig,
+  catalog: Catalog,
+  previousPlan: SignaturePlanResult | null
+): { signaturePlan: SignaturePlanResult | null; signatureError: string | null } {
+  try {
+    const press = getPress(catalog, state.pressId);
+    if (!press) {
+      throw new RangeError(`La prensa "${state.pressId}" no existe en la configuración`);
+    }
+
+    const sheet = getSheetDimensions(catalog, state.sheetSizeId, state.customSheetSizes);
+
+    const basePlan = planSignatures({
+      pageWidth_mm: state.pageWidth_mm,
+      pageHeight_mm: state.pageHeight_mm,
+      bleed_mm: state.bleed_mm,
+      sheetWidth_mm: sheet.width,
+      sheetHeight_mm: sheet.height,
+      press,
+      schemes: catalog.foldingSchemes,
+      totalPages: state.totalPages,
+    });
+
+    if (!state.foldingSchemeId) {
+      return { signaturePlan: basePlan, signatureError: null };
+    }
+
+    const chosen = basePlan.options.find(option => option.scheme.id === state.foldingSchemeId);
+    if (chosen) {
+      return {
+        signaturePlan: { options: basePlan.options, selected: chosen, reason: null },
+        signatureError: null,
+      };
+    }
+
+    const schemeExists = catalog.foldingSchemes.some(scheme => scheme.id === state.foldingSchemeId);
+    const signatureError = schemeExists
+      ? `El esquema de plegado "${state.foldingSchemeId}" no cabe en el pliego con los márgenes actuales de la prensa.`
+      : `El esquema de plegado "${state.foldingSchemeId}" no existe en la configuración.`;
+
+    return {
+      signaturePlan: {
+        options: basePlan.options,
+        selected: previousPlan?.selected ?? null,
+        reason: basePlan.reason,
+      },
+      signatureError,
+    };
+  } catch (error) {
+    return {
+      signaturePlan: null,
+      signatureError: `No se pudo calcular la imposición por firmas: ${getErrorMessage(error)}. Corrige la prensa, el pliego, el sangrado o las páginas.`,
+    };
+  }
+}
+
+function calculateResults(state: BookStore, catalog: Catalog): CalculationResults {
   let impositionResult: ImpositionResult | null = null;
   let impositionError: string | null = null;
   let spineResult: SpineResult | null = null;
@@ -131,7 +206,9 @@ function calculateResults(state: BookConfig, catalog: Catalog): CalculationResul
     spineError = `No se pudieron calcular las referencias de lomo y peso: ${getErrorMessage(error)}. Corrige dimensiones, páginas, gramaje y calibre.`;
   }
 
-  return { impositionResult, impositionError, spineResult, spineError };
+  const { signaturePlan, signatureError } = calculateSignaturePlan(state, catalog, state.signaturePlan);
+
+  return { impositionResult, impositionError, signaturePlan, signatureError, spineResult, spineError };
 }
 
 function withUpdatedCalculations(
@@ -194,12 +271,18 @@ export const useBookStore = create<BookStore>((set, get) => ({
   sheetSizeId: '',
   customSheetSizes: [],
 
+  // Signature imposition
+  pressId: '',
+  foldingSchemeId: null,
+
   // Spine
   totalPages: 0,
 
   // Computed
   impositionResult: null,
   impositionError: null,
+  signaturePlan: null,
+  signatureError: null,
   spineResult: null,
   spineError: null,
   customGrammageError: null,
@@ -225,6 +308,8 @@ export const useBookStore = create<BookStore>((set, get) => ({
         customGrammages: [],
         sheetSizeId: defaults.sheetSizeId,
         customSheetSizes: [],
+        pressId: defaults.pressId,
+        foldingSchemeId: null,
         totalPages: defaults.totalPages,
       };
 
@@ -335,6 +420,20 @@ export const useBookStore = create<BookStore>((set, get) => ({
     set(state => {
       if (!state.catalog) return state;
       return withUpdatedCalculations(state, state.catalog, { sheetSizeId });
+    });
+  },
+
+  setPress: (pressId) => {
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { pressId });
+    });
+  },
+
+  setFoldingScheme: (foldingSchemeId) => {
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { foldingSchemeId });
     });
   },
 

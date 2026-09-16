@@ -1,0 +1,55 @@
+{
+  "source": "Esquemas de plegado construidos a mano como ejemplo; deben confirmarse contra un pliego doblado real antes de usarse en producción.",
+  "foldingSchemes": [
+    {
+      "id": "esquema_8pp",
+      "name": "Firma de 8 páginas (pliego doblado 2 veces)",
+      "pagesPerSignature": 8,
+      "cols": 2,
+      "rows": 2,
+      "sides": {
+        "front": [
+          { "page": 8, "rotation": 0 },
+          { "page": 1, "rotation": 0 },
+          { "page": 6, "rotation": 180 },
+          { "page": 3, "rotation": 180 }
+        ],
+        "back": [
+          { "page": 2, "rotation": 0 },
+          { "page": 7, "rotation": 0 },
+          { "page": 4, "rotation": 180 },
+          { "page": 5, "rotation": 180 }
+        ]
+      }
+    },
+    {
+      "id": "esquema_16pp",
+      "name": "Firma de 16 páginas (pliego doblado 3 veces)",
+      "pagesPerSignature": 16,
+      "cols": 2,
+      "rows": 4,
+      "sides": {
+        "front": [
+          { "page": 16, "rotation": 0 },
+          { "page": 1, "rotation": 0 },
+          { "page": 10, "rotation": 180 },
+          { "page": 7, "rotation": 180 },
+          { "page": 12, "rotation": 0 },
+          { "page": 5, "rotation": 0 },
+          { "page": 14, "rotation": 180 },
+          { "page": 3, "rotation": 180 }
+        ],
+        "back": [
+          { "page": 2, "rotation": 0 },
+          { "page": 15, "rotation": 0 },
+          { "page": 8, "rotation": 180 },
+          { "page": 9, "rotation": 180 },
+          { "page": 6, "rotation": 0 },
+          { "page": 11, "rotation": 0 },
+          { "page": 4, "rotation": 180 },
+          { "page": 13, "rotation": 180 }
+        ]
+      }
+    }
+  ]
+}

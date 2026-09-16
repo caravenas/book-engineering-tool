@@ -8,6 +8,11 @@ describe('Golden defaults from the shipped runtime config', () => {
   it('reproduces the exact 91d321b results for the default configuration', () => {
     const catalog = loadShippedCatalog();
     useBookStore.getState().initialize(catalog);
+    // Increment 2 changed defaults.sheetSizeId to pliego_70x100 (P2: tabloide
+    // is too small for either shipped folding scheme), so the tabloide
+    // regression this test guards is now reproduced explicitly instead of
+    // relying on it being the default.
+    useBookStore.getState().setSheetSize('tabloide');
     const state = useBookStore.getState();
 
     expect(state.pageWidth_mm).toBe(140);

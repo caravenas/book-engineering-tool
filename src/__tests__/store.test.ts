@@ -154,6 +154,108 @@ describe('Book store recovery', () => {
   });
 });
 
+describe('Signature imposition plan', () => {
+  it('produces a non-null selected scheme for the shipped catalog defaults', () => {
+    // This is the regression this exact test would have caught: the shipped
+    // defaults.sheetSizeId/pressId pair must actually fit a shipped scheme.
+    const state = useBookStore.getState();
+    expect(state.pressId).toBe('prensa_70x100');
+    expect(state.sheetSizeId).toBe('pliego_70x100');
+    expect(state.foldingSchemeId).toBeNull();
+    expect(state.signaturePlan?.selected).not.toBeNull();
+    expect(state.signatureError).toBeNull();
+  });
+
+  it('reproduces the plan acceptance numbers for 32 pages once a large-enough sheet is selected', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    const selected = useBookStore.getState().signaturePlan?.selected;
+
+    expect(selected?.scheme.id).toBe('esquema_16pp');
+    expect(selected?.signatures).toBe(2);
+    expect(selected?.blankPages).toBe(0);
+    expect(selected?.sheetsPerCopy).toBe(2);
+  });
+
+  it('gives 2 blank pages for 30 pages with the same scheme', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    useBookStore.getState().setTotalPages(30);
+    const selected = useBookStore.getState().signaturePlan?.selected;
+
+    expect(selected?.scheme.id).toBe('esquema_16pp');
+    expect(selected?.signatures).toBe(2);
+    expect(selected?.blankPages).toBe(2);
+  });
+
+  it('recomputes the plan on page size, bleed, sheet, total pages, press, and scheme changes', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    const plans: unknown[] = [useBookStore.getState().signaturePlan];
+
+    useBookStore.getState().setPageDimensions(100, 150);
+    plans.push(useBookStore.getState().signaturePlan);
+    useBookStore.getState().setBleed(5);
+    plans.push(useBookStore.getState().signaturePlan);
+    useBookStore.getState().setTotalPages(48);
+    plans.push(useBookStore.getState().signaturePlan);
+    useBookStore.getState().setPress('prensa_sra3');
+    plans.push(useBookStore.getState().signaturePlan);
+    // tabloide (432×279mm) fits prensa_sra3's press format rotated
+    // (279 <= 330, 432 <= 460); pliego_77x110 would not (P3 enforcement).
+    useBookStore.getState().setSheetSize('tabloide');
+    plans.push(useBookStore.getState().signaturePlan);
+    useBookStore.getState().setFoldingScheme('esquema_8pp');
+    plans.push(useBookStore.getState().signaturePlan);
+
+    for (let i = 1; i < plans.length; i++) {
+      expect(plans[i]).not.toBe(plans[i - 1]);
+    }
+    expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_8pp');
+  });
+
+  it('keeps the previous selection and reports an error when the chosen scheme stops fitting', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    const previousSelected = useBookStore.getState().signaturePlan?.selected;
+    expect(previousSelected).not.toBeNull();
+
+    useBookStore.getState().setFoldingScheme('esquema_16pp');
+    expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_16pp');
+
+    // Switch to a sheet where esquema_16pp no longer fits.
+    useBookStore.getState().setSheetSize('tabloide');
+    const state = useBookStore.getState();
+
+    expect(state.foldingSchemeId).toBe('esquema_16pp');
+    expect(state.signatureError).toContain('esquema_16pp');
+    expect(state.signaturePlan?.selected?.scheme.id).toBe('esquema_16pp');
+  });
+
+  it('reports an error for a folding scheme id that does not exist without clearing the selection', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    const previousSelected = useBookStore.getState().signaturePlan?.selected;
+
+    useBookStore.getState().setFoldingScheme('missing-scheme');
+    const state = useBookStore.getState();
+
+    expect(state.foldingSchemeId).toBe('missing-scheme');
+    expect(state.signatureError).toContain('missing-scheme');
+    expect(state.signaturePlan?.selected).toBe(previousSelected);
+  });
+});
+
+describe('Actions before initialize (signature imposition)', () => {
+  it('setPress and setFoldingScheme are no-ops while the catalog is null', () => {
+    useBookStore.setState(initialState);
+    const before = useBookStore.getState();
+    expect(before.catalog).toBeNull();
+
+    expect(() => {
+      before.setPress('prensa_70x100');
+      before.setFoldingScheme('esquema_16pp');
+    }).not.toThrow();
+
+    expect(useBookStore.getState()).toBe(before);
+  });
+});
+
 describe('Custom grammages', () => {
   it('rejects built-in and custom duplicates in the same substrate', () => {
     expect(useBookStore.getState().addCustomGrammage('couche_matte', 150, 130)).toBe(false);

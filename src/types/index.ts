@@ -36,6 +36,38 @@ export interface SheetSize {
   height_mm: number;
 }
 
+// ─── Presses ──────────────────────────────────────────────────────────────
+
+export interface Press {
+  id: string;
+  name: string;
+  maxSheetWidth_mm: number;
+  maxSheetHeight_mm: number;
+  gripperMargin_mm: number;
+  sideMargin_mm: number;
+  tailMargin_mm: number;
+  gutter_mm: number;
+}
+
+// ─── Folding Schemes ──────────────────────────────────────────────────────
+
+export interface SlotPlacement {
+  page: number;
+  rotation: 0 | 180;
+}
+
+export interface FoldingScheme {
+  id: string;
+  name: string;
+  pagesPerSignature: number;
+  cols: number;
+  rows: number;
+  sides: {
+    front: SlotPlacement[];
+    back: SlotPlacement[];
+  };
+}
+
 // ─── Runtime Catalog Configuration ───────────────────────────────────────
 
 export interface CatalogDefaults {
@@ -46,6 +78,7 @@ export interface CatalogDefaults {
   proportionId: string;
   bleed_mm: number;
   totalPages: number;
+  pressId: string;
 }
 
 export interface Catalog {
@@ -53,6 +86,10 @@ export interface Catalog {
   substratesSource: string;
   sheetSizes: SheetSize[];
   sheetSizesSource: string;
+  presses: Press[];
+  pressesSource: string;
+  foldingSchemes: FoldingScheme[];
+  foldingSchemesSource: string;
   proportions: Proportion[];
   defaults: CatalogDefaults;
 }
@@ -78,6 +115,63 @@ export interface ImpositionResult {
   placements: PagePlacement[];
   previewTruncated: boolean;
   usesBestOrientation: boolean; // Best only between the normal and rotated uniform grids
+}
+
+// ─── Signature Imposition Engine Results ─────────────────────────────────
+
+// 'tiro-retiro' means the scheme can be printed from a single plate
+// (work-and-turn); 'planchas-separadas' means front and back need separate
+// plates. Detection is a geometric simplification, documented where computed.
+export type PrintingMode = 'tiro-retiro' | 'planchas-separadas';
+
+// Why no scheme was selected, for a UI that wants to explain it precisely
+// instead of a generic "nothing fits": `null` means something did fit.
+export type SignaturePlanReason = 'sheet-exceeds-press' | 'margins-exceed-sheet' | 'no-scheme-fits' | null;
+
+export interface SignaturePlanInput {
+  pageWidth_mm: number;
+  pageHeight_mm: number;
+  bleed_mm: number;
+  sheetWidth_mm: number;
+  sheetHeight_mm: number;
+  press: Press;
+  schemes: FoldingScheme[];
+  totalPages: number;
+}
+
+export interface SignatureOption {
+  scheme: FoldingScheme;
+  pageRotated: boolean; // the page is turned 90° to fit the scheme's grid
+  cols: number;
+  rows: number;
+  pagesPerSheet: number;  // cols × rows × 2 (front and back together)
+  cellWidth_mm: number;  // trimmed page + bleed, in the orientation actually used
+  cellHeight_mm: number;
+  gutter_mm: number;
+  sideMargin_mm: number;
+  gripperMargin_mm: number;
+  signatures: number;
+  blankPages: number;
+  sheetsPerCopy: number;
+  usedArea_mm2: number;
+  printableArea_mm2: number;
+  wastePercentage: number;
+  printingMode: PrintingMode;
+}
+
+export interface SignaturePlanResult {
+  options: SignatureOption[];
+  selected: SignatureOption | null;
+  reason: SignaturePlanReason;
+}
+
+export interface SignaturePlacement {
+  page: number;
+  rotation: 0 | 90 | 180 | 270;
+  x_mm: number;
+  y_mm: number;
+  width_mm: number;
+  height_mm: number;
 }
 
 // ─── Spine & Weight Results ──────────────────────────────────────────────
@@ -114,6 +208,10 @@ export interface BookConfig {
   sheetSizeId: string;
   customSheetSizes: SheetSize[];      // User-added sheet sizes
 
+  // Signature imposition
+  pressId: string;
+  foldingSchemeId: string | null;   // null = automatic selection (least waste)
+
   // Spine & Weight
   totalPages: number;
 }
@@ -125,6 +223,8 @@ export interface BookStore extends BookConfig {
   // Computed results
   impositionResult: ImpositionResult | null;
   impositionError: string | null;
+  signaturePlan: SignaturePlanResult | null;
+  signatureError: string | null;
   spineResult: SpineResult | null;
   spineError: string | null;
   customGrammageError: string | null;
@@ -140,6 +240,8 @@ export interface BookStore extends BookConfig {
   setSubstrate: (substrateId: string) => void;
   setGrammage: (grammage: number) => void;
   setSheetSize: (sheetSizeId: string) => void;
+  setPress: (pressId: string) => void;
+  setFoldingScheme: (foldingSchemeId: string | null) => void;
   setTotalPages: (pages: number) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;
   removeCustomSheetSize: (id: string) => void;

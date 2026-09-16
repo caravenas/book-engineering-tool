@@ -1,0 +1,25 @@
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "presses": [
+    {
+      "id": "prensa_sra3",
+      "name": "Prensa formato SRA3",
+      "maxSheetWidth_mm": 330,
+      "maxSheetHeight_mm": 460,
+      "gripperMargin_mm": 10,
+      "sideMargin_mm": 5,
+      "tailMargin_mm": 5,
+      "gutter_mm": 4
+    },
+    {
+      "id": "prensa_70x100",
+      "name": "Prensa formato 70×100",
+      "maxSheetWidth_mm": 720,
+      "maxSheetHeight_mm": 1020,
+      "gripperMargin_mm": 12,
+      "sideMargin_mm": 10,
+      "tailMargin_mm": 10,
+      "gutter_mm": 5
+    }
+  ]
+}

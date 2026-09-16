@@ -35,6 +35,53 @@ function validPliegos() {
   };
 }
 
+function validMaquinas() {
+  return {
+    source: 'Datos de prueba.',
+    presses: [
+      {
+        id: 'prensa1',
+        name: 'Prensa 1',
+        maxSheetWidth_mm: 500,
+        maxSheetHeight_mm: 700,
+        gripperMargin_mm: 10,
+        sideMargin_mm: 5,
+        tailMargin_mm: 5,
+        gutter_mm: 3,
+      },
+    ],
+  };
+}
+
+function validEsquemas() {
+  return {
+    source: 'Datos de prueba.',
+    foldingSchemes: [
+      {
+        id: 'esquema1',
+        name: 'Esquema 1',
+        pagesPerSignature: 8,
+        cols: 2,
+        rows: 2,
+        sides: {
+          front: [
+            { page: 8, rotation: 180 },
+            { page: 1, rotation: 0 },
+            { page: 6, rotation: 180 },
+            { page: 3, rotation: 0 },
+          ],
+          back: [
+            { page: 2, rotation: 180 },
+            { page: 7, rotation: 0 },
+            { page: 4, rotation: 180 },
+            { page: 5, rotation: 0 },
+          ],
+        },
+      },
+    ],
+  };
+}
+
 function validFormatos() {
   return {
     proportions: [
@@ -51,6 +98,7 @@ function validFormatos() {
       proportionId: '2:3',
       bleed_mm: 3,
       totalPages: 32,
+      pressId: 'prensa1',
     },
   };
 }
@@ -59,6 +107,8 @@ function validInput(): CatalogFiles {
   return {
     'sustratos.json': validSustratos(),
     'pliegos.json': validPliegos(),
+    'maquinas.json': validMaquinas(),
+    'esquemas.json': validEsquemas(),
     'formatos.json': validFormatos(),
   };
 }
@@ -72,14 +122,21 @@ describe('validateCatalog', () => {
     expect(result.catalog.substratesSource).toBe('Datos de prueba.');
     expect(result.catalog.sheetSizes).toHaveLength(1);
     expect(result.catalog.sheetSizesSource).toBe('Datos de prueba.');
+    expect(result.catalog.presses).toHaveLength(1);
+    expect(result.catalog.pressesSource).toBe('Datos de prueba.');
+    expect(result.catalog.foldingSchemes).toHaveLength(1);
+    expect(result.catalog.foldingSchemesSource).toBe('Datos de prueba.');
     expect(result.catalog.proportions).toHaveLength(4);
     expect(result.catalog.defaults.substrateId).toBe('bond');
+    expect(result.catalog.defaults.pressId).toBe('prensa1');
   });
 
   it('reports a malformed top-level structure for each file', () => {
     const result = validateCatalog({
       'sustratos.json': null,
       'pliegos.json': [1, 2, 3],
+      'maquinas.json': 42,
+      'esquemas.json': 'not an object',
       'formatos.json': 'not an object',
     });
 
@@ -87,6 +144,8 @@ describe('validateCatalog', () => {
     if (result.ok) return;
     assertError(result.errors, 'sustratos.json', '');
     assertError(result.errors, 'pliegos.json', '');
+    assertError(result.errors, 'maquinas.json', '');
+    assertError(result.errors, 'esquemas.json', '');
     assertError(result.errors, 'formatos.json', '');
   });
 
@@ -344,6 +403,7 @@ describe('validateCatalog', () => {
         proportionId: 'missing-proportion',
         bleed_mm: 3,
         totalPages: 32,
+        pressId: 'missing-press',
       },
     };
 
@@ -353,6 +413,7 @@ describe('validateCatalog', () => {
     assertError(result.errors, 'formatos.json', 'defaults.substrateId');
     assertError(result.errors, 'formatos.json', 'defaults.sheetSizeId');
     assertError(result.errors, 'formatos.json', 'defaults.proportionId');
+    assertError(result.errors, 'formatos.json', 'defaults.pressId');
   });
 
   it('rejects a default grammage that does not exist for the referenced substrate', () => {
@@ -411,6 +472,8 @@ describe('validateCatalog', () => {
     const result = validateCatalog({
       'sustratos.json': { source: '', substrates: [] },
       'pliegos.json': { source: '', sheetSizes: [] },
+      'maquinas.json': validMaquinas(),
+      'esquemas.json': validEsquemas(),
       'formatos.json': {
         proportions: [],
         defaults: {
@@ -421,6 +484,7 @@ describe('validateCatalog', () => {
           proportionId: '',
           bleed_mm: -1,
           totalPages: 0,
+          pressId: '',
         },
       },
     });
@@ -436,6 +500,7 @@ describe('validateCatalog', () => {
       'formatos.json:defaults.bleed_mm',
       'formatos.json:defaults.grammage',
       'formatos.json:defaults.pageWidth_mm',
+      'formatos.json:defaults.pressId',
       'formatos.json:defaults.proportionId',
       'formatos.json:defaults.sheetSizeId',
       'formatos.json:defaults.substrateId',
@@ -490,9 +555,357 @@ describe('validateCatalog', () => {
     const result = validateCatalog({
       'sustratos.json': validSustratos(),
       'pliegos.json': undefined,
+      'maquinas.json': validMaquinas(),
+      'esquemas.json': validEsquemas(),
       'formatos.json': validFormatos(),
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  describe('presses (maquinas.json)', () => {
+    it('rejects non-finite geometry values and negative margins', () => {
+      const input = validInput();
+      input['maquinas.json'] = {
+        source: 'Datos de prueba.',
+        presses: [{
+          id: 'prensa1',
+          name: 'Prensa 1',
+          maxSheetWidth_mm: Number.NaN,
+          maxSheetHeight_mm: -1,
+          gripperMargin_mm: -1,
+          sideMargin_mm: -1,
+          tailMargin_mm: -1,
+          gutter_mm: -1,
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'maquinas.json', 'presses[0].maxSheetWidth_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].maxSheetHeight_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].gripperMargin_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].sideMargin_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].tailMargin_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].gutter_mm');
+    });
+
+    it('rejects margins that leave no usable printable area', () => {
+      const input = validInput();
+      input['maquinas.json'] = {
+        source: 'Datos de prueba.',
+        presses: [{
+          id: 'prensa1',
+          name: 'Prensa 1',
+          maxSheetWidth_mm: 100,
+          maxSheetHeight_mm: 100,
+          gripperMargin_mm: 60,
+          sideMargin_mm: 60,
+          tailMargin_mm: 60,
+          gutter_mm: 3,
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'maquinas.json', 'presses[0].gripperMargin_mm');
+      assertError(result.errors, 'maquinas.json', 'presses[0].sideMargin_mm');
+    });
+
+    it('rejects duplicate press ids', () => {
+      const input = validInput();
+      input['maquinas.json'] = {
+        source: 'Datos de prueba.',
+        presses: [
+          validMaquinas().presses[0],
+          { ...validMaquinas().presses[0], name: 'Prensa duplicada' },
+        ],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'maquinas.json', 'presses[1].id');
+    });
+
+    it('rejects a null and a non-object entry in presses', () => {
+      const input = validInput();
+      input['maquinas.json'] = {
+        source: 'Datos de prueba.',
+        presses: [null, 'not an object', validMaquinas().presses[0]],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'maquinas.json', 'presses[0]');
+      assertError(result.errors, 'maquinas.json', 'presses[1]');
+    });
+
+    it('does not report a false "no existe" for defaults.pressId when the referenced press has an invalid name', () => {
+      const input = validInput();
+      input['maquinas.json'] = {
+        source: 'Datos de prueba.',
+        presses: [{ ...validMaquinas().presses[0], name: '' }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'maquinas.json', 'presses[0].name');
+      expect(result.errors.some(error => error.path === 'defaults.pressId')).toBe(false);
+    });
+  });
+
+  describe('folding schemes (esquemas.json)', () => {
+    it('rejects a pagesPerSignature that is not a multiple of 4', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{ ...scheme, pagesPerSignature: 6 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].pagesPerSignature');
+    });
+
+    it('rejects a cols × rows product that does not match half of pagesPerSignature', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{ ...scheme, cols: 3, rows: 1 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].cols');
+    });
+
+    it('rejects a rotation of 90 degrees', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            ...scheme.sides,
+            front: [
+              { page: 8, rotation: 90 },
+              ...scheme.sides.front.slice(1),
+            ],
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].rotation');
+    });
+
+    it('rejects a scheme with a page missing between front and back', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            front: scheme.sides.front,
+            // Page 5 is replaced by a repeat of page 4: page 5 never appears.
+            back: [
+              scheme.sides.back[0], scheme.sides.back[1], scheme.sides.back[2],
+              { page: 4, rotation: 0 },
+            ],
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.back[3].page');
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides');
+    });
+
+    it('rejects a scheme with a page duplicated across front and back', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            front: scheme.sides.front,
+            // Page 1 (already on the front) replaces page 5 on the back.
+            back: [
+              scheme.sides.back[0], scheme.sides.back[1], scheme.sides.back[2],
+              { page: 1, rotation: 0 },
+            ],
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.back[3].page');
+    });
+
+    it('rejects a side with the wrong number of slots', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: { front: scheme.sides.front.slice(0, 3), back: scheme.sides.back },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front');
+    });
+
+    it('rejects a null and a non-object entry in foldingSchemes', () => {
+      const input = validInput();
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [null, 42, validEsquemas().foldingSchemes[0]],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0]');
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[1]');
+    });
+
+    it('rejects a non-object "sides" and a non-array "sides.front"', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [
+          { ...scheme, id: 'esquema-a', sides: 'not an object' },
+          { ...scheme, id: 'esquema-b', sides: { front: 'not an array', back: scheme.sides.back } },
+        ],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides');
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[1].sides.front');
+    });
+
+    it('rejects a non-integer page', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: { ...scheme.sides, front: [{ page: 1.5, rotation: 0 }, ...scheme.sides.front.slice(1)] },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].page');
+    });
+
+    it('rejects a page out of range (9 in an 8-page scheme)', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: { ...scheme.sides, front: [{ page: 9, rotation: 0 }, ...scheme.sides.front.slice(1)] },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].page');
+    });
+
+    it('rejects a duplicate scheme id', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [scheme, { ...scheme, name: 'Duplicado' }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[1].id');
+    });
+
+    it('rejects a pagesPerSignature above the maximum cap without building a huge coverage array', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{ ...scheme, pagesPerSignature: 16000000 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].pagesPerSignature');
+      // The cap must reject this before the coverage check runs at all: no
+      // "faltan las páginas" pileup from trying to cover 16 million pages.
+      expect(result.errors.some(error => error.path === 'foldingSchemes[0].sides')).toBe(false);
+    });
+
+    it('does not report a redundant page-coverage error when a slot was already rejected for a bad rotation', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            ...scheme.sides,
+            front: [{ page: 8, rotation: 90 }, ...scheme.sides.front.slice(1)],
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].rotation');
+      expect(result.errors.some(error => error.path === 'foldingSchemes[0].sides')).toBe(false);
+    });
+  });
+
+  it('rejects a default pressId that does not exist', () => {
+    const input = validInput();
+    input['formatos.json'] = {
+      ...validFormatos(),
+      defaults: { ...validFormatos().defaults, pressId: 'missing-press' },
+    };
+
+    const result = validateCatalog(input);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    assertError(result.errors, 'formatos.json', 'defaults.pressId');
   });
 });

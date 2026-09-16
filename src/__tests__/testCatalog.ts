@@ -1,5 +1,7 @@
 import sustratosRaw from '../../public/config/sustratos.json?raw';
 import pliegosRaw from '../../public/config/pliegos.json?raw';
+import maquinasRaw from '../../public/config/maquinas.json?raw';
+import esquemasRaw from '../../public/config/esquemas.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { validateCatalog } from '../config/validateCatalog';
 import type { Catalog } from '../types';
@@ -12,6 +14,8 @@ export function loadShippedCatalog(): Catalog {
   const result = validateCatalog({
     'sustratos.json': JSON.parse(sustratosRaw),
     'pliegos.json': JSON.parse(pliegosRaw),
+    'maquinas.json': JSON.parse(maquinasRaw),
+    'esquemas.json': JSON.parse(esquemasRaw),
     'formatos.json': JSON.parse(formatosRaw),
   });
 
