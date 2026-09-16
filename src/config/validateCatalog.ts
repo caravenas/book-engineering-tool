@@ -1,4 +1,5 @@
 import type {
+  Binding,
   Catalog,
   CatalogDefaults,
   FoldingScheme,
@@ -25,6 +26,7 @@ export interface CatalogFiles {
   'pliegos.json': unknown;
   'maquinas.json': unknown;
   'esquemas.json': unknown;
+  'encuadernaciones.json': unknown;
   'formatos.json': unknown;
 }
 
@@ -34,12 +36,16 @@ const SUSTRATOS_FILE = 'sustratos.json';
 const PLIEGOS_FILE = 'pliegos.json';
 const MAQUINAS_FILE = 'maquinas.json';
 const ESQUEMAS_FILE = 'esquemas.json';
+const ENCUADERNACIONES_FILE = 'encuadernaciones.json';
 const FORMATOS_FILE = 'formatos.json';
 const VISIBLE_PROPORTIONS_COUNT = 3;
 // Real signatures never approach this size; the cap exists to reject
 // pathological input (e.g. 16000000) before the coverage check below builds
 // an array and a join() of that size.
 const MAX_PAGES_PER_SIGNATURE = 128;
+// No real book binding method admits this many pages; the cap exists to
+// catch a typo (an extra digit) in `maxPages`, not to model a physical limit.
+const MAX_BINDING_PAGES = 20000;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -714,6 +720,150 @@ function validateFoldingSchemes(raw: unknown, available: boolean, errors: Config
   return { foldingSchemes: result, source: isNonEmptyString(source) ? source : undefined, knownIds };
 }
 
+interface BindingsValidation {
+  bindings: Binding[];
+  source: string | undefined;
+  /** Ids seen well-formed, regardless of other fields on that entry, for duplicate/reference checks. */
+  knownIds: Set<string>;
+}
+
+/**
+ * Validate `encuadernaciones.json` and collect every structural or semantic error found.
+ */
+function validateBindings(raw: unknown, available: boolean, errors: ConfigError[]): BindingsValidation {
+  const knownIds = new Set<string>();
+
+  if (!available) {
+    return { bindings: [], source: undefined, knownIds };
+  }
+
+  if (!isPlainObject(raw)) {
+    errors.push({ file: ENCUADERNACIONES_FILE, path: '', message: 'El archivo debe contener un objeto JSON.' });
+    return { bindings: [], source: undefined, knownIds };
+  }
+
+  const { bindings, source } = raw;
+
+  if (!isNonEmptyString(source)) {
+    errors.push({ file: ENCUADERNACIONES_FILE, path: 'source', message: 'El campo "source" debe ser un texto no vacío que indique el origen de los datos.' });
+  }
+
+  if (!Array.isArray(bindings)) {
+    errors.push({ file: ENCUADERNACIONES_FILE, path: 'bindings', message: 'El campo "bindings" debe ser un arreglo.' });
+    return { bindings: [], source: isNonEmptyString(source) ? source : undefined, knownIds };
+  }
+  if (bindings.length === 0) {
+    errors.push({ file: ENCUADERNACIONES_FILE, path: 'bindings', message: 'El catálogo de encuadernaciones no puede estar vacío.' });
+  }
+
+  const result: Binding[] = [];
+
+  bindings.forEach((rawBinding, index) => {
+    const path = `bindings[${index}]`;
+    if (!isPlainObject(rawBinding)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path, message: 'Cada encuadernación debe ser un objeto.' });
+      return;
+    }
+
+    const {
+      id, name, pageMultiple, minPages, maxPages,
+      spineAllowance_mm, nests, requiresSignatureMultiple,
+    } = rawBinding;
+    let valid = true;
+
+    if (!isCleanIdentifier(id)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.id`, message: 'El id de la encuadernación debe ser un texto no vacío, sin espacios al inicio o al final.' });
+      valid = false;
+    } else if (knownIds.has(id)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.id`, message: `El id de encuadernación "${id}" está duplicado.` });
+      valid = false;
+    }
+
+    if (!isNonEmptyString(name)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.name`, message: 'El nombre de la encuadernación debe ser un texto no vacío.' });
+      valid = false;
+    }
+
+    const pageMultipleValid = isPositiveSafeInteger(pageMultiple) && pageMultiple % 2 === 0;
+    if (!pageMultipleValid) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.pageMultiple`, message: 'El múltiplo de páginas debe ser un entero seguro mayor que cero y par, porque un pliego siempre aporta dos páginas.' });
+      valid = false;
+    }
+
+    const minPagesValid = isPositiveSafeInteger(minPages)
+      && pageMultipleValid && minPages % (pageMultiple as number) === 0;
+    if (!isPositiveSafeInteger(minPages)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.minPages`, message: 'El mínimo de páginas debe ser un entero seguro mayor que cero.' });
+      valid = false;
+    } else if (pageMultipleValid && minPages % (pageMultiple as number) !== 0) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.minPages`, message: `El mínimo de páginas debe ser múltiplo de ${pageMultiple}.` });
+      valid = false;
+    }
+
+    const maxPagesValid = isPositiveSafeInteger(maxPages)
+      && pageMultipleValid && maxPages % (pageMultiple as number) === 0
+      && maxPages <= MAX_BINDING_PAGES;
+    if (!isPositiveSafeInteger(maxPages)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.maxPages`, message: 'El máximo de páginas debe ser un entero seguro mayor que cero.' });
+      valid = false;
+    } else {
+      if (pageMultipleValid && maxPages % (pageMultiple as number) !== 0) {
+        errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.maxPages`, message: `El máximo de páginas debe ser múltiplo de ${pageMultiple}.` });
+        valid = false;
+      }
+      if (maxPages > MAX_BINDING_PAGES) {
+        errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.maxPages`, message: `El máximo de páginas no puede superar ${MAX_BINDING_PAGES}; revisa si hay un error de tipeo.` });
+        valid = false;
+      }
+    }
+
+    if (minPagesValid && maxPagesValid && (minPages as number) > (maxPages as number)) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.minPages`, message: 'El mínimo de páginas debe ser menor o igual que el máximo.' });
+      valid = false;
+    }
+
+    if (!isFiniteNumber(spineAllowance_mm) || spineAllowance_mm < 0) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.spineAllowance_mm`, message: 'El aporte al lomo debe ser un número finito no negativo.' });
+      valid = false;
+    }
+
+    if (typeof nests !== 'boolean') {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.nests`, message: 'El campo "nests" debe ser un booleano.' });
+      valid = false;
+    } else if (nests && pageMultipleValid && (pageMultiple as number) % 4 !== 0) {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.pageMultiple`, message: 'Un método cuyas hojas se anidan ("nests": true) debe tener un múltiplo de páginas que sea también múltiplo de 4, porque el plegado que anida se hace de a cuatro páginas.' });
+      valid = false;
+    }
+
+    if (typeof requiresSignatureMultiple !== 'boolean') {
+      errors.push({ file: ENCUADERNACIONES_FILE, path: `${path}.requiresSignatureMultiple`, message: 'El campo "requiresSignatureMultiple" debe ser un booleano.' });
+      valid = false;
+    }
+
+    if (isCleanIdentifier(id)) {
+      knownIds.add(id);
+    }
+
+    if (valid && isCleanIdentifier(id) && isNonEmptyString(name)
+      && isPositiveSafeInteger(pageMultiple) && isPositiveSafeInteger(minPages) && isPositiveSafeInteger(maxPages)
+      && isFiniteNumber(spineAllowance_mm) && typeof nests === 'boolean'
+      && typeof requiresSignatureMultiple === 'boolean') {
+      result.push({
+        id,
+        name,
+        pageMultiple: pageMultiple as number,
+        minPages: minPages as number,
+        maxPages: maxPages as number,
+        spineAllowance_mm,
+        nests,
+        requiresSignatureMultiple,
+      });
+    }
+  });
+
+  return { bindings: result, source: isNonEmptyString(source) ? source : undefined, knownIds };
+}
+
 interface ProportionsValidation {
   proportions: Proportion[];
   knownLabels: Set<string>;
@@ -797,7 +947,7 @@ function validateDefaults(raw: unknown, errors: ConfigError[]): CatalogDefaults 
   }
 
   const {
-    substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId,
+    substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId,
   } = raw;
   let valid = true;
 
@@ -833,15 +983,19 @@ function validateDefaults(raw: unknown, errors: ConfigError[]): CatalogDefaults 
     errors.push({ file: FORMATOS_FILE, path: 'defaults.pressId', message: 'La prensa por defecto debe ser un texto no vacío, sin espacios al inicio o al final.' });
     valid = false;
   }
+  if (!isCleanIdentifier(bindingId)) {
+    errors.push({ file: FORMATOS_FILE, path: 'defaults.bindingId', message: 'La encuadernación por defecto debe ser un texto no vacío, sin espacios al inicio o al final.' });
+    valid = false;
+  }
 
   if (!valid || !isCleanIdentifier(substrateId) || !isFiniteNumber(grammage)
     || !isCleanIdentifier(sheetSizeId) || !isFiniteNumber(pageWidth_mm)
     || !isCleanIdentifier(proportionId) || !isFiniteNumber(bleed_mm)
-    || !isPositiveSafeInteger(totalPages) || !isCleanIdentifier(pressId)) {
+    || !isPositiveSafeInteger(totalPages) || !isCleanIdentifier(pressId) || !isCleanIdentifier(bindingId)) {
     return undefined;
   }
 
-  return { substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId };
+  return { substrateId, grammage, sheetSizeId, pageWidth_mm, proportionId, bleed_mm, totalPages, pressId, bindingId };
 }
 
 /**
@@ -860,9 +1014,11 @@ function validateDefaultsReferences(
   knownSheetIds: Set<string>,
   knownProportionLabels: Set<string>,
   knownPressIds: Set<string>,
+  knownBindingIds: Set<string>,
   substratesAvailable: boolean,
   sheetSizesAvailable: boolean,
   pressesAvailable: boolean,
+  bindingsAvailable: boolean,
   errors: ConfigError[]
 ): void {
   if (substratesAvailable) {
@@ -915,10 +1071,18 @@ function validateDefaultsReferences(
       message: `La prensa por defecto "${defaults.pressId}" no existe en maquinas.json.`,
     });
   }
+
+  if (bindingsAvailable && !knownBindingIds.has(defaults.bindingId)) {
+    errors.push({
+      file: FORMATOS_FILE,
+      path: 'defaults.bindingId',
+      message: `La encuadernación por defecto "${defaults.bindingId}" no existe en encuadernaciones.json.`,
+    });
+  }
 }
 
 /**
- * Validate the five parsed catalog files together and collect every error found,
+ * Validate the six parsed catalog files together and collect every error found,
  * instead of stopping at the first one. A file whose raw value is `undefined`
  * failed to load upstream: pass its name in `unavailableFiles` so its own
  * structural checks are skipped (the loader already reported why) instead of
@@ -938,12 +1102,14 @@ export function validateCatalog(
   const sheetSizesAvailable = !unavailableFiles.has(PLIEGOS_FILE);
   const pressesAvailable = !unavailableFiles.has(MAQUINAS_FILE);
   const foldingSchemesAvailable = !unavailableFiles.has(ESQUEMAS_FILE);
+  const bindingsAvailable = !unavailableFiles.has(ENCUADERNACIONES_FILE);
   const formatosAvailable = !unavailableFiles.has(FORMATOS_FILE);
 
   const sustratos = validateSustratos(input[SUSTRATOS_FILE], substratesAvailable, errors);
   const pliegos = validatePliegos(input[PLIEGOS_FILE], sheetSizesAvailable, errors);
   const maquinas = validatePresses(input[MAQUINAS_FILE], pressesAvailable, errors);
   const esquemas = validateFoldingSchemes(input[ESQUEMAS_FILE], foldingSchemesAvailable, errors);
+  const encuadernaciones = validateBindings(input[ENCUADERNACIONES_FILE], bindingsAvailable, errors);
 
   let proportionsResult: ProportionsValidation = { proportions: [], knownLabels: new Set(), visibleLabels: new Set() };
   let defaults: CatalogDefaults | undefined;
@@ -966,9 +1132,11 @@ export function validateCatalog(
       pliegos.knownIds,
       proportionsResult.knownLabels,
       maquinas.knownIds,
+      encuadernaciones.knownIds,
       substratesAvailable,
       sheetSizesAvailable,
       pressesAvailable,
+      bindingsAvailable,
       errors
     );
   }
@@ -989,6 +1157,8 @@ export function validateCatalog(
       pressesSource: maquinas.source as string,
       foldingSchemes: esquemas.foldingSchemes,
       foldingSchemesSource: esquemas.source as string,
+      bindings: encuadernaciones.bindings,
+      bindingsSource: encuadernaciones.source as string,
       proportions: proportionsResult.proportions,
       defaults: defaults as CatalogDefaults,
     },

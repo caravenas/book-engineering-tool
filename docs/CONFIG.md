@@ -9,7 +9,7 @@ Deben reemplazarse por datos reales de una imprenta antes de usar la herramienta
 
 ## Archivos
 
-La aplicación carga los cinco archivos en paralelo al iniciar, usando `import.meta.env.BASE_URL` como prefijo para que funcione también en despliegues bajo una subruta.
+La aplicación carga los seis archivos en paralelo al iniciar, usando `import.meta.env.BASE_URL` como prefijo para que funcione también en despliegues bajo una subruta.
 Cada solicitud se hace con `cache: 'no-cache'`, para que una recarga siempre vuelva a pedir el archivo al servidor en vez de servir una copia local desactualizada.
 Cada solicitud tiene un límite de 10 segundos; si el servidor no responde a tiempo, la aplicación cancela la solicitud y reporta ese archivo como fallido en vez de dejar "Cargando configuración…" indefinidamente.
 Si algún archivo falta, no responde a tiempo, devuelve un código distinto de 2xx, o no contiene JSON válido, la aplicación muestra un estado de error accesible en vez de quedar en blanco.
@@ -159,6 +159,44 @@ El orden de páginas de cada firma (qué página va en cada hoja tras el plegado
 La convención de rotación por posición, en cambio, no ha sido confirmada contra una tabla de imposición estándar de la industria ni contra un pliego doblado físicamente.
 Antes de usar estos esquemas para imprimir, hay que doblar un pliego de prueba con el esquema elegido y comprobar que cada página queda del lado y en la orientación correctos.
 
+### `public/config/encuadernaciones.json`
+
+Contiene los métodos de encuadernación disponibles: sus límites de páginas, su aporte al lomo y, cuando corresponde, su corrimiento por hoja.
+
+```json
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "bindings": [
+    {
+      "id": "grapa",
+      "name": "Grapa (caballete)",
+      "pageMultiple": 4,
+      "minPages": 8,
+      "maxPages": 64,
+      "spineAllowance_mm": 0,
+      "nests": true,
+      "requiresSignatureMultiple": false
+    }
+  ]
+}
+```
+
+- `source`: texto no vacío que describe el origen de estos datos.
+  La aplicación lo muestra tal cual, junto al selector de encuadernación, como "Fuente: `<source>` (config/encuadernaciones.json)".
+- `bindings`: arreglo no vacío de métodos de encuadernación.
+- `id`: identificador único del método, usado como referencia desde `formatos.json` (`defaults.bindingId`) y desde el store.
+- `name`: nombre visible en el selector de encuadernación.
+- `pageMultiple`: múltiplo de páginas que exige el método, entero positivo y par, porque un pliego siempre aporta dos páginas.
+  El número de páginas del libro debe ser múltiplo de este valor para ese método.
+- `minPages` y `maxPages`: límites de páginas que admite el método, enteros positivos y múltiplos de `pageMultiple`, con `minPages` menor o igual que `maxPages`.
+  Los métodos hotmelt y PUR de ejemplo aceptan cualquier múltiplo de 2, pero los esquemas de plegado incluidos en el repositorio solo producen ciertos totales de página sin dejar páginas en blanco; no todo número de páginas aceptado por el método calza exactamente con una firma completa.
+- `spineAllowance_mm`: aporte del método al lomo final, en milímetros, número finito no negativo, que se suma al lomo del papel interior.
+  Los métodos que cosen o pegan el lomo (por ejemplo hotmelt, PUR o cosido a hilo) declaran un valor mayor que cero aquí.
+- `nests`: booleano que indica si las hojas plegadas del método se anidan una dentro de otra, como ocurre en la grapa (caballete).
+  Cuando es `true`, el motor calcula el corrimiento (creep o shingling) como un calibre de papel por cada hoja anidada entre esa hoja y el centro del cuadernillo, usando el calibre del gramaje seleccionado en el panel de sustrato; los métodos que apilan las firmas en vez de anidarlas, como los que pegan o cosen el lomo, declaran `false` aquí porque no tienen corrimiento que compensar.
+- `requiresSignatureMultiple`: booleano que indica si el método, además del múltiplo de `pageMultiple`, exige que el número de páginas sea múltiplo del tamaño de la firma.
+  Esta regla se aplica contra el esquema de plegado realmente seleccionado en cada momento, no contra un tamaño de firma fijo: si todavía no hay un esquema seleccionado, la regla simplemente no se evalúa.
+
 ### `public/config/formatos.json`
 
 Contiene las proporciones de página disponibles y los valores iniciales con los que arranca la calculadora.
@@ -176,7 +214,8 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
     "proportionId": "2:3",
     "bleed_mm": 3,
     "totalPages": 32,
-    "pressId": "prensa_70x100"
+    "pressId": "prensa_70x100",
+    "bindingId": "grapa"
   }
 }
 ```
@@ -198,22 +237,23 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
 - `defaults.totalPages`: número inicial de páginas del libro, entero positivo.
 - `defaults.pressId`: id de una prensa existente en `maquinas.json`, usada para la imposición por firmas.
   No existe un esquema de plegado por defecto: la aplicación elige automáticamente, al arrancar, el esquema disponible que menos papel desperdicia para la prensa y el pliego iniciales.
+- `defaults.bindingId`: id de un método de encuadernación existente en `encuadernaciones.json`, usado como método inicial en el selector de encuadernación.
 
 El formato (`vertical`, `apaisado`, `cuadrado`), el sistema de unidades y la orientación de rotación manual no vienen de `formatos.json`: quedan en sus valores por defecto del código (`vertical`, métrico, automática) porque no dependen de datos de imprenta.
 
 ## Reglas de validación
 
-Antes de usar los cinco archivos, la aplicación los valida con un validador propio, sin dependencias externas.
+Antes de usar los seis archivos, la aplicación los valida con un validador propio, sin dependencias externas.
 El validador recorre todo el contenido y acumula todos los errores encontrados, en vez de detenerse en el primero.
 Cada error reportado incluye el archivo, la ruta del campo (por ejemplo `substrates[2].options[0].caliper`) y el motivo.
 
 Reglas aplicadas:
 
-- Los arreglos de sustratos, pliegos, prensas, esquemas de plegado, proporciones y opciones de gramaje no pueden estar vacíos.
-- El campo `source` de `sustratos.json`, `pliegos.json`, `maquinas.json` y `esquemas.json` no puede estar vacío.
+- Los arreglos de sustratos, pliegos, prensas, esquemas de plegado, encuadernaciones, proporciones y opciones de gramaje no pueden estar vacíos.
+- El campo `source` de `sustratos.json`, `pliegos.json`, `maquinas.json`, `esquemas.json` y `encuadernaciones.json` no puede estar vacío.
 - Los campos de texto libres (nombre, tipo, descripción) no pueden estar vacíos.
-- Los identificadores y etiquetas (id de sustrato, id de pliego, id de prensa, id de esquema, etiqueta de proporción, y las referencias `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`) no pueden estar vacíos ni tener espacios al inicio o al final.
-- Los id de sustrato, los id de pliego, los id de prensa, los id de esquema y las etiquetas de proporción deben ser únicos dentro de su archivo; un id se considera visto para efectos de duplicado y de referencia en cuanto está bien formado, aunque otro campo de esa misma entrada sea inválido.
+- Los identificadores y etiquetas (id de sustrato, id de pliego, id de prensa, id de esquema, id de encuadernación, etiqueta de proporción, y las referencias `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId`) no pueden estar vacíos ni tener espacios al inicio o al final.
+- Los id de sustrato, los id de pliego, los id de prensa, los id de esquema, los id de encuadernación y las etiquetas de proporción deben ser únicos dentro de su archivo; un id se considera visto para efectos de duplicado y de referencia en cuanto está bien formado, aunque otro campo de esa misma entrada sea inválido.
 - El gramaje debe ser único dentro de cada sustrato, con la misma regla: un gramaje bien formado cuenta para detectar duplicados aunque su calibre sea inválido.
 - Las dimensiones (`width_mm`, `height_mm`, `maxSheetWidth_mm`, `maxSheetHeight_mm`), el gramaje, el calibre, los componentes de `ratio` y `pageWidth_mm` deben ser números finitos mayores que cero.
 - El sangrado (`bleed_mm`) debe ser un número finito mayor o igual que cero.
@@ -223,13 +263,16 @@ Reglas aplicadas:
 - `pagesPerSignature` debe ser un entero seguro mayor que cero, múltiplo de 4 y como máximo 128.
 - `cols` y `rows` deben ser enteros seguros mayores que cero, y su producto debe ser igual a la mitad de `pagesPerSignature`.
 - `sides.front` y `sides.back` deben ser arreglos de exactamente `cols × rows` posiciones cada uno; cada posición debe tener un `page` entero y una `rotation` de `0` o `180`; solo se comprueba que las páginas cubran exactamente `1..pagesPerSignature` una vez que la cantidad de posiciones y cada posición individual ya son válidas, para no acumular un error de cobertura sobre un problema ya reportado.
-- `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId` y `defaults.proportionId` deben referenciar un id o etiqueta existente en su catálogo correspondiente, y `defaults.grammage` debe existir entre las opciones del sustrato referenciado; una entrada inválida por otro motivo no hace que su id o gramaje, si están bien formados, se reporten como inexistentes.
+- `pageMultiple`, `minPages` y `maxPages` deben ser enteros seguros mayores que cero; `pageMultiple` debe además ser par; `minPages` y `maxPages` deben ser múltiplos de `pageMultiple`, y `minPages` debe ser menor o igual que `maxPages`.
+- `spineAllowance_mm` debe ser un número finito mayor o igual que cero, y `nests` debe ser un valor booleano.
+- `requiresSignatureMultiple` debe ser un valor booleano.
+- `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId` y `defaults.bindingId` deben referenciar un id o etiqueta existente en su catálogo correspondiente, y `defaults.grammage` debe existir entre las opciones del sustrato referenciado; una entrada inválida por otro motivo no hace que su id o gramaje, si están bien formados, se reporten como inexistentes.
 - `defaults.proportionId` debe estar además entre las tres primeras proporciones de `proportions`, para que siempre haya un botón visible que la seleccione.
 
 Si algún archivo falla al cargarse (fallo de red, tiempo de espera agotado, código distinto de 2xx, HTML en vez de JSON, o JSON inválido) o si la validación encuentra errores, la aplicación muestra un bloque con `role="alert"` que lista cada problema, en vez de quedar en blanco o mostrar datos parciales.
 
 ## Editar la configuración después de compilar
 
-Los tres archivos se copian tal cual a `dist/config/` al ejecutar `npm run build`, porque viven en `public/`.
+Los seis archivos se copian tal cual a `dist/config/` al ejecutar `npm run build`, porque viven en `public/`.
 Para cambiar un dato (por ejemplo, el calibre de un sustrato) sin recompilar, basta con editar el archivo correspondiente dentro de `dist/config/` y recargar el navegador: la aplicación vuelve a leerlo en cada carga de página, no lo empaqueta en el JavaScript compilado.
 Esto es lo que permite, en `npm run preview`, cambiar `dist/config/sustratos.json` y ver el lomo recalculado sin volver a construir la aplicación.

@@ -321,6 +321,58 @@ describe('Honest and recoverable UI', () => {
   });
 });
 
+describe('Binding selector', () => {
+  it('renders the four shipped methods and switching changes the displayed rules', () => {
+    render(<SpineCalculator />);
+    const select = screen.getByLabelText('Encuadernación') as HTMLSelectElement;
+
+    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
+      'cosido', 'grapa', 'hotmelt', 'pur',
+    ]);
+    expect(select.value).toBe('grapa');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('0');
+
+    fireEvent.change(select, { target: { value: 'hotmelt' } });
+
+    expect(useBookStore.getState().bindingId).toBe('hotmelt');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('2');
+  });
+
+  it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
+    useBookStore.getState().setTotalPages(33); // grapa requires a multiple of 4
+    render(<SpineCalculator />);
+
+    const message = screen.getByRole('status');
+    expect(message.textContent).toContain('32');
+    expect(message.textContent).toContain('36');
+  });
+
+  it('renders the spine split into interior paper, binding allowance, and total', () => {
+    render(<SpineCalculator />);
+
+    // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
+    expect(screen.getByText('Lomo del papel interior (mm)').previousSibling?.textContent).toBe('1.92');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('0');
+    expect(screen.getByText('Grosor del papel en el pliegue (mm)').previousSibling?.textContent).toBe('1.92');
+  });
+
+  it('shows the creep block for grapa and hides it for a method that declares no creep', () => {
+    render(<SpineCalculator />);
+
+    expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('8 pliegos anidados');
+    expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('0.96 mm');
+
+    fireEvent.change(screen.getByLabelText('Encuadernación'), { target: { value: 'hotmelt' } });
+
+    expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
+  });
+
+  it('shows the config source note for the binding catalog', () => {
+    render(<SpineCalculator />);
+    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/encuadernaciones.json');
+  });
+});
+
 describe('Signature imposition preview', () => {
   it('renders the page numbers of the selected side', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');

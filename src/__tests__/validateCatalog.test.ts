@@ -82,6 +82,24 @@ function validEsquemas() {
   };
 }
 
+function validEncuadernaciones() {
+  return {
+    source: 'Datos de prueba.',
+    bindings: [
+      {
+        id: 'grapa',
+        name: 'Grapa',
+        pageMultiple: 4,
+        minPages: 8,
+        maxPages: 64,
+        spineAllowance_mm: 0,
+        nests: true,
+        requiresSignatureMultiple: false,
+      },
+    ],
+  };
+}
+
 function validFormatos() {
   return {
     proportions: [
@@ -99,6 +117,7 @@ function validFormatos() {
       bleed_mm: 3,
       totalPages: 32,
       pressId: 'prensa1',
+      bindingId: 'grapa',
     },
   };
 }
@@ -109,6 +128,7 @@ function validInput(): CatalogFiles {
     'pliegos.json': validPliegos(),
     'maquinas.json': validMaquinas(),
     'esquemas.json': validEsquemas(),
+    'encuadernaciones.json': validEncuadernaciones(),
     'formatos.json': validFormatos(),
   };
 }
@@ -126,9 +146,12 @@ describe('validateCatalog', () => {
     expect(result.catalog.pressesSource).toBe('Datos de prueba.');
     expect(result.catalog.foldingSchemes).toHaveLength(1);
     expect(result.catalog.foldingSchemesSource).toBe('Datos de prueba.');
+    expect(result.catalog.bindings).toHaveLength(1);
+    expect(result.catalog.bindingsSource).toBe('Datos de prueba.');
     expect(result.catalog.proportions).toHaveLength(4);
     expect(result.catalog.defaults.substrateId).toBe('bond');
     expect(result.catalog.defaults.pressId).toBe('prensa1');
+    expect(result.catalog.defaults.bindingId).toBe('grapa');
   });
 
   it('reports a malformed top-level structure for each file', () => {
@@ -137,6 +160,7 @@ describe('validateCatalog', () => {
       'pliegos.json': [1, 2, 3],
       'maquinas.json': 42,
       'esquemas.json': 'not an object',
+      'encuadernaciones.json': 'not an object',
       'formatos.json': 'not an object',
     });
 
@@ -146,6 +170,7 @@ describe('validateCatalog', () => {
     assertError(result.errors, 'pliegos.json', '');
     assertError(result.errors, 'maquinas.json', '');
     assertError(result.errors, 'esquemas.json', '');
+    assertError(result.errors, 'encuadernaciones.json', '');
     assertError(result.errors, 'formatos.json', '');
   });
 
@@ -391,7 +416,7 @@ describe('validateCatalog', () => {
     expect(result.errors.some(error => error.path === 'defaults.substrateId')).toBe(false);
   });
 
-  it('rejects defaults that reference a nonexistent substrate id, grammage, sheet id, and proportion', () => {
+  it('rejects defaults that reference a nonexistent substrate id, grammage, sheet id, proportion, press id, and binding id', () => {
     const input = validInput();
     input['formatos.json'] = {
       proportions: validFormatos().proportions,
@@ -404,6 +429,7 @@ describe('validateCatalog', () => {
         bleed_mm: 3,
         totalPages: 32,
         pressId: 'missing-press',
+        bindingId: 'missing-binding',
       },
     };
 
@@ -414,6 +440,7 @@ describe('validateCatalog', () => {
     assertError(result.errors, 'formatos.json', 'defaults.sheetSizeId');
     assertError(result.errors, 'formatos.json', 'defaults.proportionId');
     assertError(result.errors, 'formatos.json', 'defaults.pressId');
+    assertError(result.errors, 'formatos.json', 'defaults.bindingId');
   });
 
   it('rejects a default grammage that does not exist for the referenced substrate', () => {
@@ -474,6 +501,7 @@ describe('validateCatalog', () => {
       'pliegos.json': { source: '', sheetSizes: [] },
       'maquinas.json': validMaquinas(),
       'esquemas.json': validEsquemas(),
+      'encuadernaciones.json': validEncuadernaciones(),
       'formatos.json': {
         proportions: [],
         defaults: {
@@ -485,6 +513,7 @@ describe('validateCatalog', () => {
           bleed_mm: -1,
           totalPages: 0,
           pressId: '',
+          bindingId: '',
         },
       },
     });
@@ -497,6 +526,7 @@ describe('validateCatalog', () => {
       .sort();
 
     expect(paths).toEqual([
+      'formatos.json:defaults.bindingId',
       'formatos.json:defaults.bleed_mm',
       'formatos.json:defaults.grammage',
       'formatos.json:defaults.pageWidth_mm',
@@ -557,6 +587,7 @@ describe('validateCatalog', () => {
       'pliegos.json': undefined,
       'maquinas.json': validMaquinas(),
       'esquemas.json': validEsquemas(),
+      'encuadernaciones.json': validEncuadernaciones(),
       'formatos.json': validFormatos(),
     });
 
@@ -893,6 +924,140 @@ describe('validateCatalog', () => {
       if (result.ok) return;
       assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].rotation');
       expect(result.errors.some(error => error.path === 'foldingSchemes[0].sides')).toBe(false);
+    });
+  });
+
+  describe('bindings (encuadernaciones.json)', () => {
+    it('rejects a minPages greater than maxPages', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], minPages: 64, maxPages: 8 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].minPages');
+    });
+
+    it('rejects an odd pageMultiple', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], pageMultiple: 3 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].pageMultiple');
+    });
+
+    it('rejects a minPages that is not a multiple of pageMultiple', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], pageMultiple: 4, minPages: 9 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].minPages');
+    });
+
+    it('rejects a negative spineAllowance_mm', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], spineAllowance_mm: -1 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].spineAllowance_mm');
+    });
+
+    it('rejects a non-boolean requiresSignatureMultiple', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], requiresSignatureMultiple: 'yes' }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].requiresSignatureMultiple');
+    });
+
+    it('rejects a duplicate binding id', () => {
+      const input = validInput();
+      const binding = validEncuadernaciones().bindings[0];
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [binding, { ...binding, name: 'Grapa duplicada' }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[1].id');
+    });
+
+    it('rejects a missing "source" field on encuadernaciones.json', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = { bindings: validEncuadernaciones().bindings };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'source');
+    });
+
+    it('rejects a default bindingId that does not exist', () => {
+      const input = validInput();
+      input['formatos.json'] = {
+        ...validFormatos(),
+        defaults: { ...validFormatos().defaults, bindingId: 'missing-binding' },
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'formatos.json', 'defaults.bindingId');
+    });
+
+    it('rejects a pageMultiple that is not a multiple of 4 for a method whose sheets nest', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        // pageMultiple: 2 is valid on its own (even, and minPages/maxPages
+        // are valid multiples of it), but nests: true requires a multiple of
+        // 4, because nesting folds four pages into each sheet.
+        bindings: [{ ...validEncuadernaciones().bindings[0], nests: true, pageMultiple: 2 }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].pageMultiple');
+    });
+
+    it('does not report a false "no existe" for defaults.bindingId when the referenced binding has an invalid name', () => {
+      const input = validInput();
+      input['encuadernaciones.json'] = {
+        source: 'Datos de prueba.',
+        bindings: [{ ...validEncuadernaciones().bindings[0], name: '' }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'encuadernaciones.json', 'bindings[0].name');
+      expect(result.errors.some(error => error.path === 'defaults.bindingId')).toBe(false);
     });
   });
 

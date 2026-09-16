@@ -68,6 +68,45 @@ export interface FoldingScheme {
   };
 }
 
+// ─── Binding Methods ──────────────────────────────────────────────────────
+
+export interface Binding {
+  id: string;
+  name: string;
+  pageMultiple: number;
+  minPages: number;
+  maxPages: number;
+  spineAllowance_mm: number;
+  nests: boolean;
+  requiresSignatureMultiple: boolean;
+}
+
+// ─── Binding Engine Results ──────────────────────────────────────────────
+
+export type BindingPageCountReason = 'below-min' | 'above-max' | 'not-multiple' | 'not-signature-multiple';
+
+export type BindingPageCountResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: BindingPageCountReason;
+      message: string;
+      nearestBelow: number | null;
+      nearestAbove: number | null;
+    };
+
+export interface BindingSpineResult {
+  interior_mm: number;
+  allowance_mm: number;
+  total_mm: number;
+}
+
+export interface CreepCompensationResult {
+  nestedSheets: number;
+  maxShift_mm: number;
+  innermostShift_mm: number;
+}
+
 // ─── Runtime Catalog Configuration ───────────────────────────────────────
 
 export interface CatalogDefaults {
@@ -79,6 +118,7 @@ export interface CatalogDefaults {
   bleed_mm: number;
   totalPages: number;
   pressId: string;
+  bindingId: string;
 }
 
 export interface Catalog {
@@ -90,6 +130,8 @@ export interface Catalog {
   pressesSource: string;
   foldingSchemes: FoldingScheme[];
   foldingSchemesSource: string;
+  bindings: Binding[];
+  bindingsSource: string;
   proportions: Proportion[];
   defaults: CatalogDefaults;
 }
@@ -214,6 +256,9 @@ export interface BookConfig {
 
   // Spine & Weight
   totalPages: number;
+
+  // Binding
+  bindingId: string;
 }
 
 export interface BookStore extends BookConfig {
@@ -227,6 +272,10 @@ export interface BookStore extends BookConfig {
   signatureError: string | null;
   spineResult: SpineResult | null;
   spineError: string | null;
+  bindingPageCount: BindingPageCountResult | null;
+  bindingSpine: BindingSpineResult | null;
+  bindingCreep: CreepCompensationResult | null;
+  bindingError: string | null;
   customGrammageError: string | null;
 
   // Actions
@@ -243,6 +292,7 @@ export interface BookStore extends BookConfig {
   setPress: (pressId: string) => void;
   setFoldingScheme: (foldingSchemeId: string | null) => void;
   setTotalPages: (pages: number) => void;
+  setBinding: (bindingId: string) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;
   removeCustomSheetSize: (id: string) => void;
   addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => boolean;

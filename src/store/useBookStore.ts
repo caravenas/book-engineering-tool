@@ -16,6 +16,7 @@ import type {
 import { calculateImposition } from '../engine/imposition';
 import { calculateSpineAndWeight } from '../engine/spine';
 import { planSignatures } from '../engine/signatures';
+import { creepCompensation, spineWithBinding, validatePageCount } from '../engine/binding';
 
 /**
  * Get all sheet sizes (catalog + custom).
@@ -74,7 +75,10 @@ function getErrorMessage(error: unknown): string {
 
 type CalculationResults = Pick<
   BookStore,
-  'impositionResult' | 'impositionError' | 'signaturePlan' | 'signatureError' | 'spineResult' | 'spineError'
+  | 'impositionResult' | 'impositionError'
+  | 'signaturePlan' | 'signatureError'
+  | 'spineResult' | 'spineError'
+  | 'bindingPageCount' | 'bindingSpine' | 'bindingCreep' | 'bindingError'
 >;
 
 /**
@@ -140,6 +144,74 @@ function calculateSignaturePlan(
       signatureError: `No se pudo calcular la imposición por firmas: ${getErrorMessage(error)}. Corrige la prensa, el pliego, el sangrado o las páginas.`,
     };
   }
+}
+
+type BindingResults = Pick<
+  CalculationResults,
+  'bindingPageCount' | 'bindingSpine' | 'bindingCreep' | 'bindingError'
+>;
+
+/**
+ * Evaluate the selected binding method against the freshly computed interior
+ * spine and signature plan of this same calculation pass, never against
+ * stale previous results.
+ *
+ * `validatePageCount` returning `{ ok: false, ... }` for a page count that
+ * doesn't fit the method is a normal, displayable result, not an exception.
+ * The three engine calls are wrapped independently, not in one shared
+ * try/catch: a nesting method's page count that isn't a multiple of 4 makes
+ * `creepCompensation` throw even though `validatePageCount` already reports
+ * that very problem as a normal `not-multiple` result, and a shared catch
+ * would wipe out that already-valid result and mislabel a displayable
+ * mismatch as an error. Creep failures are therefore absorbed as "nothing to
+ * show" (`null`) rather than surfaced in `bindingError`: either the page
+ * count mismatch is already explained by `bindingPageCount`, or the caliper
+ * is unavailable because the interior spine itself failed, which the spine
+ * branch below already reports.
+ */
+function calculateBindingResults(
+  state: BookConfig,
+  catalog: Catalog,
+  spineResult: SpineResult | null,
+  pagesPerSignature: number | null
+): BindingResults {
+  const binding = catalog.bindings.find(b => b.id === state.bindingId);
+  if (!binding) {
+    return {
+      bindingPageCount: null,
+      bindingSpine: null,
+      bindingCreep: null,
+      bindingError: `No se pudo calcular la encuadernación: la encuadernación "${state.bindingId}" no existe en la configuración.`,
+    };
+  }
+
+  let bindingPageCount: BindingResults['bindingPageCount'] = null;
+  let bindingError: string | null = null;
+  try {
+    bindingPageCount = validatePageCount(binding, state.totalPages, pagesPerSignature);
+  } catch (error) {
+    bindingError = `No se pudo validar el número de páginas para la encuadernación: ${getErrorMessage(error)}.`;
+  }
+
+  let bindingSpine: BindingResults['bindingSpine'] = null;
+  try {
+    if (!spineResult) {
+      throw new RangeError('No hay un lomo de papel interior calculado para sumarle la encuadernación');
+    }
+    bindingSpine = spineWithBinding(spineResult.thickness_mm, binding);
+  } catch (error) {
+    bindingError = bindingError ?? `No se pudo calcular el lomo con encuadernación: ${getErrorMessage(error)}.`;
+  }
+
+  let bindingCreep: BindingResults['bindingCreep'] = null;
+  try {
+    const caliper = getCaliper(catalog, state.substrateId, state.selectedGrammage, state.customGrammages);
+    bindingCreep = creepCompensation(binding, state.totalPages, caliper);
+  } catch {
+    bindingCreep = null;
+  }
+
+  return { bindingPageCount, bindingSpine, bindingCreep, bindingError };
 }
 
 function calculateResults(state: BookStore, catalog: Catalog): CalculationResults {
@@ -208,7 +280,20 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
 
   const { signaturePlan, signatureError } = calculateSignaturePlan(state, catalog, state.signaturePlan);
 
-  return { impositionResult, impositionError, signaturePlan, signatureError, spineResult, spineError };
+  const pagesPerSignature = signaturePlan?.selected?.scheme.pagesPerSignature ?? null;
+  const { bindingPageCount, bindingSpine, bindingCreep, bindingError } = calculateBindingResults(
+    state,
+    catalog,
+    spineResult,
+    pagesPerSignature
+  );
+
+  return {
+    impositionResult, impositionError,
+    signaturePlan, signatureError,
+    spineResult, spineError,
+    bindingPageCount, bindingSpine, bindingCreep, bindingError,
+  };
 }
 
 function withUpdatedCalculations(
@@ -278,6 +363,9 @@ export const useBookStore = create<BookStore>((set, get) => ({
   // Spine
   totalPages: 0,
 
+  // Binding
+  bindingId: '',
+
   // Computed
   impositionResult: null,
   impositionError: null,
@@ -285,6 +373,10 @@ export const useBookStore = create<BookStore>((set, get) => ({
   signatureError: null,
   spineResult: null,
   spineError: null,
+  bindingPageCount: null,
+  bindingSpine: null,
+  bindingCreep: null,
+  bindingError: null,
   customGrammageError: null,
 
   // ─── Actions ─────────────────────────────────────────────────────
@@ -311,6 +403,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
         pressId: defaults.pressId,
         foldingSchemeId: null,
         totalPages: defaults.totalPages,
+        bindingId: defaults.bindingId,
       };
 
       return {
@@ -441,6 +534,13 @@ export const useBookStore = create<BookStore>((set, get) => ({
     set(state => {
       if (!state.catalog) return state;
       return withUpdatedCalculations(state, state.catalog, { totalPages });
+    });
+  },
+
+  setBinding: (bindingId) => {
+    set(state => {
+      if (!state.catalog) return state;
+      return withUpdatedCalculations(state, state.catalog, { bindingId });
     });
   },
 

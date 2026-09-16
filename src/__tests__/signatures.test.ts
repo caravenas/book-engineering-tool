@@ -5,6 +5,7 @@ import sustratosRaw from '../../public/config/sustratos.json?raw';
 import pliegosRaw from '../../public/config/pliegos.json?raw';
 import maquinasRaw from '../../public/config/maquinas.json?raw';
 import esquemasRaw from '../../public/config/esquemas.json?raw';
+import encuadernacionesRaw from '../../public/config/encuadernaciones.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { validateCatalog } from '../config/validateCatalog';
 
@@ -422,6 +423,7 @@ describe('planSignatures', () => {
       'pliegos.json': JSON.parse(pliegosRaw),
       'maquinas.json': JSON.parse(maquinasRaw),
       'esquemas.json': JSON.parse(esquemasRaw),
+      'encuadernaciones.json': JSON.parse(encuadernacionesRaw),
       'formatos.json': JSON.parse(formatosRaw),
     });
     expect(result.ok).toBe(true);

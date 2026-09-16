@@ -1,0 +1,45 @@
+{
+  "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "bindings": [
+    {
+      "id": "grapa",
+      "name": "Grapa (caballete)",
+      "pageMultiple": 4,
+      "minPages": 8,
+      "maxPages": 64,
+      "spineAllowance_mm": 0,
+      "nests": true,
+      "requiresSignatureMultiple": false
+    },
+    {
+      "id": "hotmelt",
+      "name": "Hotmelt (adhesivo termofusible)",
+      "pageMultiple": 2,
+      "minPages": 32,
+      "maxPages": 600,
+      "spineAllowance_mm": 2,
+      "nests": false,
+      "requiresSignatureMultiple": false
+    },
+    {
+      "id": "pur",
+      "name": "PUR (adhesivo de poliuretano)",
+      "pageMultiple": 2,
+      "minPages": 32,
+      "maxPages": 800,
+      "spineAllowance_mm": 1.5,
+      "nests": false,
+      "requiresSignatureMultiple": false
+    },
+    {
+      "id": "cosido",
+      "name": "Cosido a hilo",
+      "pageMultiple": 4,
+      "minPages": 32,
+      "maxPages": 1200,
+      "spineAllowance_mm": 3,
+      "nests": false,
+      "requiresSignatureMultiple": true
+    }
+  ]
+}

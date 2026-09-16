@@ -256,6 +256,71 @@ describe('Actions before initialize (signature imposition)', () => {
   });
 });
 
+describe('Binding rules', () => {
+  it('computes the binding results for the shipped defaults', () => {
+    const state = useBookStore.getState();
+
+    expect(state.bindingId).toBe('grapa');
+    expect(state.bindingPageCount).toEqual({ ok: true });
+    expect(state.bindingSpine).toEqual({ interior_mm: 1.92, allowance_mm: 0, total_mm: 1.92 });
+    expect(state.bindingCreep).toEqual({ nestedSheets: 8, maxShift_mm: 0.96, innermostShift_mm: 0 });
+    expect(state.bindingError).toBeNull();
+  });
+
+  it('recomputes on total pages, binding, grammage, and folding scheme changes', () => {
+    useBookStore.getState().setTotalPages(40);
+    let state = useBookStore.getState();
+    expect(state.bindingSpine).toEqual({ interior_mm: 2.4, allowance_mm: 0, total_mm: 2.4 });
+
+    useBookStore.getState().setBinding('hotmelt');
+    state = useBookStore.getState();
+    expect(state.bindingSpine).toEqual({ interior_mm: 2.4, allowance_mm: 2, total_mm: 4.4 });
+    expect(state.bindingCreep).toBeNull(); // hotmelt declares no creep
+
+    useBookStore.getState().setGrammage(200);
+    state = useBookStore.getState();
+    expect(state.bindingSpine).toEqual({ interior_mm: 3.2, allowance_mm: 2, total_mm: 5.2 });
+
+    const beforeScheme = state.bindingPageCount;
+    useBookStore.getState().setFoldingScheme('esquema_16pp');
+    expect(useBookStore.getState().bindingPageCount).not.toBe(beforeScheme);
+  });
+
+  it('produces a displayable invalid page count that keeps the binding selection and does not set bindingError', () => {
+    useBookStore.getState().setTotalPages(33); // not a multiple of grapa's pageMultiple (4)
+    const state = useBookStore.getState();
+
+    expect(state.bindingId).toBe('grapa');
+    expect(state.bindingPageCount).toMatchObject({ ok: false, reason: 'not-multiple' });
+    expect(state.bindingError).toBeNull();
+    expect(state.bindingSpine).not.toBeNull();
+  });
+
+  it('enforces requiresSignatureMultiple against the actually selected scheme, not a fixed size', () => {
+    useBookStore.getState().setBinding('cosido');
+    useBookStore.getState().setTotalPages(40);
+    const state = useBookStore.getState();
+
+    expect(state.signaturePlan?.selected?.scheme.pagesPerSignature).toBe(16);
+    expect(state.bindingPageCount).toMatchObject({
+      ok: false,
+      reason: 'not-signature-multiple',
+      nearestBelow: 32,
+      nearestAbove: 48,
+    });
+  });
+
+  it('setBinding is a no-op while the catalog is null', () => {
+    useBookStore.setState(initialState);
+    const before = useBookStore.getState();
+    expect(before.catalog).toBeNull();
+
+    expect(() => before.setBinding('grapa')).not.toThrow();
+
+    expect(useBookStore.getState()).toBe(before);
+  });
+});
+
 describe('Custom grammages', () => {
   it('rejects built-in and custom duplicates in the same substrate', () => {
     expect(useBookStore.getState().addCustomGrammage('couche_matte', 150, 130)).toBe(false);
