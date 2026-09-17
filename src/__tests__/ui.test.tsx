@@ -567,3 +567,42 @@ describe('Cover panel', () => {
     expect(screen.getByText(/config\/tapas\.json/)).toBeTruthy();
   });
 });
+
+// jsdom never lays out the page, so it cannot honestly confirm either the
+// real 44x44 tap-target size or that a keyboard focus ring is visually
+// perceptible: `getBoundingClientRect` returns zeros and no styles are
+// actually painted. What follows only checks that the two delete buttons
+// carry the class that the CSS hooks the enlarged tap area to; the 44x44
+// size itself and the focus ring's perceptibility are verified in a real
+// browser via `npm run preview`.
+describe('Focus visibility and delete-button tap targets (UX-3)', () => {
+  it('renders the custom-grammage remove button with the class whose ::before overlay grows its tap target', () => {
+    useBookStore.setState({
+      substrateId: 'couche_matte',
+      selectedGrammage: 160,
+      customGrammages: [{ substrateId: 'couche_matte', grammage: 160, caliper: 130 }],
+    });
+
+    render(<SubstrateSelector />);
+
+    const removeButton = screen.getByRole('button', {
+      name: 'Eliminar gramaje personalizado de 160 gramos por metro cuadrado',
+    });
+
+    expect(removeButton.className).toContain('remove-grammage-button');
+  });
+
+  it('renders the custom-sheet remove button with the class whose ::before overlay grows its tap target', () => {
+    useBookStore.getState().recalculate();
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
+    fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '500' } });
+    fireEvent.change(screen.getByLabelText('Alto'), { target: { value: '700' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
+
+    const removeButton = screen.getByRole('button', { name: 'Eliminar pliego personalizado' });
+
+    expect(removeButton.className).toContain('remove-sheet-button');
+  });
+});

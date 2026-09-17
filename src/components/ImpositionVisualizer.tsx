@@ -394,6 +394,7 @@ export function ImpositionVisualizer() {
               {customSheetSizes.some(sheet => sheet.id === sheetSizeId) && (
                 <button
                   type="button"
+                  className="remove-sheet-button"
                   onClick={() => removeCustomSheetSize(sheetSizeId)}
                   title="Eliminar pliego personalizado"
                   aria-label="Eliminar pliego personalizado"

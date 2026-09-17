@@ -348,7 +348,15 @@ body::before {
 
 .form-input:focus {
   background: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 1px var(--color-text-primary);
+}
+
+/* Keyboard focus ring, kept separate from the already-visible border so it
+   reads as its own signal instead of blending into it; :focus-visible keeps
+   it off on mouse clicks. */
+.form-input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-border-active);
+  outline-offset: 2px;
 }
 
 .form-input::placeholder {
@@ -856,6 +864,7 @@ select.form-input {
 }
 
 .remove-grammage-button {
+  position: relative;
   width: 32px;
   height: 32px;
   border: 1px solid rgba(244, 63, 94, 0.3);
@@ -864,6 +873,34 @@ select.form-input {
   color: var(--color-danger-foreground);
   cursor: pointer;
   line-height: 1;
+}
+
+/* Enlarges the tap target to 44x44 without resizing the painted circle: an
+   invisible pseudo-element overlay, biased away from the adjacent grammage
+   toggle button (only 4px apart) so the two hit areas never overlap. */
+.remove-grammage-button::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  right: -12px;
+}
+
+.remove-sheet-button {
+  position: relative;
+}
+
+/* Same technique as .remove-grammage-button: an invisible overlay grows the
+   tap target to 44x44 without changing the painted button, which already
+   sits inside an 8px flex gap next to the sheet-size select. */
+.remove-sheet-button::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: -2px;
+  right: -2px;
 }
 
 /* ─── Responsive Fine-tuning ────────────────────────────────────────── */
