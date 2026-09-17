@@ -214,5 +214,8 @@ El incremento 5 es el siguiente y todavía no está planificado en detalle.
   Hasta confirmarlo, el valor mostrado debe leerse como una referencia preliminar más.
 - Chris decidió el 2026-09-15 que la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado, además de la geometría y los conteos.
 - Quedan pendientes, sin bloquear: tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
+- 2026-09-17, pendiente de verificar en un navegador: el área táctil ampliada del botón de eliminar gramaje personalizado se extiende 12 px hacia la derecha, hacia su vecino, el botón de añadir.
+  Si la invade, un clic dirigido a añadir borraría un gramaje.
+  No se pudo medir porque exige un gramaje personalizado en pantalla y el flujo de alta no se completó; el equivalente para pliegos usa 2 px y no corre ese riesgo.
 - Los esquemas de plegado entregados son ejemplos construidos a mano: su emparejamiento de páginas está verificado, pero su convención de plegado debe confirmarse contra un pliego doblado real.
 - El motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego, lo que desaprovecha pliegos grandes con páginas pequeñas; es candidato a un incremento posterior.
