@@ -194,7 +194,7 @@ body::before {
 
 .app-grid {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0;
   align-items: stretch;
   max-width: 1440px;
@@ -263,13 +263,9 @@ body::before {
   border-top: 1px solid var(--color-border);
 }
 
-@media (max-width: 1200px) {
-  .app-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 768px) {
+/* Single layout breakpoint: 1024px sits inside the 960-1200px window
+   UX-REVIEW.md 2.2 allows, replacing the three values used here before. */
+@media (max-width: 1024px) {
   .app-grid {
     grid-template-columns: 1fr;
   }
@@ -872,7 +868,7 @@ select.form-input {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .stat-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -890,11 +886,5 @@ select.form-input {
 
   .spine-cover {
     width: 45px;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-  .app-grid {
-    grid-template-columns: 1fr 1fr;
   }
 }

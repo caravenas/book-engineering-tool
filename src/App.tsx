@@ -6,6 +6,7 @@ import { CanvasDesigner } from './components/CanvasDesigner';
 import { SubstrateSelector } from './components/SubstrateSelector';
 import { ImpositionVisualizer } from './components/ImpositionVisualizer';
 import { SpineCalculator } from './components/SpineCalculator';
+import { BindingPanel } from './components/BindingPanel';
 import { CoverPanel } from './components/CoverPanel';
 
 type LoadState =
@@ -93,13 +94,16 @@ export default function App() {
                 <CanvasDesigner />
               </div>
               <div className="app-cell cell-tr">
-                <ImpositionVisualizer />
-              </div>
-              <div className="app-cell cell-bl">
                 <SubstrateSelector />
               </div>
-              <div className="app-cell cell-br">
+              <div className="app-cell cell-bl">
                 <SpineCalculator />
+              </div>
+              <div className="app-cell cell-br">
+                <BindingPanel />
+              </div>
+              <div className="app-cell cell-bottom">
+                <ImpositionVisualizer />
               </div>
               <div className="app-cell cell-bottom">
                 <CoverPanel />

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CanvasDesigner } from '../components/CanvasDesigner';
 import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { SpineCalculator } from '../components/SpineCalculator';
+import { BindingPanel } from '../components/BindingPanel';
 import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CoverPanel } from '../components/CoverPanel';
 import { useBookStore } from '../store/useBookStore';
@@ -14,6 +15,33 @@ const initialState = useBookStore.getState();
 afterEach(() => {
   cleanup();
   useBookStore.setState(initialState);
+});
+
+describe('Panel layout (UX-1)', () => {
+  it('renders the panel titles in the order laid out in App.tsx', () => {
+    const { container } = render(
+      <>
+        <CanvasDesigner />
+        <SubstrateSelector />
+        <SpineCalculator />
+        <BindingPanel />
+        <ImpositionVisualizer />
+        <CoverPanel />
+      </>
+    );
+
+    const titles = Array.from(container.querySelectorAll('.panel-title'))
+      .map(title => title.textContent?.trim());
+
+    expect(titles).toEqual([
+      'Canvas Designer',
+      'Sustrato (Papel)',
+      'Lomo y peso del interior',
+      'Encuadernación',
+      'Imposición por firmas',
+      'Tapa',
+    ]);
+  });
 });
 
 describe('Honest and recoverable UI', () => {
@@ -324,7 +352,7 @@ describe('Honest and recoverable UI', () => {
 
 describe('Binding selector', () => {
   it('renders the four shipped methods and switching changes the displayed rules', () => {
-    render(<SpineCalculator />);
+    render(<BindingPanel />);
     const select = screen.getByLabelText('Encuadernación') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
@@ -341,7 +369,7 @@ describe('Binding selector', () => {
 
   it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
     useBookStore.getState().setTotalPages(33); // grapa requires a multiple of 4
-    render(<SpineCalculator />);
+    render(<BindingPanel />);
 
     const message = screen.getByRole('status');
     expect(message.textContent).toContain('32');
@@ -349,7 +377,7 @@ describe('Binding selector', () => {
   });
 
   it('renders the spine split into interior paper, binding allowance, and total', () => {
-    render(<SpineCalculator />);
+    render(<BindingPanel />);
 
     // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
     expect(screen.getByText('Lomo del papel interior (mm)').previousSibling?.textContent).toBe('1.92');
@@ -358,7 +386,7 @@ describe('Binding selector', () => {
   });
 
   it('shows the creep block for grapa and hides it for a method that declares no creep', () => {
-    render(<SpineCalculator />);
+    render(<BindingPanel />);
 
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('8 pliegos anidados');
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('0.96 mm');
@@ -369,7 +397,7 @@ describe('Binding selector', () => {
   });
 
   it('shows the config source note for the binding catalog', () => {
-    render(<SpineCalculator />);
+    render(<BindingPanel />);
     expect(screen.getByText(/^Fuente: /).textContent).toContain('config/encuadernaciones.json');
   });
 });
