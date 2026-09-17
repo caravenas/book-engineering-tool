@@ -49,17 +49,19 @@ El token `--color-border-active` está definido y no se usa en ninguna regla, as
 Los paneles se agrupan por forma de contenido, no por un orden narrativo inventado.
 **Diseño de la página** reúne Formato de página y Sustrato, que son entradas cortas e independientes entre sí, sin diagramas grandes.
 **Producción** reúne Imposición por firmas, Lomo y peso del interior, Encuadernación y Tapa, que dependen de los datos anteriores y añaden diagramas o cuadrículas de estadísticas.
-Esta agrupación conserva el orden que ya existe entre Formato, Imposición y Lomo y peso; el único cambio relativo es mover Sustrato junto a Formato de página.
+Esta agrupación conserva el orden que ya existe entre Formato y Lomo y peso; los cambios relativos son mover Sustrato junto a Formato de página y adelantar Lomo y peso del interior y Encuadernación frente a Imposición por firmas, que junto con Tapa queda al final por llevar los diagramas más grandes y ser los paneles más altos.
 Ese cambio no está respaldado por investigación de usuarios: la justificación es de forma de contenido, no de flujo observado, y es el primer punto a revisar si una prueba con usuarios muestra otra cosa.
 
 ### 2.2 Disposición
 
-Desde unos 1200 píxeles de ancho, una banda de dos columnas para Formato de página y Sustrato, seguida de una pila de ancho completo para Imposición por firmas, Lomo y peso del interior, Encuadernación y Tapa.
-Por debajo de unos 960 píxeles, una sola columna para todo, que es el comportamiento que la hoja de estilos ya implementa.
-Se simplifica a un único punto de quiebre en vez de los tres niveles actuales, para reducir casos de borde sin tocar ningún token visual.
+Por encima de 1024 píxeles de ancho, dos bandas de dos columnas seguidas de una pila de ancho completo.
+La primera banda pone Formato de página junto a Sustrato; la segunda pone Lomo y peso del interior junto a Encuadernación.
+Debajo, a ancho completo, Imposición por firmas y luego Tapa, que son los dos paneles con diagramas grandes y los que más alto miden, así que quedan solos en su propia fila en vez de alargar una columna compartida.
+Desde 1024 píxeles de ancho hacia abajo, una sola columna con el mismo orden de lectura: Formato de página, Sustrato, Lomo y peso del interior, Encuadernación, Imposición por firmas y Tapa.
+Se usa un único punto de quiebre en vez de los tres niveles actuales, para reducir casos de borde sin tocar ningún token visual.
 Opcionalmente, un rótulo de sección reutilizando el estilo de etiqueta ya existente encima de cada grupo, que debe evaluarse contra el principio de no decorar de más antes de construirlo.
 Encuadernación deja de ser una sección sin título dentro del panel de lomo y pasa a ser su propio panel con su propio título.
-Tapa entra como sexto panel al final de Producción, porque depende del lomo final que produce Encuadernación.
+Tapa entra como sexto panel al final, porque depende del lomo final que produce Encuadernación.
 
 ### 2.3 Wireframe estructural
 
@@ -68,12 +70,10 @@ Tapa entra como sexto panel al final de Producción, porque depende del lomo fin
 │ PliegoStack                      [Calculadora|Configuración] │
 ├───────────────────────────┬──────────────────────────────┤
 │ Formato de página          │ Sustrato (papel)              │
+├───────────────────────────┼──────────────────────────────┤
+│ Lomo y peso del interior  │ Encuadernación               │
 ├───────────────────────────┴──────────────────────────────┤
 │ Imposición por firmas                                      │
-├──────────────────────────────────────────────────────────┤
-│ Lomo y peso del interior                                   │
-├──────────────────────────────────────────────────────────┤
-│ Encuadernación                                             │
 ├──────────────────────────────────────────────────────────┤
 │ Tapa blanda y dura (incremento 4)                          │
 └──────────────────────────────────────────────────────────┘
@@ -84,6 +84,14 @@ Tapa entra como sexto panel al final de Producción, porque depende del lomo fin
 Se evaluó mantener la rejilla de dos columnas con la izquierda fija mediante posicionamiento adherente, para comparar el lomo con el formato sin volver a subir.
 Se descarta porque reintroduce el problema de raíz, ya que una columna seguiría acumulando cuatro paneles largos, y porque añade una interacción nueva que puede tapar contenido en pantallas bajas.
 Si más adelante se observa que los usuarios necesitan comparar Formato y Encuadernación sin desplazarse, esta es la primera alternativa a reconsiderar.
+
+### 2.5 Disposición de pila completa descartada
+
+La versión original de esta sección proponía una sola banda de dos columnas, para Formato de página y Sustrato, seguida de una pila de ancho completo con Imposición por firmas, Lomo y peso del interior, Encuadernación y Tapa.
+Esa disposición no llegó a implementarse tal cual porque no cumplía el criterio de aceptación de UX-1 en la §7: en un navegador real, a 1440 por 900 píxeles, el selector de encuadernación quedaba a 2454 píxeles de profundidad, es decir 2,73 pantallas, sobre una página de 3673 píxeles de alto, más lejos que antes de este rediseño.
+Antes de UX-1, en `master`, el mismo selector estaba a 1711 píxeles, 1,90 pantallas, sobre una página de 3026 píxeles; apilar los cuatro paneles de Producción a ancho completo empeoraba el problema en vez de resolverlo, porque solo el panel de Imposición por firmas mide 1063 píxeles de alto, más que el propio viewport.
+La disposición de la §2.2, ya implementada, con dos bandas de dos columnas antes de la pila de ancho completo, deja ese mismo selector a 898 píxeles, 1,00 pantalla, sobre una página de 3263 píxeles, y sí cumple el criterio.
+Chris decidió la corrección el 2026-09-17 al ver esta medición; la disposición de pila completa ya se probó y falló el criterio, así que no debe reintentarse sin resolver antes la altura del panel de Imposición por firmas.
 
 ## 3. Diseño de la personalización
 
