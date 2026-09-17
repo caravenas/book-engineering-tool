@@ -104,7 +104,7 @@ describe('App runtime config loading', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Canvas Designer' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Formato de página' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Sustrato (Papel)' })).toBeTruthy();
     expect((screen.getByLabelText('Tipo de papel') as HTMLSelectElement).value).toBe('couche_matte');
     expect(screen.queryByRole('status')).toBeNull();
@@ -130,7 +130,7 @@ describe('App runtime config loading', () => {
       </StrictMode>
     );
 
-    expect(await screen.findByRole('heading', { name: 'Canvas Designer' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Formato de página' })).toBeTruthy();
     expect(initializeSpy).toHaveBeenCalledTimes(1);
   });
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
+import { ConfigSourceNote } from './ConfigSourceNote';
 
 export function SubstrateSelector() {
   const {
@@ -139,6 +140,11 @@ export function SubstrateSelector() {
             {showCustomForm ? 'Cancelar' : '+'}
           </button>
         </div>
+        {isSelectedGrammageCustom ? (
+          <ConfigSourceNote text="gramaje personalizado" />
+        ) : catalog && (
+          <ConfigSourceNote file="config/sustratos.json" text={catalog.substratesSource} />
+        )}
       </div>
 
       {showCustomForm && (
@@ -215,11 +221,6 @@ export function SubstrateSelector() {
           <div style={{ fontSize: '3.5rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1 }}>
             {currentOption.caliper} <span style={{ fontSize: '2rem' }}>μm</span>
           </div>
-          {isSelectedGrammageCustom ? (
-            <p className="config-source-note">Fuente: gramaje personalizado</p>
-          ) : catalog && (
-            <p className="config-source-note">Fuente: {catalog.substratesSource} (config/sustratos.json)</p>
-          )}
         </div>
       )}
     </div>

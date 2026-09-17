@@ -1,5 +1,6 @@
 import { useBookStore } from '../store/useBookStore';
 import { roundTo } from '../engine/units';
+import { ConfigSourceNote } from './ConfigSourceNote';
 import type { Binding, Cover, HardCoverResult, SoftCoverResult } from '../types';
 
 const SVG_PADDING = 30;
@@ -201,7 +202,7 @@ export function CoverPanel() {
             ))}
         </select>
         {catalog && (
-          <p className="config-source-note">Fuente: {catalog.coversSource} (config/tapas.json)</p>
+          <ConfigSourceNote file="config/tapas.json" text={catalog.coversSource} />
         )}
       </div>
 

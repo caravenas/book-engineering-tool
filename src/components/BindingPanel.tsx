@@ -1,5 +1,6 @@
 import { useBookStore } from '../store/useBookStore';
 import { roundTo } from '../engine/units';
+import { ConfigSourceNote } from './ConfigSourceNote';
 
 function formatRoundedValue(value: number, decimals: number): string {
   const roundedValue = roundTo(value, decimals);
@@ -38,7 +39,7 @@ export function BindingPanel() {
           ))}
         </select>
         {catalog && (
-          <p className="config-source-note">Fuente: {catalog.bindingsSource} (config/encuadernaciones.json)</p>
+          <ConfigSourceNote file="config/encuadernaciones.json" text={catalog.bindingsSource} />
         )}
       </div>
 
@@ -83,8 +84,9 @@ export function BindingPanel() {
 
       {bindingCreep && (
         <p className="calculation-note" style={{ marginTop: 'var(--space-4)' }}>
-          Corrimiento (creep): {bindingCreep.nestedSheets} pliegos anidados, desplazamiento máximo de {formatRoundedValue(bindingCreep.maxShift_mm, 3)} mm en el pliego más externo y 0 mm en el más interno.
-          Ocurre porque los pliegos de este método se anidan unos dentro de otros.
+          Corrimiento (creep): esta encuadernación anida pliegos plegados de 4 páginas, uno dentro de otro; hay {bindingCreep.nestedSheets} pliegos anidados.
+          El pliego más externo se desplaza un máximo de {formatRoundedValue(bindingCreep.maxShift_mm, 3)} mm y el más interno no se desplaza.
+          Este pliego plegado es distinto del pliego de prensa de Imposición por firmas, porque aquí se cuenta cada grupo de 4 páginas ya plegado, sin importar el esquema de plegado elegido arriba.
         </p>
       )}
     </div>

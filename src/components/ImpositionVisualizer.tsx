@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBookStore, getAllSheetSizes } from '../store/useBookStore';
 import { layoutSide } from '../engine/signatures';
 import { roundTo } from '../engine/units';
+import { ConfigSourceNote } from './ConfigSourceNote';
 import type { SheetSize, SignatureOption } from '../types';
 
 const SVG_PADDING = 30;
@@ -242,7 +243,7 @@ export function ImpositionVisualizer() {
             ))}
           </select>
           {catalog && (
-            <p className="config-source-note">Fuente: {catalog.pressesSource} (config/maquinas.json)</p>
+            <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
           )}
         </div>
 
@@ -260,7 +261,7 @@ export function ImpositionVisualizer() {
             ))}
           </select>
           {catalog && (
-            <p className="config-source-note">Fuente: {catalog.foldingSchemesSource} (config/esquemas.json)</p>
+            <ConfigSourceNote file="config/esquemas.json" text={catalog.foldingSchemesSource} />
           )}
         </div>
 
@@ -415,9 +416,9 @@ export function ImpositionVisualizer() {
             </div>
           )}
           {isSelectedSheetCustom ? (
-            <p className="config-source-note">Fuente: pliego personalizado</p>
+            <ConfigSourceNote text="pliego personalizado" />
           ) : catalog && (
-            <p className="config-source-note">Fuente: {catalog.sheetSizesSource} (config/pliegos.json)</p>
+            <ConfigSourceNote file="config/pliegos.json" text={catalog.sheetSizesSource} />
           )}
         </div>
       </div>
@@ -452,7 +453,7 @@ export function ImpositionVisualizer() {
           </div>
           <div style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.sheetsPerCopy}</div>
-            <div className="stat-label">Pliegos por ejemplar</div>
+            <div className="stat-label">Pliegos de prensa por ejemplar</div>
           </div>
           <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)', borderTop: '1px solid var(--color-border)' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{roundTo(selected.wastePercentage, 1)}%</div>

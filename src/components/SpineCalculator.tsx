@@ -124,9 +124,9 @@ export function SpineCalculator() {
                   </div>
                   <div className="stat-label">Peso estimado del papel interior</div>
                 </div>
-                <div className="stat-card" role="group" aria-label="Hojas" style={{ borderRadius: '12px', padding: '10px 4px' }}>
+                <div className="stat-card" role="group" aria-label="Hojas de papel (interior)" style={{ borderRadius: '12px', padding: '10px 4px' }}>
                   <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>{sheetCount}</div>
-                  <div className="stat-label">Hojas</div>
+                  <div className="stat-label">Hojas de papel (interior)</div>
                 </div>
                 <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
                   <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>{selectedGrammage} g/m²</div>

@@ -34,7 +34,7 @@ describe('Panel layout (UX-1)', () => {
       .map(title => title.textContent?.trim());
 
     expect(titles).toEqual([
-      'Canvas Designer',
+      'Formato de página',
       'Sustrato (Papel)',
       'Lomo y peso del interior',
       'Encuadernación',
@@ -317,7 +317,7 @@ describe('Honest and recoverable UI', () => {
     expect(pagesInput.getAttribute('aria-invalid')).toBe('false');
     expect(screen.queryByRole('alert')).toBeNull();
 
-    const sheetsCard = screen.getByRole('group', { name: 'Hojas' });
+    const sheetsCard = screen.getByRole('group', { name: 'Hojas de papel (interior)' });
     expect(within(sheetsCard).getByText('17')).toBeTruthy();
     const formulaCopy = screen.getByText((_, element) => (
       element?.tagName === 'P'
@@ -329,24 +329,30 @@ describe('Honest and recoverable UI', () => {
 
   it('shows the config source for a shipped grammage and the custom-source note for a custom one', () => {
     const substrateSelector = render(<SubstrateSelector />);
-    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/sustratos.json');
+    expect(screen.getByText('config/sustratos.json')).toBeTruthy();
+    expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
+    expect(screen.queryByText(/^Fuente: /)).toBeNull();
     substrateSelector.unmount();
 
     useBookStore.getState().addCustomGrammage('couche_matte', 999, 100);
     render(<SubstrateSelector />);
-    expect(screen.getByText('Fuente: gramaje personalizado')).toBeTruthy();
+    expect(screen.getByText('gramaje personalizado')).toBeTruthy();
     expect(screen.queryByText(/config\/sustratos\.json/)).toBeNull();
+    expect(screen.queryByText(/^Fuente: /)).toBeNull();
   });
 
   it('shows the config source for a shipped sheet size and the custom-source note for a custom one', () => {
     const impositionVisualizer = render(<ImpositionVisualizer />);
-    expect(screen.getByText(/config\/pliegos\.json/)).toBeTruthy();
+    expect(screen.getByText('config/pliegos.json')).toBeTruthy();
+    expect(impositionVisualizer.container.textContent).toContain('Valores de ejemplo; reemplazar por datos reales de la imprenta.');
+    expect(screen.queryByText(/^Fuente: /)).toBeNull();
     impositionVisualizer.unmount();
 
     useBookStore.getState().addCustomSheetSize('Pliego personalizado', 500, 700);
     render(<ImpositionVisualizer />);
-    expect(screen.getByText('Fuente: pliego personalizado')).toBeTruthy();
+    expect(screen.getByText('pliego personalizado')).toBeTruthy();
     expect(screen.queryByText(/config\/pliegos\.json/)).toBeNull();
+    expect(screen.queryByText(/^Fuente: /)).toBeNull();
   });
 });
 
@@ -398,7 +404,9 @@ describe('Binding selector', () => {
 
   it('shows the config source note for the binding catalog', () => {
     render(<BindingPanel />);
-    expect(screen.getByText(/^Fuente: /).textContent).toContain('config/encuadernaciones.json');
+    expect(screen.getByText('config/encuadernaciones.json')).toBeTruthy();
+    expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
+    expect(screen.queryByText(/^Fuente: /)).toBeNull();
   });
 });
 
@@ -452,6 +460,13 @@ describe('Signature imposition preview', () => {
 
     expect(screen.getByText(/config\/maquinas\.json/)).toBeTruthy();
     expect(screen.getByText(/config\/esquemas\.json/)).toBeTruthy();
+  });
+
+  it('names the press-sheet stat apart from the folded, per-4-page sheet used for creep', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+
+    expect(screen.getByText('Pliegos de prensa por ejemplar')).toBeTruthy();
   });
 });
 
