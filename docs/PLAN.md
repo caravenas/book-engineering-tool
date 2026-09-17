@@ -11,13 +11,14 @@
 
 ## Estado actual
 
-- Los incrementos 1, 2 y 3 están cerrados; el siguiente es el incremento 4, tapa blanda y dura.
-- El 2026-09-16 se verificó con Node v22.22.2, sobre `86e4f57`, que `npm test` (213 tests) y `npm run build` terminan con código 0.
-- Todo el catálogo y los valores por defecto se leen en runtime desde seis archivos de `public/config/`, validados al iniciar y documentados en `docs/CONFIG.md`.
+- Los incrementos 1, 2, 3 y 4 están cerrados; el siguiente es el incremento 5, tirada, merma y costo.
+- El 2026-09-17 se verificó con Node v22.22.2, sobre `f8f3473`, que `npm test` (273 tests) y `npm run build` terminan con código 0, sin dependencias nuevas.
+- Todo el catálogo y los valores por defecto se leen en runtime desde siete archivos de `public/config/`, validados al iniciar y documentados en `docs/CONFIG.md`.
 - La imposición por firmas vive en `src/engine/signatures.ts`: respeta pinza, márgenes y calles de la máquina, numera las páginas según el esquema de plegado y calcula firmas, blancos y pliegos por ejemplar.
 - La encuadernación vive en `src/engine/binding.ts`: restringe el número de páginas por método, suma el aporte del método al lomo del papel interior y calcula el corrimiento solo para los métodos con `nests: true`.
-- El peso cubre solo el papel interior.
-- No existen cálculo de tapa, tirada, merma ni costos.
+- La tapa vive en `src/engine/cover.ts`: para tapa blanda calcula el ancho y alto del pliego con lomo, sangrado y solapas opcionales, y para tapa dura las medidas de los cartones laterales, el cartón de lomo y el forro con sus canales y dobleces.
+- El peso cubre el papel interior y el papel de tapa, mostrados por separado; en tapa dura se devuelve la superficie de cartón pero no su peso, porque el catálogo no declara su densidad.
+- Siguen sin existir cálculo de tirada, merma ni costos.
 
 ## Principios comunes a todos los incrementos
 
@@ -37,8 +38,8 @@
 5. Tirada, merma y costo.
 
 El orden sigue las dependencias: las firmas necesitan la configuración de máquinas, la encuadernación restringe las firmas y el lomo, la tapa necesita el lomo final y la tirada necesita pliegos por ejemplar, tapa y encuadernación.
-El incremento 1 está cerrado en `3f8279c`, el incremento 2 en `2f1b7f4` y el incremento 3 en `8fefcdd`.
-El incremento 4 está planificado en detalle y es el siguiente; el 5 se detalla cuando sea el siguiente.
+El incremento 1 está cerrado en `3f8279c`, el incremento 2 en `2f1b7f4`, el incremento 3 en `8fefcdd` y el incremento 4 en `f8f3473`.
+El incremento 5 es el siguiente y todavía no está planificado en detalle.
 
 ## Incremento 1 — Configuración en runtime
 
@@ -203,9 +204,11 @@ El incremento 4 está planificado en detalle y es el siguiente; el 5 se detalla 
 
 ## Decisiones pendientes
 
-- Ninguna bloquea el incremento 4.
+- 2026-09-17, pendiente de confirmar con una imprenta real: el peso del cartón no se calcula porque el catálogo no declara su densidad; queda pendiente añadirla cuando se necesite.
+- 2026-09-17, pendiente de confirmar con una imprenta real: las tolerancias de encajado de la tapa dura dependen de cada taller y no están modeladas.
+- 2026-09-17, pendiente de confirmar con una imprenta real: la convención de dónde cae el sangrado en una tapa con solapas, en el borde exterior de la solapa porque la unión tapa-solapa es hendido y no corte, debe confirmarse contra un taller real.
 - Chris decidió el 2026-09-16 no añadir un `spineType` a la encuadernación: el lomo plano se deriva de `nests`, que ya existe.
-- 2026-09-16: la revisión de UX en `docs/UX-REVIEW.md` está aprobada, y se ejecuta después del incremento 4, empezando por sus tres primeros incrementos y dejando la capa de personalización al final.
+- 2026-09-16: la revisión de UX en `docs/UX-REVIEW.md` fue aprobada para ejecutarse después del incremento 4, empezando por sus tres primeros incrementos y dejando la capa de personalización al final; con el incremento 4 cerrado el 2026-09-17, es ahora ejecutable.
 - 2026-09-16, pendiente de confirmar con una imprenta real: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema de plegado elegido.
   Si un cuadernillo grapado se arma anidando pliegos plegados de 16 páginas, la unidad no es 4 y el corrimiento queda sobreestimado.
   Hasta confirmarlo, el valor mostrado debe leerse como una referencia preliminar más.
