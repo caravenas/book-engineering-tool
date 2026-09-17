@@ -500,6 +500,187 @@ describe('Custom sheet sizes', () => {
   });
 });
 
+describe('Custom presses', () => {
+  it('rejects a blank or whitespace-only name with the same message the shipped catalog validator uses', () => {
+    expect(useBookStore.getState().addCustomPress('', 200, 300, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+    expect(useBookStore.getState().customPressError).toBe('El nombre de la prensa debe ser un texto no vacío.');
+
+    expect(useBookStore.getState().addCustomPress('   ', 200, 300, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+  });
+
+  it('rejects a name that duplicates a catalog or custom press, ignoring case and surrounding spaces', () => {
+    expect(useBookStore.getState().addCustomPress('  prensa formato sra3 ', 200, 300, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+    expect(useBookStore.getState().customPressError).toContain('Ya existe');
+
+    expect(useBookStore.getState().addCustomPress('Prensa X', 200, 300, 5, 5, 5, 2)).toBe(true);
+    expect(useBookStore.getState().addCustomPress('prensa x  ', 250, 350, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(1);
+    expect(useBookStore.getState().customPressError).toContain('Ya existe');
+  });
+
+  it('rejects non-finite or non-positive dimensions with a recoverable error', () => {
+    expect(useBookStore.getState().addCustomPress('Prensa inválida', 0, 300, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPressError).toContain('finitos');
+
+    expect(useBookStore.getState().addCustomPress('Prensa inválida', 200, Number.NaN, 5, 5, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+  });
+
+  it('rejects margins that leave no printable area', () => {
+    // gripperMargin_mm (30) + tailMargin_mm (30) >= maxSheetHeight_mm (60)
+    expect(useBookStore.getState().addCustomPress('Prensa sin área', 200, 60, 30, 5, 30, 2)).toBe(false);
+    expect(useBookStore.getState().customPressError).toContain('área imprimible');
+
+    // 2 * sideMargin_mm (100) >= maxSheetWidth_mm (200)
+    expect(useBookStore.getState().addCustomPress('Prensa sin área lateral', 200, 300, 5, 100, 5, 2)).toBe(false);
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+  });
+
+  it('adds, selects, and recalculates the signature plan for the new press', () => {
+    expect(useBookStore.getState().addCustomPress('Prensa pequeña', 100, 100, 1, 1, 1, 1)).toBe(true);
+    const state = useBookStore.getState();
+
+    expect(state.pressId).toMatch(/^custom_press_/);
+    expect(state.customPresses).toHaveLength(1);
+    // The shipped default sheet (pliego_70x100, 700×1000mm) cannot fit a 100×100mm press.
+    expect(state.signaturePlan?.selected).toBeNull();
+    expect(state.signaturePlan?.reason).toBe('sheet-exceeds-press');
+    expect(state.signatureError).toBeNull();
+    expect(state.customPressError).toBeNull();
+  });
+
+  it('removes the custom press and falls back to the first catalog press when it was selected', () => {
+    useBookStore.getState().addCustomPress('Prensa pequeña', 100, 100, 1, 1, 1, 1);
+    const beforeRemoval = useBookStore.getState();
+    const addedId = beforeRemoval.pressId;
+
+    useBookStore.getState().removeCustomPress(addedId);
+    const state = useBookStore.getState();
+
+    expect(state.pressId).toBe(catalog.presses[0].id);
+    expect(state.customPresses).toHaveLength(0);
+    // The signature plan is recomputed against the fallback press, not left stale.
+    expect(state.signaturePlan).not.toBe(beforeRemoval.signaturePlan);
+    expect(state.customPressError).toBeNull();
+  });
+});
+
+describe('Custom bindings', () => {
+  it('rejects a blank or whitespace-only name with the same message the shipped catalog validator uses', () => {
+    expect(useBookStore.getState().addCustomBinding('', 2, 2, 2000, 5, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+    expect(useBookStore.getState().customBindingError).toBe('El nombre de la encuadernación debe ser un texto no vacío.');
+
+    expect(useBookStore.getState().addCustomBinding('   ', 2, 2, 2000, 5, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+  });
+
+  it('rejects a name that duplicates a catalog or custom binding, ignoring case and surrounding spaces', () => {
+    expect(useBookStore.getState().addCustomBinding(' GRAPA (caballete) ', 2, 2, 2000, 5, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+    expect(useBookStore.getState().customBindingError).toContain('Ya existe');
+
+    expect(useBookStore.getState().addCustomBinding('Encuadernación X', 2, 2, 2000, 5, false, false)).toBe(true);
+    expect(useBookStore.getState().addCustomBinding('encuadernación x  ', 2, 2, 2000, 5, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindings).toHaveLength(1);
+    expect(useBookStore.getState().customBindingError).toContain('Ya existe');
+  });
+
+  it('rejects a page count out of range with a recoverable error', () => {
+    // minPages (4) is above maxPages (2)
+    expect(useBookStore.getState().addCustomBinding('Encuadernación inválida', 2, 4, 2, 5, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindingError).toContain('menor o igual que el máximo');
+
+    expect(useBookStore.getState().addCustomBinding('Encuadernación inválida', 2, 2, 2000, Number.NaN, false, false)).toBe(false);
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+  });
+
+  it('adds, selects, and recalculates the binding spine for the new binding', () => {
+    expect(useBookStore.getState().addCustomBinding('Encuadernación nueva', 2, 2, 2000, 5, false, false)).toBe(true);
+    const state = useBookStore.getState();
+
+    expect(state.bindingId).toMatch(/^custom_binding_/);
+    expect(state.customBindings).toHaveLength(1);
+    // Shipped defaults: 32 pages, couche_matte @150g (caliper 120µm) -> interior 1.92mm; +5mm allowance.
+    expect(state.bindingSpine).toEqual({ interior_mm: 1.92, allowance_mm: 5, total_mm: 6.92 });
+    expect(state.bindingError).toBeNull();
+    expect(state.customBindingError).toBeNull();
+  });
+
+  it('removes the custom binding and falls back to the first catalog binding when it was selected', () => {
+    useBookStore.getState().addCustomBinding('Encuadernación nueva', 2, 2, 2000, 5, false, false);
+    const addedId = useBookStore.getState().bindingId;
+
+    useBookStore.getState().removeCustomBinding(addedId);
+    const state = useBookStore.getState();
+
+    expect(state.bindingId).toBe(catalog.bindings[0].id);
+    expect(state.customBindings).toHaveLength(0);
+    expect(state.bindingSpine).toEqual({ interior_mm: 1.92, allowance_mm: 0, total_mm: 1.92 });
+    expect(state.customBindingError).toBeNull();
+  });
+});
+
+describe('Custom proportions', () => {
+  it('rejects a blank or whitespace-only description with the same message the shipped catalog validator uses', () => {
+    expect(useBookStore.getState().addCustomProportion('Formato sin descripción', 1, 2, '')).toBe(false);
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+    expect(useBookStore.getState().customProportionError).toBe('La descripción de la proporción debe ser un texto no vacío.');
+
+    expect(useBookStore.getState().addCustomProportion('Formato sin descripción', 1, 2, '   ')).toBe(false);
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+  });
+
+  it('rejects a label that duplicates a catalog or custom proportion, ignoring case and surrounding spaces', () => {
+    expect(useBookStore.getState().addCustomProportion(' 2:3 ', 4, 5, 'Duplicada')).toBe(false);
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+    expect(useBookStore.getState().customProportionError).toContain('Ya existe');
+
+    expect(useBookStore.getState().addCustomProportion('Formato X', 1, 2, 'Nueva proporción')).toBe(true);
+    expect(useBookStore.getState().addCustomProportion('formato x  ', 3, 4, 'Otra vez')).toBe(false);
+    expect(useBookStore.getState().customProportions).toHaveLength(1);
+    expect(useBookStore.getState().customProportionError).toContain('Ya existe');
+  });
+
+  it('rejects a non-finite or non-positive ratio with a recoverable error', () => {
+    expect(useBookStore.getState().addCustomProportion('Formato inválido', 0, 5, 'Inválida')).toBe(false);
+    expect(useBookStore.getState().customProportionError).toContain('finitos mayores que cero');
+
+    expect(useBookStore.getState().addCustomProportion('Formato inválido', 4, Number.NaN, 'Inválida')).toBe(false);
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+  });
+
+  it('adds, selects, and recalculates the page dimensions for the new proportion', () => {
+    expect(useBookStore.getState().addCustomProportion('Mi formato', 1, 2, 'Ratio 1:2')).toBe(true);
+    const state = useBookStore.getState();
+
+    expect(state.proportionId).toBe('Mi formato');
+    expect(state.customProportions).toHaveLength(1);
+    // format is 'vertical' and pageWidth_mm stays 140 (the shipped default);
+    // height = 140 * (2/1) = 280.
+    expect(state.pageWidth_mm).toBe(140);
+    expect(state.pageHeight_mm).toBe(280);
+    expect(state.customProportionError).toBeNull();
+  });
+
+  it('removes the custom proportion and falls back to the first catalog proportion when it was selected', () => {
+    useBookStore.getState().addCustomProportion('Mi formato', 1, 2, 'Ratio 1:2');
+
+    useBookStore.getState().removeCustomProportion('Mi formato');
+    const state = useBookStore.getState();
+
+    expect(state.proportionId).toBe(catalog.proportions[0].label);
+    expect(state.customProportions).toHaveLength(0);
+    // catalog.proportions[0] is '1:1' (ratio [1, 1]); pageWidth_mm stays 140, height becomes 140.
+    expect(state.pageWidth_mm).toBe(140);
+    expect(state.pageHeight_mm).toBe(140);
+    expect(state.customProportionError).toBeNull();
+  });
+});
+
 describe('Actions before initialize', () => {
   it('are no-ops that do not throw while the catalog is null', () => {
     useBookStore.setState(initialState);

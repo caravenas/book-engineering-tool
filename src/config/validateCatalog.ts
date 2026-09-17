@@ -49,7 +49,7 @@ const VISIBLE_PROPORTIONS_COUNT = 3;
 const MAX_PAGES_PER_SIGNATURE = 128;
 // No real book binding method admits this many pages; the cap exists to
 // catch a typo (an extra digit) in `maxPages`, not to model a physical limit.
-const MAX_BINDING_PAGES = 20000;
+export const MAX_BINDING_PAGES = 20000;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

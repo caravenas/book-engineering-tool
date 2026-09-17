@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  Binding,
   BindingSpineResult,
   BookConfig,
   BookFormat,
@@ -19,6 +20,7 @@ import { calculateSpineAndWeight } from '../engine/spine';
 import { planSignatures } from '../engine/signatures';
 import { creepCompensation, spineWithBinding, validatePageCount } from '../engine/binding';
 import { planCover } from '../engine/cover';
+import { MAX_BINDING_PAGES } from '../config/validateCatalog';
 
 /**
  * Get all sheet sizes (catalog + custom).
@@ -65,14 +67,45 @@ function getSheetDimensions(catalog: Catalog, sheetSizeId: string, customSheetSi
 }
 
 /**
- * Get a press by ID.
+ * Get all presses (catalog + custom).
  */
-function getPress(catalog: Catalog, pressId: string): Press | undefined {
-  return catalog.presses.find(p => p.id === pressId);
+function getAllPresses(catalog: Catalog, customPresses: Press[]): Press[] {
+  return [...catalog.presses, ...customPresses];
+}
+
+/**
+ * Get all bindings (catalog + custom).
+ */
+function getAllBindings(catalog: Catalog, customBindings: Binding[]): Binding[] {
+  return [...catalog.bindings, ...customBindings];
+}
+
+/**
+ * Get all proportions (catalog + custom).
+ */
+function getAllProportions(catalog: Catalog, customProportions: Proportion[]): Proportion[] {
+  return [...catalog.proportions, ...customProportions];
+}
+
+/**
+ * Get a press by ID (catalog + custom).
+ */
+function getPress(catalog: Catalog, pressId: string, customPresses: Press[]): Press | undefined {
+  return getAllPresses(catalog, customPresses).find(p => p.id === pressId);
 }
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Ocurrió un error desconocido';
+}
+
+/** Non-empty integer within JS's safely representable range, and strictly positive. */
+function isPositiveSafeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+/** Case- and surrounding-whitespace-insensitive equality, for duplicate checks on user-typed names/labels. */
+function namesMatch(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 type CalculationResults = Pick<
@@ -98,7 +131,7 @@ function calculateSignaturePlan(
   previousPlan: SignaturePlanResult | null
 ): { signaturePlan: SignaturePlanResult | null; signatureError: string | null } {
   try {
-    const press = getPress(catalog, state.pressId);
+    const press = getPress(catalog, state.pressId, state.customPresses);
     if (!press) {
       throw new RangeError(`La prensa "${state.pressId}" no existe en la configuración`);
     }
@@ -178,7 +211,7 @@ function calculateBindingResults(
   spineResult: SpineResult | null,
   pagesPerSignature: number | null
 ): BindingResults {
-  const binding = catalog.bindings.find(b => b.id === state.bindingId);
+  const binding = getAllBindings(catalog, state.customBindings).find(b => b.id === state.bindingId);
   if (!binding) {
     return {
       bindingPageCount: null,
@@ -241,7 +274,7 @@ function calculateCoverResult(
       throw new RangeError(`La tapa "${state.coverId}" no existe en la configuración`);
     }
 
-    const binding = catalog.bindings.find(b => b.id === state.bindingId);
+    const binding = getAllBindings(catalog, state.customBindings).find(b => b.id === state.bindingId);
     if (!binding) {
       throw new RangeError(`La encuadernación "${state.bindingId}" no existe en la configuración`);
     }
@@ -390,6 +423,8 @@ function dimensionsFromProportion(
 }
 
 let customSheetCounter = 0;
+let customPressCounter = 0;
+let customBindingCounter = 0;
 
 export const useBookStore = create<BookStore>((set, get) => ({
   // Runtime configuration catalog
@@ -398,6 +433,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
   // Canvas Designer
   format: 'vertical',
   proportionId: null,
+  customProportions: [],
   pageWidth_mm: 0,
   pageHeight_mm: 0,
   bleed_mm: 0,
@@ -415,6 +451,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   // Signature imposition
   pressId: '',
+  customPresses: [],
   foldingSchemeId: null,
 
   // Spine
@@ -422,6 +459,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
   // Binding
   bindingId: '',
+  customBindings: [],
 
   // Cover
   coverId: '',
@@ -440,6 +478,9 @@ export const useBookStore = create<BookStore>((set, get) => ({
   coverPlan: null,
   coverError: null,
   customGrammageError: null,
+  customPressError: null,
+  customBindingError: null,
+  customProportionError: null,
 
   // ─── Actions ─────────────────────────────────────────────────────
 
@@ -454,6 +495,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
       );
       const inputPatch: Partial<BookConfig> = {
         proportionId: defaults.proportionId,
+        customProportions: [],
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
         bleed_mm: defaults.bleed_mm,
@@ -463,9 +505,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
         sheetSizeId: defaults.sheetSizeId,
         customSheetSizes: [],
         pressId: defaults.pressId,
+        customPresses: [],
         foldingSchemeId: null,
         totalPages: defaults.totalPages,
         bindingId: defaults.bindingId,
+        customBindings: [],
         coverId: defaults.coverId,
       };
 
@@ -485,7 +529,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
       }
 
       const dimensions = dimensionsFromProportion(
-        state.catalog.proportions,
+        getAllProportions(state.catalog, state.customProportions),
         state.proportionId,
         format,
         state.pageWidth_mm
@@ -507,7 +551,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
       }
 
       const dimensions = dimensionsFromProportion(
-        state.catalog.proportions,
+        getAllProportions(state.catalog, state.customProportions),
         proportionId,
         state.format,
         state.pageWidth_mm
@@ -739,6 +783,288 @@ export const useBookStore = create<BookStore>((set, get) => ({
     });
   },
 
+  // ─── Custom Presses ──────────────────────────────────────────────
+
+  addCustomPress: (
+    name,
+    maxSheetWidth_mm,
+    maxSheetHeight_mm,
+    gripperMargin_mm,
+    sideMargin_mm,
+    tailMargin_mm,
+    gutter_mm
+  ) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    if (!name.trim()) {
+      set({ customPressError: 'El nombre de la prensa debe ser un texto no vacío.' });
+      return false;
+    }
+
+    if (!Number.isFinite(maxSheetWidth_mm) || maxSheetWidth_mm <= 0
+      || !Number.isFinite(maxSheetHeight_mm) || maxSheetHeight_mm <= 0
+      || !Number.isFinite(gripperMargin_mm) || gripperMargin_mm < 0
+      || !Number.isFinite(sideMargin_mm) || sideMargin_mm < 0
+      || !Number.isFinite(tailMargin_mm) || tailMargin_mm < 0
+      || !Number.isFinite(gutter_mm) || gutter_mm < 0) {
+      set({
+        customPressError: 'Introduce las medidas de la prensa como números finitos: el ancho y el alto máximo de pliego mayores que cero, y los márgenes y la calle no negativos.',
+      });
+      return false;
+    }
+
+    if (gripperMargin_mm + tailMargin_mm >= maxSheetHeight_mm) {
+      set({
+        customPressError: 'La pinza y el margen de cola no dejan área imprimible: su suma debe ser menor que el alto máximo de pliego.',
+      });
+      return false;
+    }
+
+    if (2 * sideMargin_mm >= maxSheetWidth_mm) {
+      set({
+        customPressError: 'Los márgenes laterales no dejan área imprimible: el doble del margen lateral debe ser menor que el ancho máximo de pliego.',
+      });
+      return false;
+    }
+
+    const duplicate = getAllPresses(state.catalog, state.customPresses).some(press => namesMatch(press.name, name));
+    if (duplicate) {
+      set({ customPressError: `Ya existe una prensa llamada "${name}". Introduce otro nombre o cancela.` });
+      return false;
+    }
+
+    const id = `custom_press_${++customPressCounter}_${Date.now()}`;
+    const newPress: Press = {
+      id, name: name.trim(), maxSheetWidth_mm, maxSheetHeight_mm, gripperMargin_mm, sideMargin_mm, tailMargin_mm, gutter_mm,
+    };
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      return {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          customPresses: [...currentState.customPresses, newPress],
+          pressId: id,
+        }),
+        customPressError: null,
+      };
+    });
+    return true;
+  },
+
+  clearCustomPressError: () => {
+    set(state => (state.catalog ? { customPressError: null } : state));
+  },
+
+  removeCustomPress: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.customPresses.some(press => press.id === id)) {
+        return state;
+      }
+
+      const inputPatch: Partial<BookConfig> = {
+        customPresses: state.customPresses.filter(press => press.id !== id),
+      };
+      if (state.pressId === id) {
+        inputPatch.pressId = state.catalog.presses[0].id;
+      }
+
+      return {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customPressError: null,
+      };
+    });
+  },
+
+  // ─── Custom Bindings ─────────────────────────────────────────────
+
+  addCustomBinding: (name, pageMultiple, minPages, maxPages, spineAllowance_mm, nests, requiresSignatureMultiple) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    if (!name.trim()) {
+      set({ customBindingError: 'El nombre de la encuadernación debe ser un texto no vacío.' });
+      return false;
+    }
+
+    if (!isPositiveSafeInteger(pageMultiple) || pageMultiple % 2 !== 0) {
+      set({
+        customBindingError: 'El múltiplo de páginas debe ser un entero seguro mayor que cero y par, porque un pliego siempre aporta dos páginas.',
+      });
+      return false;
+    }
+
+    if (!isPositiveSafeInteger(minPages) || minPages % pageMultiple !== 0) {
+      set({
+        customBindingError: `El mínimo de páginas debe ser un entero seguro mayor que cero y múltiplo de ${pageMultiple}.`,
+      });
+      return false;
+    }
+
+    if (!isPositiveSafeInteger(maxPages) || maxPages % pageMultiple !== 0 || maxPages > MAX_BINDING_PAGES) {
+      set({
+        customBindingError: `El máximo de páginas debe ser un entero seguro mayor que cero, múltiplo de ${pageMultiple}, y como máximo ${MAX_BINDING_PAGES}.`,
+      });
+      return false;
+    }
+
+    if (minPages > maxPages) {
+      set({ customBindingError: 'El mínimo de páginas debe ser menor o igual que el máximo.' });
+      return false;
+    }
+
+    if (!Number.isFinite(spineAllowance_mm) || spineAllowance_mm < 0) {
+      set({ customBindingError: 'El aporte al lomo debe ser un número finito no negativo.' });
+      return false;
+    }
+
+    if (nests && pageMultiple % 4 !== 0) {
+      set({
+        customBindingError: 'Un método cuyas hojas se anidan debe tener un múltiplo de páginas que sea también múltiplo de 4, porque el plegado que anida se hace de a cuatro páginas.',
+      });
+      return false;
+    }
+
+    const duplicate = getAllBindings(state.catalog, state.customBindings)
+      .some(binding => namesMatch(binding.name, name));
+    if (duplicate) {
+      set({ customBindingError: `Ya existe una encuadernación llamada "${name}". Introduce otro nombre o cancela.` });
+      return false;
+    }
+
+    const id = `custom_binding_${++customBindingCounter}_${Date.now()}`;
+    const newBinding: Binding = {
+      id, name: name.trim(), pageMultiple, minPages, maxPages, spineAllowance_mm, nests, requiresSignatureMultiple,
+    };
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      return {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          customBindings: [...currentState.customBindings, newBinding],
+          bindingId: id,
+        }),
+        customBindingError: null,
+      };
+    });
+    return true;
+  },
+
+  clearCustomBindingError: () => {
+    set(state => (state.catalog ? { customBindingError: null } : state));
+  },
+
+  removeCustomBinding: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.customBindings.some(binding => binding.id === id)) {
+        return state;
+      }
+
+      const inputPatch: Partial<BookConfig> = {
+        customBindings: state.customBindings.filter(binding => binding.id !== id),
+      };
+      if (state.bindingId === id) {
+        inputPatch.bindingId = state.catalog.bindings[0].id;
+      }
+
+      return {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customBindingError: null,
+      };
+    });
+  },
+
+  // ─── Custom Proportions ──────────────────────────────────────────
+
+  addCustomProportion: (label, ratioWidth, ratioHeight, description) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) {
+      set({ customProportionError: 'Introduce una etiqueta para la proporción.' });
+      return false;
+    }
+
+    if (!description.trim()) {
+      set({ customProportionError: 'La descripción de la proporción debe ser un texto no vacío.' });
+      return false;
+    }
+
+    if (!Number.isFinite(ratioWidth) || ratioWidth <= 0 || !Number.isFinite(ratioHeight) || ratioHeight <= 0) {
+      set({
+        customProportionError: 'Introduce las dos medidas de la proporción como números finitos mayores que cero.',
+      });
+      return false;
+    }
+
+    const duplicate = getAllProportions(state.catalog, state.customProportions)
+      .some(proportion => namesMatch(proportion.label, trimmedLabel));
+    if (duplicate) {
+      set({ customProportionError: `Ya existe la proporción "${trimmedLabel}". Introduce otra etiqueta o cancela.` });
+      return false;
+    }
+
+    const newProportion: Proportion = { label: trimmedLabel, ratio: [ratioWidth, ratioHeight], description };
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const dimensions = dimensionsFromProportion(
+        [newProportion],
+        trimmedLabel,
+        currentState.format,
+        currentState.pageWidth_mm
+      );
+      return {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          customProportions: [...currentState.customProportions, newProportion],
+          proportionId: trimmedLabel,
+          pageWidth_mm: dimensions.width,
+          pageHeight_mm: dimensions.height,
+        }),
+        customProportionError: null,
+      };
+    });
+    return true;
+  },
+
+  clearCustomProportionError: () => {
+    set(state => (state.catalog ? { customProportionError: null } : state));
+  },
+
+  removeCustomProportion: (label) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.customProportions.some(proportion => proportion.label === label)) {
+        return state;
+      }
+
+      const inputPatch: Partial<BookConfig> = {
+        customProportions: state.customProportions.filter(proportion => proportion.label !== label),
+      };
+
+      if (state.proportionId === label) {
+        const fallbackLabel = state.catalog.proportions[0].label;
+        const dimensions = dimensionsFromProportion(
+          state.catalog.proportions,
+          fallbackLabel,
+          state.format,
+          state.pageWidth_mm
+        );
+        inputPatch.proportionId = fallbackLabel;
+        inputPatch.pageWidth_mm = dimensions.width;
+        inputPatch.pageHeight_mm = dimensions.height;
+      }
+
+      return {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customProportionError: null,
+      };
+    });
+  },
+
   // ─── Recalculate ─────────────────────────────────────────────────
 
   recalculate: () => {
@@ -748,4 +1074,4 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
 // ─── Exported helpers for components ─────────────────────────────────────
 
-export { getAllSheetSizes, getAllGrammageOptions };
+export { getAllSheetSizes, getAllGrammageOptions, getAllPresses, getAllBindings, getAllProportions };

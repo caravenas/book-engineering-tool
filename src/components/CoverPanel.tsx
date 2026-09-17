@@ -1,4 +1,4 @@
-import { useBookStore } from '../store/useBookStore';
+import { useBookStore, getAllBindings } from '../store/useBookStore';
 import { roundTo } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import type { Binding, Cover, HardCoverResult, SoftCoverResult } from '../types';
@@ -162,10 +162,12 @@ function getHardCoverSvg(result: HardCoverResult, rawCover: Cover): HardCoverSvg
 }
 
 export function CoverPanel() {
-  const { catalog, coverId, bindingId, setCover, coverPlan, coverError } = useBookStore();
+  const { catalog, coverId, bindingId, customBindings, setCover, coverPlan, coverError } = useBookStore();
 
   const selectedCover = catalog?.covers.find(cover => cover.id === coverId) ?? null;
-  const selectedBinding = catalog?.bindings.find(binding => binding.id === bindingId) ?? null;
+  const selectedBinding = catalog
+    ? getAllBindings(catalog, customBindings).find(binding => binding.id === bindingId) ?? null
+    : null;
   const plan = coverPlan?.ok ? coverPlan.cover : null;
 
   const softSvg = plan && plan.kind === 'blanda' ? getSoftCoverSvg(plan) : null;

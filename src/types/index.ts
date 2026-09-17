@@ -306,6 +306,7 @@ export interface BookConfig {
   // Canvas Designer
   format: BookFormat;
   proportionId: string | null;   // null = custom dimensions
+  customProportions: Proportion[];  // User-added proportions
   pageWidth_mm: number;
   pageHeight_mm: number;
   bleed_mm: number;
@@ -325,6 +326,7 @@ export interface BookConfig {
 
   // Signature imposition
   pressId: string;
+  customPresses: Press[];      // User-added presses
   foldingSchemeId: string | null;   // null = automatic selection (least waste)
 
   // Spine & Weight
@@ -332,6 +334,7 @@ export interface BookConfig {
 
   // Binding
   bindingId: string;
+  customBindings: Binding[];      // User-added bindings
 
   // Cover
   coverId: string;
@@ -355,6 +358,9 @@ export interface BookStore extends BookConfig {
   coverPlan: CoverPlanResult | null;
   coverError: string | null;
   customGrammageError: string | null;
+  customPressError: string | null;
+  customBindingError: string | null;
+  customProportionError: string | null;
 
   // Actions
   initialize: (catalog: Catalog) => void;
@@ -377,5 +383,30 @@ export interface BookStore extends BookConfig {
   addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => boolean;
   removeCustomGrammage: (substrateId: string, grammage: number) => void;
   clearCustomGrammageError: () => void;
+  addCustomPress: (
+    name: string,
+    maxSheetWidth_mm: number,
+    maxSheetHeight_mm: number,
+    gripperMargin_mm: number,
+    sideMargin_mm: number,
+    tailMargin_mm: number,
+    gutter_mm: number
+  ) => boolean;
+  removeCustomPress: (id: string) => void;
+  clearCustomPressError: () => void;
+  addCustomBinding: (
+    name: string,
+    pageMultiple: number,
+    minPages: number,
+    maxPages: number,
+    spineAllowance_mm: number,
+    nests: boolean,
+    requiresSignatureMultiple: boolean
+  ) => boolean;
+  removeCustomBinding: (id: string) => void;
+  clearCustomBindingError: () => void;
+  addCustomProportion: (label: string, ratioWidth: number, ratioHeight: number, description: string) => boolean;
+  removeCustomProportion: (label: string) => void;
+  clearCustomProportionError: () => void;
   recalculate: () => void;
 }

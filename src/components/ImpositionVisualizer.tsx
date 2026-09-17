@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBookStore, getAllSheetSizes } from '../store/useBookStore';
+import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
 import { layoutSide } from '../engine/signatures';
 import { roundTo } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
@@ -129,6 +129,8 @@ export function ImpositionVisualizer() {
     sheetSizeId,
     customSheetSizes,
     pressId,
+    customPresses,
+    customPressError,
     foldingSchemeId,
     signaturePlan,
     signatureError,
@@ -136,6 +138,9 @@ export function ImpositionVisualizer() {
     addCustomSheetSize,
     removeCustomSheetSize,
     setPress,
+    addCustomPress,
+    removeCustomPress,
+    clearCustomPressError,
     setFoldingScheme,
   } = useBookStore();
 
@@ -146,11 +151,22 @@ export function ImpositionVisualizer() {
   const [customSheetError, setCustomSheetError] = useState<string | null>(null);
   const [side, setSide] = useState<Side>('front');
 
+  const [showPressForm, setShowPressForm] = useState(false);
+  const [pressName, setPressName] = useState('');
+  const [pressMaxWidth, setPressMaxWidth] = useState('');
+  const [pressMaxHeight, setPressMaxHeight] = useState('');
+  const [pressGripperMargin, setPressGripperMargin] = useState('');
+  const [pressSideMargin, setPressSideMargin] = useState('');
+  const [pressTailMargin, setPressTailMargin] = useState('');
+  const [pressGutter, setPressGutter] = useState('');
+
   const customWidthIsValid = isPositiveFinite(Number(customW));
   const customHeightIsValid = isPositiveFinite(Number(customH));
   const allSheets = catalog ? getAllSheetSizes(catalog, customSheetSizes) : customSheetSizes;
   const currentSheet = allSheets.find(sheet => sheet.id === sheetSizeId);
   const isSelectedSheetCustom = customSheetSizes.some(sheet => sheet.id === sheetSizeId);
+  const allPresses = catalog ? getAllPresses(catalog, customPresses) : customPresses;
+  const isSelectedPressCustom = customPresses.some(press => press.id === pressId);
 
   const handleAddCustom = () => {
     const width = Number(customW);
@@ -171,6 +187,34 @@ export function ImpositionVisualizer() {
     setCustomW('');
     setCustomH('');
     setCustomSheetError(null);
+  };
+
+  const handleTogglePressForm = () => {
+    setShowPressForm(!showPressForm);
+    clearCustomPressError();
+  };
+
+  const handleAddPress = () => {
+    const added = addCustomPress(
+      pressName,
+      Number(pressMaxWidth),
+      Number(pressMaxHeight),
+      Number(pressGripperMargin),
+      Number(pressSideMargin),
+      Number(pressTailMargin),
+      Number(pressGutter)
+    );
+
+    if (added) {
+      setShowPressForm(false);
+      setPressName('');
+      setPressMaxWidth('');
+      setPressMaxHeight('');
+      setPressGripperMargin('');
+      setPressSideMargin('');
+      setPressTailMargin('');
+      setPressGutter('');
+    }
   };
 
   const selected = signaturePlan?.selected ?? null;
@@ -230,19 +274,200 @@ export function ImpositionVisualizer() {
       </p>
 
       <div className="input-row">
-        <div className="form-group">
-          <label className="form-label" htmlFor="select-press">Prensa</label>
-          <select
-            className="form-input"
-            value={pressId}
-            onChange={event => setPress(event.target.value)}
-            id="select-press"
-          >
-            {catalog?.presses.map(press => (
-              <option key={press.id} value={press.id}>{press.name}</option>
-            ))}
-          </select>
-          {catalog && (
+        <div
+          className="form-group"
+          role="group"
+          aria-labelledby="press-group-label"
+        >
+          <div className="form-label-row">
+            <span id="press-group-label" className="form-label">Prensa</span>
+            <button
+              type="button"
+              onClick={handleTogglePressForm}
+              aria-expanded={showPressForm}
+              aria-controls="custom-press-form"
+              aria-label={showPressForm ? 'Cancelar prensa personalizada' : 'Añadir prensa personalizada'}
+              style={{
+                background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+              }}
+            >
+              {showPressForm ? 'Cancelar' : '+ Person.'}
+            </button>
+          </div>
+
+          {showPressForm ? (
+            <div id="custom-press-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <label className="form-label" htmlFor="input-custom-press-name">Nombre</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={pressName}
+                  onChange={event => setPressName(event.target.value)}
+                  id="input-custom-press-name"
+                />
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-max-width">Ancho máximo de pliego</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressMaxWidth}
+                      onChange={event => setPressMaxWidth(event.target.value)}
+                      min="1"
+                      id="input-custom-press-max-width"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-max-height">Alto máximo de pliego</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressMaxHeight}
+                      onChange={event => setPressMaxHeight(event.target.value)}
+                      min="1"
+                      id="input-custom-press-max-height"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-gripper-margin">Margen de pinza</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressGripperMargin}
+                      onChange={event => setPressGripperMargin(event.target.value)}
+                      min="0"
+                      id="input-custom-press-gripper-margin"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-tail-margin">Margen de cola</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressTailMargin}
+                      onChange={event => setPressTailMargin(event.target.value)}
+                      min="0"
+                      id="input-custom-press-tail-margin"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-side-margin">Margen lateral</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressSideMargin}
+                      onChange={event => setPressSideMargin(event.target.value)}
+                      min="0"
+                      id="input-custom-press-side-margin"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-custom-press-gutter">Calle</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={pressGutter}
+                      onChange={event => setPressGutter(event.target.value)}
+                      min="0"
+                      id="input-custom-press-gutter"
+                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              {customPressError && (
+                <p className="calculation-error" id="custom-press-error" role="alert">
+                  {customPressError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleAddPress}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2)',
+                  background: 'var(--color-text-primary)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Crear prensa
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <label className="visually-hidden" htmlFor="select-press">Prensa seleccionada</label>
+              <select
+                className="form-input"
+                value={pressId}
+                onChange={event => setPress(event.target.value)}
+                id="select-press"
+                style={{ flex: 1 }}
+              >
+                {allPresses.map(press => (
+                  <option key={press.id} value={press.id}>{press.name}</option>
+                ))}
+              </select>
+              {isSelectedPressCustom && (
+                <button
+                  type="button"
+                  className="remove-sheet-button"
+                  onClick={() => removeCustomPress(pressId)}
+                  title="Eliminar prensa personalizada"
+                  aria-label="Eliminar prensa personalizada"
+                  style={{
+                    background: 'rgba(244, 63, 94, 0.15)',
+                    color: 'var(--color-danger-foreground)',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    width: '42px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+          {isSelectedPressCustom ? (
+            <ConfigSourceNote text="prensa personalizada" />
+          ) : catalog && (
             <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
           )}
         </div>

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useBookStore } from '../store/useBookStore';
 import { mmToInches, roundTo } from '../engine/units';
+import { ConfigSourceNote } from './ConfigSourceNote';
 import type { BookFormat } from '../types';
 
 const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
@@ -30,10 +32,41 @@ export function CanvasDesigner() {
   const {
     format, proportionId, pageWidth_mm, pageHeight_mm,
     bleed_mm, unitSystem, catalog,
+    customProportions, customProportionError,
     setFormat, setProportion, setPageDimensions, setBleed,
+    addCustomProportion, removeCustomProportion, clearCustomProportionError,
   } = useBookStore();
 
+  const [showProportionForm, setShowProportionForm] = useState(false);
+  const [proportionLabel, setProportionLabel] = useState('');
+  const [proportionRatioWidth, setProportionRatioWidth] = useState('');
+  const [proportionRatioHeight, setProportionRatioHeight] = useState('');
+  const [proportionDescription, setProportionDescription] = useState('');
+
   const proportionOptions = catalog ? catalog.proportions.slice(0, 3) : [];
+  const isSelectedProportionCustom = customProportions.some(prop => prop.label === proportionId);
+
+  const handleToggleProportionForm = () => {
+    setShowProportionForm(!showProportionForm);
+    clearCustomProportionError();
+  };
+
+  const handleAddProportion = () => {
+    const added = addCustomProportion(
+      proportionLabel,
+      Number(proportionRatioWidth),
+      Number(proportionRatioHeight),
+      proportionDescription
+    );
+
+    if (added) {
+      setShowProportionForm(false);
+      setProportionLabel('');
+      setProportionRatioWidth('');
+      setProportionRatioHeight('');
+      setProportionDescription('');
+    }
+  };
 
   // Convert finite values for display without passing invalid geometry to number inputs.
   const displayW = toDisplayValue(pageWidth_mm, unitSystem, unitSystem === 'imperial' ? 2 : 1);
@@ -128,34 +161,166 @@ export function CanvasDesigner() {
       <div
         className="form-group"
         style={{ marginBottom: 'var(--space-6)' }}
-        role="group"
-        aria-labelledby="proportion-group-label"
       >
-        <span className="form-label" id="proportion-group-label">Proporción</span>
-        <div className="segment-group">
-          {proportionOptions.map(prop => (
-            <button
-              key={prop.label}
-              type="button"
-              className={`segment-btn ${proportionId === prop.label ? 'active' : ''}`}
-              onClick={() => setProportion(prop.label)}
-              id={`proportion-${prop.label}`}
-              title={prop.description}
-              aria-pressed={proportionId === prop.label}
-            >
-              {prop.label}
-            </button>
-          ))}
+        <div className="form-label-row">
+          <span className="form-label" id="proportion-group-label">Proporción</span>
           <button
             type="button"
-            className={`segment-btn ${proportionId === null ? 'active' : ''}`}
-            onClick={() => setProportion(null)}
-            id="proportion-custom"
-            aria-pressed={proportionId === null}
+            onClick={handleToggleProportionForm}
+            aria-expanded={showProportionForm}
+            aria-controls="custom-proportion-form"
+            aria-label={showProportionForm ? 'Cancelar proporción personalizada' : 'Añadir proporción personalizada'}
+            style={{
+              background: 'none', border: 'none', color: 'var(--color-amber-600)',
+              cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+            }}
           >
-            Manual
+            {showProportionForm ? 'Cancelar' : '+ Person.'}
           </button>
         </div>
+
+        {showProportionForm ? (
+          <div id="custom-proportion-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <label className="form-label" htmlFor="input-custom-proportion-label">Etiqueta</label>
+              <input
+                type="text"
+                className="form-input"
+                value={proportionLabel}
+                onChange={event => setProportionLabel(event.target.value)}
+                id="input-custom-proportion-label"
+              />
+            </div>
+            <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+              <div>
+                <label className="form-label" htmlFor="input-custom-proportion-ratio-width">Proporción (ancho)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={proportionRatioWidth}
+                  onChange={event => setProportionRatioWidth(event.target.value)}
+                  min="0"
+                  id="input-custom-proportion-ratio-width"
+                  aria-describedby={customProportionError ? 'custom-proportion-error' : undefined}
+                />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="input-custom-proportion-ratio-height">Proporción (alto)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={proportionRatioHeight}
+                  onChange={event => setProportionRatioHeight(event.target.value)}
+                  min="0"
+                  id="input-custom-proportion-ratio-height"
+                  aria-describedby={customProportionError ? 'custom-proportion-error' : undefined}
+                />
+              </div>
+            </div>
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <label className="form-label" htmlFor="input-custom-proportion-description">Descripción</label>
+              <input
+                type="text"
+                className="form-input"
+                value={proportionDescription}
+                onChange={event => setProportionDescription(event.target.value)}
+                id="input-custom-proportion-description"
+              />
+            </div>
+            {customProportionError && (
+              <p className="calculation-error" id="custom-proportion-error" role="alert">
+                {customProportionError}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleAddProportion}
+              style={{
+                width: '100%',
+                padding: 'var(--space-2)',
+                background: 'var(--color-text-primary)',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Crear proporción
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div
+              className="segment-group"
+              style={{ flex: 1 }}
+              role="group"
+              aria-labelledby="proportion-group-label"
+            >
+              {proportionOptions.map(prop => (
+                <button
+                  key={prop.label}
+                  type="button"
+                  className={`segment-btn ${proportionId === prop.label ? 'active' : ''}`}
+                  onClick={() => setProportion(prop.label)}
+                  id={`proportion-${prop.label}`}
+                  title={prop.description}
+                  aria-pressed={proportionId === prop.label}
+                >
+                  {prop.label}
+                </button>
+              ))}
+              {customProportions.map(prop => (
+                <button
+                  key={prop.label}
+                  type="button"
+                  className={`segment-btn ${proportionId === prop.label ? 'active' : ''}`}
+                  onClick={() => setProportion(prop.label)}
+                  id={`proportion-${prop.label}`}
+                  title={prop.description}
+                  aria-pressed={proportionId === prop.label}
+                >
+                  {prop.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`segment-btn ${proportionId === null ? 'active' : ''}`}
+                onClick={() => setProportion(null)}
+                id="proportion-custom"
+                aria-pressed={proportionId === null}
+              >
+                Manual
+              </button>
+            </div>
+            {isSelectedProportionCustom && (
+              <button
+                type="button"
+                className="remove-sheet-button"
+                onClick={() => removeCustomProportion(proportionId as string)}
+                title="Eliminar proporción personalizada"
+                aria-label="Eliminar proporción personalizada"
+                style={{
+                  background: 'rgba(244, 63, 94, 0.15)',
+                  color: 'var(--color-danger-foreground)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  width: '42px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
+        {isSelectedProportionCustom && (
+          <ConfigSourceNote text="proporción personalizada" />
+        )}
       </div>
 
       {/* Dimensions and Units side by side */}

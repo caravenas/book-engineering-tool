@@ -359,7 +359,7 @@ describe('Honest and recoverable UI', () => {
 describe('Binding selector', () => {
   it('renders the four shipped methods and switching changes the displayed rules', () => {
     render(<BindingPanel />);
-    const select = screen.getByLabelText('Encuadernación') as HTMLSelectElement;
+    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
       'cosido', 'grapa', 'hotmelt', 'pur',
@@ -397,7 +397,7 @@ describe('Binding selector', () => {
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('8 pliegos anidados');
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('0.96 mm');
 
-    fireEvent.change(screen.getByLabelText('Encuadernación'), { target: { value: 'hotmelt' } });
+    fireEvent.change(screen.getByLabelText('Encuadernación seleccionada'), { target: { value: 'hotmelt' } });
 
     expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
   });
@@ -502,6 +502,21 @@ describe('Cover panel', () => {
     }
   });
 
+  it('offers the hard cover as selectable when a custom flat-spine binding is selected (regression)', () => {
+    useBookStore.getState().addCustomBinding('Rústica de prueba', 2, 2, 2000, 2, false, false);
+    render(<CoverPanel />);
+    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
+
+    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
+      'blanda_simple', 'blanda_solapas', 'dura_estandar',
+    ]);
+    const hardCoverOption = Array.from(select.options).find(option => option.value === 'dura_estandar');
+    expect(hardCoverOption?.disabled).toBe(false);
+
+    fireEvent.change(select, { target: { value: 'dura_estandar' } });
+    expect(useBookStore.getState().coverId).toBe('dura_estandar');
+  });
+
   it('keeps an incompatible cover as a disabled option instead of removing it, when the binding changes underneath it', () => {
     useBookStore.getState().setBinding('hotmelt');
     useBookStore.getState().setCover('dura_estandar');
@@ -604,5 +619,114 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
     const removeButton = screen.getByRole('button', { name: 'Eliminar pliego personalizado' });
 
     expect(removeButton.className).toContain('remove-sheet-button');
+  });
+});
+
+describe('Custom press quick-add (UX-4)', () => {
+  it('opens the form with the + button, adds a valid press through the real flow, surfaces the store error for an invalid one, and removes the custom press', () => {
+    render(<ImpositionVisualizer />);
+
+    const toggle = screen.getByRole('button', { name: 'Añadir prensa personalizada' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById('custom-press-form')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa de prueba' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear prensa' }));
+    expect(screen.getByRole('alert').textContent).toContain('Introduce las medidas de la prensa');
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '500' } });
+    fireEvent.change(screen.getByLabelText('Alto máximo de pliego'), { target: { value: '700' } });
+    fireEvent.change(screen.getByLabelText('Margen de pinza'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Margen de cola'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Margen lateral'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Calle'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear prensa' }));
+
+    const newPressId = useBookStore.getState().pressId;
+    expect(newPressId).toMatch(/^custom_press_/);
+    expect(useBookStore.getState().customPresses).toHaveLength(1);
+    expect(document.getElementById('custom-press-form')).toBeNull();
+    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
+    expect(select.value).toBe(newPressId);
+    expect(screen.getByText('prensa personalizada')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar prensa personalizada' }));
+    expect(useBookStore.getState().customPresses).toHaveLength(0);
+    expect(useBookStore.getState().pressId).not.toBe(newPressId);
+  });
+});
+
+describe('Custom binding quick-add (UX-4)', () => {
+  it('opens the form with the + button, adds a valid binding through the real flow, surfaces the store error for an invalid one, and removes the custom binding', () => {
+    render(<BindingPanel />);
+
+    const toggle = screen.getByRole('button', { name: 'Añadir encuadernación personalizada' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById('custom-binding-form')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Encuadernación de prueba' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear encuadernación' }));
+    expect(screen.getByRole('alert').textContent).toContain('múltiplo de páginas');
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText('Múltiplo de páginas'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Mínimo de páginas'), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText('Máximo de páginas'), { target: { value: '64' } });
+    fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear encuadernación' }));
+
+    const newBindingId = useBookStore.getState().bindingId;
+    expect(newBindingId).toMatch(/^custom_binding_/);
+    expect(useBookStore.getState().customBindings).toHaveLength(1);
+    expect(document.getElementById('custom-binding-form')).toBeNull();
+    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
+    expect(select.value).toBe(newBindingId);
+    expect(screen.getByText('encuadernación personalizada')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar encuadernación personalizada' }));
+    expect(useBookStore.getState().customBindings).toHaveLength(0);
+    expect(useBookStore.getState().bindingId).not.toBe(newBindingId);
+  });
+});
+
+describe('Custom proportion quick-add (UX-4)', () => {
+  it('opens the form with the + button, adds a valid proportion as a new segmented button that stays before Manual, surfaces the store error for an invalid one, and removes the custom proportion', () => {
+    render(<CanvasDesigner />);
+
+    const toggle = screen.getByRole('button', { name: 'Añadir proporción personalizada' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById('custom-proportion-form')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proporción' }));
+    expect(screen.getByRole('alert').textContent).toContain('etiqueta');
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '4:5' } });
+    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Proporción (alto)'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Proporción de prueba' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear proporción' }));
+
+    expect(useBookStore.getState().customProportions).toHaveLength(1);
+    expect(useBookStore.getState().proportionId).toBe('4:5');
+    expect(document.getElementById('custom-proportion-form')).toBeNull();
+
+    const proportionGroup = screen.getByRole('group', { name: 'Proporción' });
+    const groupButtons = within(proportionGroup).getAllByRole('button');
+    expect(groupButtons[groupButtons.length - 1].textContent).toBe('Manual');
+    const newButton = within(proportionGroup).getByRole('button', { name: '4:5' });
+    expect(newButton.getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('proporción personalizada')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar proporción personalizada' }));
+    expect(useBookStore.getState().customProportions).toHaveLength(0);
+    expect(useBookStore.getState().proportionId).not.toBe('4:5');
   });
 });
