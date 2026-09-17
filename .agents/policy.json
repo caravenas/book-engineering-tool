@@ -1,0 +1,11 @@
+{
+  "_comment": [
+    "Reglas de este repositorio que la capa global de agentes lee y aplica en cualquier CLI.",
+    "Se declaran solo las listas que algún adaptador consume hoy: protected_paths, que protect-hook.mjs aplica antes de que corra la herramienta, y worktree_symlinks, que bootstrap.mjs materializa en cada worktree.",
+    "write_paths se omite a propósito: ningún hook lo consume todavía, y declararlo sería configuracion que no hace nada.",
+    "protected_paths: el contrato de verificacion y esta misma declaracion. Son los dos archivos que un agente podria editar para que su propio trabajo pase los controles, en vez de arreglar el trabajo. Protegerlos deja fuera tambien a los agentes que quieran mantenerlos: los edita Chris a mano, a proposito.",
+    "worktree_symlinks vacia: este proyecto no tiene ningun directorio propio, ignorado por git, que un worktree necesite. node_modules ya viene de los defaults globales de workflows/worktree-policy.json, y dist/ se regenera con npm run build."
+  ],
+  "protected_paths": [".verify.conf", ".agents/policy.json"],
+  "worktree_symlinks": []
+}
