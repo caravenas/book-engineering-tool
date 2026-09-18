@@ -214,6 +214,14 @@ El incremento 5 es el siguiente y todavía no está planificado en detalle.
   Hasta confirmarlo, el valor mostrado debe leerse como una referencia preliminar más.
 - Chris decidió el 2026-09-15 que la imposición por firmas incluye la numeración de páginas en el pliego según el esquema de plegado, además de la geometría y los conteos.
 - Quedan pendientes, sin bloquear: tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
+- 2026-09-17, observado por una revisión independiente de UX-5, sin bloquear: la coletilla «guardado solo para esta sesión» depende solo de que el almacenamiento no esté disponible, no de que una escritura falle a mitad de sesión.
+  En ese caso el aviso general aparece pero la nota de la entrada recién añadida no queda calificada.
+  Calificar todas las entradas personalizadas sería peor, porque marcaría como de sesión las que sí se guardaron; resolverlo bien exige seguimiento por entrada, candidato a UX-6 o UX-7.
+- 2026-09-17, observado por la misma revisión, sin bloquear: una vez descartado el aviso de persistencia, no vuelve a aparecer en esa sesión aunque ocurra un fallo de escritura nuevo y distinto.
+  La §3.5 solo pide que sea descartable, así que cumple; pero un fallo nuevo es información nueva y hoy queda callado.
+- 2026-09-17, decisión de alcance de UX-5: se persisten los cinco catálogos personalizados, no la selección actual.
+  Tras recargar, una prensa personalizada sigue en el desplegable pero no queda seleccionada, así que quien trabaje siempre con su propia prensa vuelve a elegirla en cada sesión.
+  Persistir preferencias fue un no objetivo explícito del incremento 1; cambiarlo es otra decisión.
 - 2026-09-17, pendiente de verificar en un navegador: el área táctil ampliada del botón de eliminar gramaje personalizado se extiende 12 px hacia la derecha, hacia su vecino, el botón de añadir.
   Si la invade, un clic dirigido a añadir borraría un gramaje.
   No se pudo medir porque exige un gramaje personalizado en pantalla y el flujo de alta no se completó; el equivalente para pliegos usa 2 px y no corre ese riesgo.
