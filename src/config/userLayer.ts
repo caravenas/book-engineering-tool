@@ -1,13 +1,30 @@
-import type { Binding, CustomGrammageOption, Press, Proportion, SheetSize, UserLayer } from '../types';
+import type {
+  Binding,
+  BindingPatch,
+  CustomGrammageOption,
+  Press,
+  PressPatch,
+  Proportion,
+  ProportionPatch,
+  SheetSize,
+  SheetSizePatch,
+  UserLayer,
+} from '../types';
 import { MAX_BINDING_PAGES } from './validateCatalog';
 
 /**
  * Schema version of the persisted user layer, stored alongside the data so a
- * later increment (UX-6's patches/hides, UX-8's import/export) can migrate an
- * older shape instead of guessing which format it found. A payload with any
- * other version is treated as absent rather than partially trusted.
+ * later increment (UX-8's import/export) can migrate an older shape instead
+ * of guessing which format it found.
+ *
+ * v1 → v2 (UX-6) added the patch and hide lists for the four catalogs with
+ * their own identity (sheet sizes, presses, bindings by id; proportions by
+ * label): `readUserLayer` migrates a v1 payload by keeping its five "alta"
+ * lists untouched and starting every new patch/hide list empty, so nothing
+ * saved under UX-5 is lost. A payload from any other version is treated as
+ * absent rather than partially trusted.
  */
-export const USER_LAYER_SCHEMA_VERSION = 1;
+export const USER_LAYER_SCHEMA_VERSION = 2;
 
 /** Exported so tests can seed or inspect the exact key this module reads and writes. */
 export const USER_LAYER_STORAGE_KEY = 'pliegostack:userLayer';
@@ -20,6 +37,14 @@ export function emptyUserLayer(): UserLayer {
     customSheetSizes: [],
     customPresses: [],
     customBindings: [],
+    proportionPatches: [],
+    sheetSizePatches: [],
+    pressPatches: [],
+    bindingPatches: [],
+    hiddenProportionLabels: [],
+    hiddenSheetSizeIds: [],
+    hiddenPressIds: [],
+    hiddenBindingIds: [],
   };
 }
 
@@ -72,7 +97,12 @@ function isPositiveSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
-function isValidProportion(value: unknown): value is Proportion {
+/** Every key on `changes` must be one this patch's catalog actually declares, so a stray or renamed field is rejected instead of silently carried along. */
+function hasOnlyAllowedKeys(value: Record<string, unknown>, allowedKeys: ReadonlySet<string>): boolean {
+  return Object.keys(value).every(key => allowedKeys.has(key));
+}
+
+export function isValidProportion(value: unknown): value is Proportion {
   if (!isPlainObject(value)) return false;
   const { label, ratio, description } = value;
   return isNonEmptyString(label)
@@ -90,7 +120,7 @@ function isValidCustomGrammageOption(value: unknown): value is CustomGrammageOpt
     && isFiniteNumber(caliper) && caliper > 0;
 }
 
-function isValidSheetSize(value: unknown): value is SheetSize {
+export function isValidSheetSize(value: unknown): value is SheetSize {
   if (!isPlainObject(value)) return false;
   const { id, name, width_mm, height_mm } = value;
   return isNonEmptyString(id) && isNonEmptyString(name)
@@ -98,7 +128,7 @@ function isValidSheetSize(value: unknown): value is SheetSize {
     && isFiniteNumber(height_mm) && height_mm > 0;
 }
 
-function isValidPress(value: unknown): value is Press {
+export function isValidPress(value: unknown): value is Press {
   if (!isPlainObject(value)) return false;
   const {
     id, name, maxSheetWidth_mm, maxSheetHeight_mm, gripperMargin_mm, sideMargin_mm, tailMargin_mm, gutter_mm,
@@ -118,7 +148,7 @@ function isValidPress(value: unknown): value is Press {
   return true;
 }
 
-function isValidBinding(value: unknown): value is Binding {
+export function isValidBinding(value: unknown): value is Binding {
   if (!isPlainObject(value)) return false;
   const {
     id, name, pageMultiple, minPages, maxPages, spineAllowance_mm, nests, requiresSignatureMultiple,
@@ -135,9 +165,102 @@ function isValidBinding(value: unknown): value is Binding {
   return true;
 }
 
+/**
+ * Validate a persisted proportion patch's shape and each present field's own
+ * range, independent of any factory entry: the full cross-field rules only
+ * make sense once the store merges this patch onto its target at apply time
+ * (`useBookStore`'s `patchProportion`), which is also where a merge that
+ * fails those rules is rejected outright rather than persisted.
+ */
+const PROPORTION_PATCH_KEYS = new Set(['ratio', 'description']);
+
+function isValidProportionPatch(value: unknown): value is ProportionPatch {
+  if (!isPlainObject(value)) return false;
+  const { label, changes } = value;
+  if (!isNonEmptyString(label)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, PROPORTION_PATCH_KEYS)) return false;
+
+  if ('description' in changes && !isNonEmptyString(changes.description)) return false;
+  if ('ratio' in changes) {
+    const { ratio } = changes;
+    if (!Array.isArray(ratio) || ratio.length !== 2) return false;
+    const [rw, rh] = ratio;
+    if (!isFiniteNumber(rw) || rw <= 0 || !isFiniteNumber(rh) || rh <= 0) return false;
+  }
+  return true;
+}
+
+const SHEET_SIZE_PATCH_KEYS = new Set(['name', 'width_mm', 'height_mm']);
+
+function isValidSheetSizePatch(value: unknown): value is SheetSizePatch {
+  if (!isPlainObject(value)) return false;
+  const { id, changes } = value;
+  if (!isNonEmptyString(id)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, SHEET_SIZE_PATCH_KEYS)) return false;
+
+  if ('name' in changes && !isNonEmptyString(changes.name)) return false;
+  if ('width_mm' in changes && (!isFiniteNumber(changes.width_mm) || changes.width_mm <= 0)) return false;
+  if ('height_mm' in changes && (!isFiniteNumber(changes.height_mm) || changes.height_mm <= 0)) return false;
+  return true;
+}
+
+const PRESS_PATCH_KEYS = new Set([
+  'name', 'maxSheetWidth_mm', 'maxSheetHeight_mm', 'gripperMargin_mm', 'sideMargin_mm', 'tailMargin_mm', 'gutter_mm',
+]);
+
+function isValidPressPatch(value: unknown): value is PressPatch {
+  if (!isPlainObject(value)) return false;
+  const { id, changes } = value;
+  if (!isNonEmptyString(id)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, PRESS_PATCH_KEYS)) return false;
+
+  if ('name' in changes && !isNonEmptyString(changes.name)) return false;
+  if ('maxSheetWidth_mm' in changes && (!isFiniteNumber(changes.maxSheetWidth_mm) || changes.maxSheetWidth_mm <= 0)) return false;
+  if ('maxSheetHeight_mm' in changes && (!isFiniteNumber(changes.maxSheetHeight_mm) || changes.maxSheetHeight_mm <= 0)) return false;
+  if ('gripperMargin_mm' in changes && (!isFiniteNumber(changes.gripperMargin_mm) || changes.gripperMargin_mm < 0)) return false;
+  if ('sideMargin_mm' in changes && (!isFiniteNumber(changes.sideMargin_mm) || changes.sideMargin_mm < 0)) return false;
+  if ('tailMargin_mm' in changes && (!isFiniteNumber(changes.tailMargin_mm) || changes.tailMargin_mm < 0)) return false;
+  if ('gutter_mm' in changes && (!isFiniteNumber(changes.gutter_mm) || changes.gutter_mm < 0)) return false;
+  return true;
+}
+
+const BINDING_PATCH_KEYS = new Set([
+  'name', 'pageMultiple', 'minPages', 'maxPages', 'spineAllowance_mm', 'nests', 'requiresSignatureMultiple',
+]);
+
+function isValidBindingPatch(value: unknown): value is BindingPatch {
+  if (!isPlainObject(value)) return false;
+  const { id, changes } = value;
+  if (!isNonEmptyString(id)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, BINDING_PATCH_KEYS)) return false;
+
+  if ('name' in changes && !isNonEmptyString(changes.name)) return false;
+  if ('pageMultiple' in changes
+    && (!isPositiveSafeInteger(changes.pageMultiple) || (changes.pageMultiple as number) % 2 !== 0)) return false;
+  if ('minPages' in changes && !isPositiveSafeInteger(changes.minPages)) return false;
+  if ('maxPages' in changes
+    && (!isPositiveSafeInteger(changes.maxPages) || (changes.maxPages as number) > MAX_BINDING_PAGES)) return false;
+  if ('spineAllowance_mm' in changes
+    && (!isFiniteNumber(changes.spineAllowance_mm) || changes.spineAllowance_mm < 0)) return false;
+  if ('nests' in changes && typeof changes.nests !== 'boolean') return false;
+  if ('requiresSignatureMultiple' in changes && typeof changes.requiresSignatureMultiple !== 'boolean') return false;
+  return true;
+}
+
 function filterValid<T>(raw: unknown, isValid: (value: unknown) => value is T): T[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(isValid);
+}
+
+/** The shape every v1 or v2 payload shares: the five "alta" lists, validated entry by entry. */
+function readAltaLists(parsed: Record<string, unknown>) {
+  return {
+    customProportions: filterValid(parsed.customProportions, isValidProportion),
+    customGrammages: filterValid(parsed.customGrammages, isValidCustomGrammageOption),
+    customSheetSizes: filterValid(parsed.customSheetSizes, isValidSheetSize),
+    customPresses: filterValid(parsed.customPresses, isValidPress),
+    customBindings: filterValid(parsed.customBindings, isValidBinding),
+  };
 }
 
 /**
@@ -147,6 +270,11 @@ function filterValid<T>(raw: unknown, isValid: (value: unknown) => value is T): 
  * exhausted quota is treated the same as "nothing saved" rather than an error
  * that would break startup. A malformed entry inside an otherwise well-formed
  * catalog list is dropped individually so unrelated valid entries survive.
+ *
+ * A v1 payload (UX-5, before patches/hides existed) is migrated in place:
+ * its five "alta" lists are kept as they were saved, and every patch/hide
+ * list starts empty. Any other unrecognized version is discarded like a
+ * corrupt payload.
  */
 export function readUserLayer(storage: Storage | null = getDefaultUserLayerStorage()): UserLayer {
   if (!storage) return emptyUserLayer();
@@ -166,16 +294,36 @@ export function readUserLayer(storage: Storage | null = getDefaultUserLayerStora
     return emptyUserLayer();
   }
 
-  if (!isPlainObject(parsed) || parsed.version !== USER_LAYER_SCHEMA_VERSION) {
+  if (!isPlainObject(parsed)) return emptyUserLayer();
+
+  if (parsed.version === 1) {
+    return {
+      ...readAltaLists(parsed),
+      proportionPatches: [],
+      sheetSizePatches: [],
+      pressPatches: [],
+      bindingPatches: [],
+      hiddenProportionLabels: [],
+      hiddenSheetSizeIds: [],
+      hiddenPressIds: [],
+      hiddenBindingIds: [],
+    };
+  }
+
+  if (parsed.version !== USER_LAYER_SCHEMA_VERSION) {
     return emptyUserLayer();
   }
 
   return {
-    customProportions: filterValid(parsed.customProportions, isValidProportion),
-    customGrammages: filterValid(parsed.customGrammages, isValidCustomGrammageOption),
-    customSheetSizes: filterValid(parsed.customSheetSizes, isValidSheetSize),
-    customPresses: filterValid(parsed.customPresses, isValidPress),
-    customBindings: filterValid(parsed.customBindings, isValidBinding),
+    ...readAltaLists(parsed),
+    proportionPatches: filterValid(parsed.proportionPatches, isValidProportionPatch),
+    sheetSizePatches: filterValid(parsed.sheetSizePatches, isValidSheetSizePatch),
+    pressPatches: filterValid(parsed.pressPatches, isValidPressPatch),
+    bindingPatches: filterValid(parsed.bindingPatches, isValidBindingPatch),
+    hiddenProportionLabels: filterValid(parsed.hiddenProportionLabels, isNonEmptyString),
+    hiddenSheetSizeIds: filterValid(parsed.hiddenSheetSizeIds, isNonEmptyString),
+    hiddenPressIds: filterValid(parsed.hiddenPressIds, isNonEmptyString),
+    hiddenBindingIds: filterValid(parsed.hiddenBindingIds, isNonEmptyString),
   };
 }
 

@@ -410,6 +410,336 @@ describe('Binding selector', () => {
   });
 });
 
+describe('UX-6: components read the effective catalog', () => {
+  it('excludes a hidden press from the press dropdown', () => {
+    useBookStore.getState().hidePress('prensa_70x100');
+    render(<ImpositionVisualizer />);
+
+    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
+  });
+
+  it('shows a patched binding name in the dropdown instead of its factory name', () => {
+    useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
+    render(<BindingPanel />);
+
+    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
+    expect(select.value).toBe('grapa');
+    expect(within(select).getByRole('option', { name: 'Grapa personalizada' })).toBeTruthy();
+    expect(within(select).queryByRole('option', { name: 'Grapa (caballete)' })).toBeNull();
+  });
+});
+
+describe('Hide and restore factory entries (UX-6)', () => {
+  it('hides the selected factory press with its own control, shows a restore line, and restores it', () => {
+    render(<ImpositionVisualizer />);
+    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
+    expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar prensa de fábrica' }));
+
+    expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
+    expect(screen.getByText(/1 prensa de fábrica oculta/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar prensas ocultas' }));
+
+    expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
+    expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
+  });
+
+  it('hides the selected factory sheet size with its own control, shows a restore line, and restores it', () => {
+    render(<ImpositionVisualizer />);
+    const select = screen.getByLabelText('Pliego seleccionado') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
+    expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar pliego de fábrica' }));
+
+    expect(Array.from(select.options).map(option => option.value)).not.toContain('pliego_70x100');
+    expect(screen.getByText(/1 pliego de fábrica oculto/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar pliegos ocultos' }));
+
+    expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
+    expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
+  });
+
+  it('hides the selected factory binding with its own control, shows a restore line, and restores it', () => {
+    render(<BindingPanel />);
+    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
+    expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar encuadernación de fábrica' }));
+
+    expect(Array.from(select.options).map(option => option.value)).not.toContain('grapa');
+    expect(screen.getByText(/1 encuadernación de fábrica oculta/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar encuadernaciones ocultas' }));
+
+    expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
+    expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
+  });
+
+  it('hides the selected factory proportion with its own control, shows a restore line, and restores it', () => {
+    render(<CanvasDesigner />);
+    const proportionGroup = screen.getByRole('group', { name: 'Proporción' });
+    expect(within(proportionGroup).getByRole('button', { name: '2:3' })).toBeTruthy();
+    expect(screen.queryByText(/proporción de fábrica oculta/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar proporción de fábrica' }));
+
+    expect(within(proportionGroup).queryByRole('button', { name: '2:3' })).toBeNull();
+    expect(screen.getByText(/1 proporción de fábrica oculta/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mostrar proporciones ocultas' }));
+
+    expect(within(proportionGroup).getByRole('button', { name: '2:3' })).toBeTruthy();
+    expect(screen.queryByText(/proporción de fábrica oculta/)).toBeNull();
+  });
+});
+
+describe('Catalog origin badge (UX-6)', () => {
+  it('shows "de fábrica" for an untouched factory binding', () => {
+    render(<BindingPanel />);
+
+    expect(screen.getByText('de fábrica')).toBeTruthy();
+  });
+
+  it('shows "editado" for a patched factory binding', () => {
+    useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
+    render(<BindingPanel />);
+
+    expect(screen.getByText('editado')).toBeTruthy();
+  });
+
+  it('shows "tuyo" for a custom binding', () => {
+    const added = useBookStore.getState().addCustomBinding('Encuadernación de prueba', 4, 8, 64, 5, true, false);
+    expect(added).toBe(true);
+    render(<BindingPanel />);
+
+    expect(screen.getByText('tuyo')).toBeTruthy();
+  });
+});
+
+describe('Edit a factory press or sheet size (UX-6)', () => {
+  it('edits a field of a factory press from the interface, and the badge switches to "editado"', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
+    expect((screen.getByLabelText('Ancho máximo de pliego') as HTMLInputElement).value).toBe('720');
+
+    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+
+    expect(useBookStore.getState().pressPatches).toEqual([
+      { id: 'prensa_70x100', changes: { maxSheetWidth_mm: 800 } },
+    ]);
+    expect(screen.getByText('editado')).toBeTruthy();
+  });
+
+  it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+
+    // Re-open the form: it must pre-load with the effective (already patched) values.
+    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
+    expect((screen.getByLabelText('Ancho máximo de pliego') as HTMLInputElement).value).toBe('800');
+    fireEvent.change(screen.getByLabelText('Margen de cola'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+
+    expect(useBookStore.getState().pressPatches).toEqual([
+      { id: 'prensa_70x100', changes: { maxSheetWidth_mm: 800, tailMargin_mm: 20 } },
+    ]);
+  });
+
+  it('restores a patched press to its factory values with the undo control', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    useBookStore.getState().patchPress('prensa_70x100', { maxSheetWidth_mm: 800 });
+    render(<ImpositionVisualizer />);
+    const pressGroup = screen.getByRole('group', { name: 'Prensa' });
+
+    expect(within(pressGroup).getByText('editado')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver la prensa a fábrica' }));
+
+    expect(useBookStore.getState().pressPatches).toEqual([]);
+    expect(within(pressGroup).getByText('de fábrica')).toBeTruthy();
+  });
+
+  it('edits a field of a factory sheet size from the interface, and the badge switches to "editado"', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    expect((screen.getByLabelText('Ancho') as HTMLInputElement).value).toBe('700');
+
+    fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '750' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+
+    expect(useBookStore.getState().sheetSizePatches).toEqual([
+      { id: 'pliego_70x100', changes: { width_mm: 750 } },
+    ]);
+    expect(screen.getByText('editado')).toBeTruthy();
+  });
+
+  it('persists two sheet size edits made in separate save actions, instead of the last one overwriting the first', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '750' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+
+    // Re-open the form: it must pre-load with the effective (already patched) values.
+    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    expect((screen.getByLabelText('Ancho') as HTMLInputElement).value).toBe('750');
+    fireEvent.change(screen.getByLabelText('Alto'), { target: { value: '1050' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+
+    expect(useBookStore.getState().sheetSizePatches).toEqual([
+      { id: 'pliego_70x100', changes: { width_mm: 750, height_mm: 1050 } },
+    ]);
+  });
+
+  it('restores a patched sheet size to its factory values with the undo control', () => {
+    useBookStore.getState().setSheetSize('pliego_70x100');
+    useBookStore.getState().patchSheetSize('pliego_70x100', { width_mm: 750 });
+    render(<ImpositionVisualizer />);
+    const sheetGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
+
+    expect(within(sheetGroup).getByText('editado')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver el pliego a fábrica' }));
+
+    expect(useBookStore.getState().sheetSizePatches).toEqual([]);
+    expect(within(sheetGroup).getByText('de fábrica')).toBeTruthy();
+  });
+
+  it('cancelling the press edit form clears the store error and leaves the patch untouched', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    render(<ImpositionVisualizer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+    expect(screen.getByRole('alert').textContent).toContain('Los cambios dejarían la prensa con datos inválidos.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar edición de prensa' }));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(useBookStore.getState().pressPatches).toEqual([]);
+  });
+});
+
+describe('Edit a factory binding or proportion (UX-6)', () => {
+  it('edits a field of a factory binding from the interface, and the badge switches to "editado"', () => {
+    render(<BindingPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    expect((screen.getByLabelText('Aporte al lomo') as HTMLInputElement).value).toBe('0');
+
+    fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+
+    expect(useBookStore.getState().bindingPatches).toEqual([
+      { id: 'grapa', changes: { spineAllowance_mm: 5 } },
+    ]);
+    expect(screen.getByText('editado')).toBeTruthy();
+  });
+
+  it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
+    render(<BindingPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+
+    // Re-open the form: it must pre-load with the effective (already patched) values.
+    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    expect((screen.getByLabelText('Aporte al lomo') as HTMLInputElement).value).toBe('5');
+    fireEvent.change(screen.getByLabelText('Mínimo de páginas'), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+
+    expect(useBookStore.getState().bindingPatches).toEqual([
+      { id: 'grapa', changes: { spineAllowance_mm: 5, minPages: 12 } },
+    ]);
+  });
+
+  it('restores a patched binding to its factory values with the undo control', () => {
+    useBookStore.getState().patchBinding('grapa', { spineAllowance_mm: 5 });
+    render(<BindingPanel />);
+
+    expect(screen.getByText('editado')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver la encuadernación a fábrica' }));
+
+    expect(useBookStore.getState().bindingPatches).toEqual([]);
+    expect(screen.getByText('de fábrica')).toBeTruthy();
+  });
+
+  it('edits a field of a factory proportion from the interface, and the badge switches to "editado"', () => {
+    render(<CanvasDesigner />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
+    expect((screen.getByLabelText('Proporción (ancho)') as HTMLInputElement).value).toBe('2');
+
+    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+
+    expect(useBookStore.getState().proportionPatches).toEqual([
+      { label: '2:3', changes: { ratio: [4, 3] } },
+    ]);
+    expect(screen.getByText('editado')).toBeTruthy();
+  });
+
+  it('persists two proportion edits made in separate save actions, instead of the last one overwriting the first', () => {
+    render(<CanvasDesigner />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+
+    // Re-open the form: it must pre-load with the effective (already patched) values.
+    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
+    expect((screen.getByLabelText('Proporción (ancho)') as HTMLInputElement).value).toBe('4');
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Proporción personalizada' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+
+    expect(useBookStore.getState().proportionPatches).toEqual([
+      { label: '2:3', changes: { ratio: [4, 3], description: 'Proporción personalizada' } },
+    ]);
+  });
+
+  it('restores a patched proportion to its factory values with the undo control', () => {
+    useBookStore.getState().patchProportion('2:3', { ratio: [4, 3] });
+    render(<CanvasDesigner />);
+
+    expect(screen.getByText('editado')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver la proporción a fábrica' }));
+
+    expect(useBookStore.getState().proportionPatches).toEqual([]);
+    expect(screen.getByText('de fábrica')).toBeTruthy();
+  });
+
+  it('cancelling the binding edit form clears the store error and leaves the patch untouched', () => {
+    render(<BindingPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+    expect(screen.getByRole('alert').textContent).toContain('Los cambios dejarían la encuadernación con datos inválidos.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar edición de encuadernación' }));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(useBookStore.getState().bindingPatches).toEqual([]);
+  });
+});
+
 describe('Signature imposition preview', () => {
   it('renders the page numbers of the selected side', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');

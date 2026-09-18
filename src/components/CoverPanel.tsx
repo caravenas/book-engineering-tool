@@ -162,11 +162,13 @@ function getHardCoverSvg(result: HardCoverResult, rawCover: Cover): HardCoverSvg
 }
 
 export function CoverPanel() {
-  const { catalog, coverId, bindingId, customBindings, setCover, coverPlan, coverError } = useBookStore();
+  const {
+    catalog, coverId, bindingId, customBindings, bindingPatches, hiddenBindingIds, setCover, coverPlan, coverError,
+  } = useBookStore();
 
   const selectedCover = catalog?.covers.find(cover => cover.id === coverId) ?? null;
   const selectedBinding = catalog
-    ? getAllBindings(catalog, customBindings).find(binding => binding.id === bindingId) ?? null
+    ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds).find(binding => binding.id === bindingId) ?? null
     : null;
   const plan = coverPlan?.ok ? coverPlan.cover : null;
 

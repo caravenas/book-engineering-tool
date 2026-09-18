@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getAllGrammageOptions, useBookStore } from '../store/useBookStore';
+import { emptyUserLayer } from '../config/userLayer';
 import { loadShippedCatalog } from './testCatalog';
 
 const initialState = useBookStore.getState();
@@ -713,5 +714,66 @@ describe('Actions before initialize', () => {
     expect(addedGrammage).toBe(false);
     // A genuine no-op never produces a new state object, not just equal values.
     expect(useBookStore.getState()).toBe(before);
+  });
+});
+
+describe('Initialize resolves default selections against the effective catalog (UX-6)', () => {
+  it('falls back to a visible sheet size when the default one is hidden', () => {
+    useBookStore.setState(initialState);
+    useBookStore.getState().initialize(catalog, {
+      ...emptyUserLayer(),
+      hiddenSheetSizeIds: [catalog.defaults.sheetSizeId],
+    });
+
+    const state = useBookStore.getState();
+    expect(state.sheetSizeId).not.toBe(catalog.defaults.sheetSizeId);
+    expect(state.hiddenSheetSizeIds).not.toContain(state.sheetSizeId);
+  });
+
+  it('falls back to a visible press when the default one is hidden', () => {
+    useBookStore.setState(initialState);
+    useBookStore.getState().initialize(catalog, {
+      ...emptyUserLayer(),
+      hiddenPressIds: [catalog.defaults.pressId],
+    });
+
+    const state = useBookStore.getState();
+    expect(state.pressId).not.toBe(catalog.defaults.pressId);
+    expect(state.hiddenPressIds).not.toContain(state.pressId);
+  });
+
+  it('falls back to a visible binding when the default one is hidden', () => {
+    useBookStore.setState(initialState);
+    useBookStore.getState().initialize(catalog, {
+      ...emptyUserLayer(),
+      hiddenBindingIds: [catalog.defaults.bindingId],
+    });
+
+    const state = useBookStore.getState();
+    expect(state.bindingId).not.toBe(catalog.defaults.bindingId);
+    expect(state.hiddenBindingIds).not.toContain(state.bindingId);
+  });
+
+  it('falls back to a visible proportion when the default one is hidden', () => {
+    useBookStore.setState(initialState);
+    useBookStore.getState().initialize(catalog, {
+      ...emptyUserLayer(),
+      hiddenProportionLabels: [catalog.defaults.proportionId],
+    });
+
+    const state = useBookStore.getState();
+    expect(state.proportionId).not.toBe(catalog.defaults.proportionId);
+    expect(state.proportionId).not.toBeNull();
+    expect(state.hiddenProportionLabels).not.toContain(state.proportionId as string);
+  });
+
+  it('falls back to Manual when every proportion is hidden', () => {
+    useBookStore.setState(initialState);
+    useBookStore.getState().initialize(catalog, {
+      ...emptyUserLayer(),
+      hiddenProportionLabels: catalog.proportions.map(proportion => proportion.label),
+    });
+
+    expect(useBookStore.getState().proportionId).toBeNull();
   });
 });

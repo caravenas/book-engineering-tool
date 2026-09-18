@@ -302,13 +302,82 @@ export type UnitSystem = 'metric' | 'imperial';
 
 // ─── User Layer Persistence ───────────────────────────────────────────────
 
-/** The five user-added catalogs, exactly as persisted to and read from browser storage. */
+/**
+ * A patch stores only the fields the user changed on a factory proportion,
+ * identified by its label (a proportion's id). Never a copy of the whole
+ * entry: an update to `formatos.json` that adds a field, or changes a field
+ * the user never touched, is inherited automatically because that field
+ * simply isn't in `changes`.
+ */
+export interface ProportionPatch {
+  label: string;
+  changes: Partial<Pick<Proportion, 'ratio' | 'description'>>;
+}
+
+/** A patch on a factory sheet size, identified by its id. See {@link ProportionPatch}. */
+export interface SheetSizePatch {
+  id: string;
+  changes: Partial<Pick<SheetSize, 'name' | 'width_mm' | 'height_mm'>>;
+}
+
+/** A patch on a factory press, identified by its id. See {@link ProportionPatch}. */
+export interface PressPatch {
+  id: string;
+  changes: Partial<Omit<Press, 'id'>>;
+}
+
+/** A patch on a factory binding, identified by its id. See {@link ProportionPatch}. */
+export interface BindingPatch {
+  id: string;
+  changes: Partial<Omit<Binding, 'id'>>;
+}
+
+/**
+ * The five user-added catalogs, plus (UX-6) the patches and hides for the
+ * four catalogs that have their own identity: sheet sizes, presses and
+ * bindings by id, and proportions by label. Grammages are options nested per
+ * substrate rather than entries with their own id, so patching them is a
+ * different shape of problem; covers and folding schemes have no editing
+ * surface at all. All three are intentionally left for UX-7's full catalog
+ * screen, not an oversight here.
+ *
+ * Exactly as persisted to and read from browser storage: the effective
+ * catalog (factory + patches - hides + altas) is computed on every load and
+ * is never itself written back here.
+ */
 export interface UserLayer {
   customProportions: Proportion[];
   customGrammages: CustomGrammageOption[];
   customSheetSizes: SheetSize[];
   customPresses: Press[];
   customBindings: Binding[];
+
+  proportionPatches: ProportionPatch[];
+  sheetSizePatches: SheetSizePatch[];
+  pressPatches: PressPatch[];
+  bindingPatches: BindingPatch[];
+
+  hiddenProportionLabels: string[];
+  hiddenSheetSizeIds: string[];
+  hiddenPressIds: string[];
+  hiddenBindingIds: string[];
+}
+
+/**
+ * A patch or a hide whose target (a factory id, or a label for proportions)
+ * no longer exists in the loaded catalog. Detected fresh on every load and
+ * after every user-layer write; never causes the orphaned record itself to
+ * be dropped from storage, so the work survives if the id comes back in a
+ * later catalog update.
+ */
+export type OrphanedUserLayerEntryKind =
+  | 'proportionPatch' | 'sheetSizePatch' | 'pressPatch' | 'bindingPatch'
+  | 'hiddenProportion' | 'hiddenSheetSize' | 'hiddenPress' | 'hiddenBinding';
+
+export interface OrphanedUserLayerEntry {
+  kind: OrphanedUserLayerEntryKind;
+  /** The factory id (or, for proportions, label) this entry pointed to that no longer exists. */
+  targetId: string;
 }
 
 // ─── Global Book Configuration (Store State) ─────────────────────────────
@@ -318,6 +387,8 @@ export interface BookConfig {
   format: BookFormat;
   proportionId: string | null;   // null = custom dimensions
   customProportions: Proportion[];  // User-added proportions
+  proportionPatches: ProportionPatch[];      // Edits to factory proportions, by label
+  hiddenProportionLabels: string[];          // Factory proportions hidden by the user
   pageWidth_mm: number;
   pageHeight_mm: number;
   bleed_mm: number;
@@ -334,10 +405,14 @@ export interface BookConfig {
   // Imposition
   sheetSizeId: string;
   customSheetSizes: SheetSize[];      // User-added sheet sizes
+  sheetSizePatches: SheetSizePatch[]; // Edits to factory sheet sizes, by id
+  hiddenSheetSizeIds: string[];       // Factory sheet sizes hidden by the user
 
   // Signature imposition
   pressId: string;
   customPresses: Press[];      // User-added presses
+  pressPatches: PressPatch[];  // Edits to factory presses, by id
+  hiddenPressIds: string[];    // Factory presses hidden by the user
   foldingSchemeId: string | null;   // null = automatic selection (least waste)
 
   // Spine & Weight
@@ -346,6 +421,8 @@ export interface BookConfig {
   // Binding
   bindingId: string;
   customBindings: Binding[];      // User-added bindings
+  bindingPatches: BindingPatch[]; // Edits to factory bindings, by id
+  hiddenBindingIds: string[];     // Factory bindings hidden by the user
 
   // Cover
   coverId: string;
@@ -369,14 +446,21 @@ export interface BookStore extends BookConfig {
   coverPlan: CoverPlanResult | null;
   coverError: string | null;
   customGrammageError: string | null;
+  customSheetSizeError: string | null;
   customPressError: string | null;
   customBindingError: string | null;
   customProportionError: string | null;
 
   // User layer persistence (checked once at startup; the write flag updates
-  // after every alta/baja of the five custom catalogs)
+  // after every alta/baja/patch/hide of the four catalogs with an editing
+  // surface, plus grammages)
   userLayerStorageAvailable: boolean;
   userLayerWriteFailed: boolean;
+
+  // Patches or hides whose target no longer exists in the loaded catalog,
+  // recomputed on every load and every user-layer write, for the interface
+  // to warn about (UX-6, see the `UserLayer`/`OrphanedUserLayerEntry` docs).
+  orphanedUserLayerEntries: OrphanedUserLayerEntry[];
 
   // Actions
   initialize: (catalog: Catalog, userLayer?: UserLayer) => void;
@@ -396,6 +480,11 @@ export interface BookStore extends BookConfig {
   setCover: (coverId: string) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;
   removeCustomSheetSize: (id: string) => void;
+  patchSheetSize: (id: string, changes: Partial<Pick<SheetSize, 'name' | 'width_mm' | 'height_mm'>>) => boolean;
+  unpatchSheetSize: (id: string) => void;
+  hideSheetSize: (id: string) => void;
+  showSheetSize: (id: string) => void;
+  clearCustomSheetSizeError: () => void;
   addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => boolean;
   removeCustomGrammage: (substrateId: string, grammage: number) => void;
   clearCustomGrammageError: () => void;
@@ -409,6 +498,10 @@ export interface BookStore extends BookConfig {
     gutter_mm: number
   ) => boolean;
   removeCustomPress: (id: string) => void;
+  patchPress: (id: string, changes: Partial<Omit<Press, 'id'>>) => boolean;
+  unpatchPress: (id: string) => void;
+  hidePress: (id: string) => void;
+  showPress: (id: string) => void;
   clearCustomPressError: () => void;
   addCustomBinding: (
     name: string,
@@ -420,9 +513,17 @@ export interface BookStore extends BookConfig {
     requiresSignatureMultiple: boolean
   ) => boolean;
   removeCustomBinding: (id: string) => void;
+  patchBinding: (id: string, changes: Partial<Omit<Binding, 'id'>>) => boolean;
+  unpatchBinding: (id: string) => void;
+  hideBinding: (id: string) => void;
+  showBinding: (id: string) => void;
   clearCustomBindingError: () => void;
   addCustomProportion: (label: string, ratioWidth: number, ratioHeight: number, description: string) => boolean;
   removeCustomProportion: (label: string) => void;
+  patchProportion: (label: string, changes: Partial<Pick<Proportion, 'ratio' | 'description'>>) => boolean;
+  unpatchProportion: (label: string) => void;
+  hideProportion: (label: string) => void;
+  showProportion: (label: string) => void;
   clearCustomProportionError: () => void;
   recalculate: () => void;
 }

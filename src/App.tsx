@@ -3,6 +3,7 @@ import { useBookStore, userLayerStorage } from './store/useBookStore';
 import { loadCatalog } from './config/loadCatalog';
 import { readUserLayer } from './config/userLayer';
 import type { ConfigError } from './config/validateCatalog';
+import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
 import { CanvasDesigner } from './components/CanvasDesigner';
 import { SubstrateSelector } from './components/SubstrateSelector';
 import { ImpositionVisualizer } from './components/ImpositionVisualizer';
@@ -21,13 +22,54 @@ const UNEXPECTED_ERROR: ConfigError = {
   message: 'Ocurrió un error inesperado al cargar la configuración.',
 };
 
+/** Which catalog an orphaned entry's `targetId` used to belong to, named the way the rest of the UI names that catalog. */
+const ORPHAN_CATALOG_NAME: Record<OrphanedUserLayerEntryKind, string> = {
+  proportionPatch: 'proporciones',
+  sheetSizePatch: 'pliegos',
+  pressPatch: 'prensas',
+  bindingPatch: 'encuadernaciones',
+  hiddenProportion: 'proporciones',
+  hiddenSheetSize: 'pliegos',
+  hiddenPress: 'prensas',
+  hiddenBinding: 'encuadernaciones',
+};
+
+/** Whether an orphaned entry is a patch (edited a factory entry) or a hide (hid a factory entry). */
+function describeOrphanKind(kind: OrphanedUserLayerEntryKind): string {
+  return kind.startsWith('hidden') ? 'un ocultamiento' : 'un parche';
+}
+
 export default function App() {
   const initialize = useBookStore(state => state.initialize);
   const userLayerStorageAvailable = useBookStore(state => state.userLayerStorageAvailable);
   const userLayerWriteFailed = useBookStore(state => state.userLayerWriteFailed);
+  const orphanedUserLayerEntries = useBookStore(state => state.orphanedUserLayerEntries);
+  const unpatchProportion = useBookStore(state => state.unpatchProportion);
+  const unpatchSheetSize = useBookStore(state => state.unpatchSheetSize);
+  const unpatchPress = useBookStore(state => state.unpatchPress);
+  const unpatchBinding = useBookStore(state => state.unpatchBinding);
+  const showProportion = useBookStore(state => state.showProportion);
+  const showSheetSize = useBookStore(state => state.showSheetSize);
+  const showPress = useBookStore(state => state.showPress);
+  const showBinding = useBookStore(state => state.showBinding);
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
   const [persistenceNoticeDismissed, setPersistenceNoticeDismissed] = useState(false);
+  const [orphanNoticeDismissed, setOrphanNoticeDismissed] = useState(false);
   const showPersistenceNotice = (!userLayerStorageAvailable || userLayerWriteFailed) && !persistenceNoticeDismissed;
+  const showOrphanNotice = orphanedUserLayerEntries.length > 0 && !orphanNoticeDismissed;
+
+  function removeOrphan(entry: OrphanedUserLayerEntry): void {
+    switch (entry.kind) {
+      case 'proportionPatch': unpatchProportion(entry.targetId); break;
+      case 'sheetSizePatch': unpatchSheetSize(entry.targetId); break;
+      case 'pressPatch': unpatchPress(entry.targetId); break;
+      case 'bindingPatch': unpatchBinding(entry.targetId); break;
+      case 'hiddenProportion': showProportion(entry.targetId); break;
+      case 'hiddenSheetSize': showSheetSize(entry.targetId); break;
+      case 'hiddenPress': showPress(entry.targetId); break;
+      case 'hiddenBinding': showBinding(entry.targetId); break;
+    }
+  }
 
   // Load the runtime catalog once on mount; guard against StrictMode's
   // double effect invocation and against state updates after unmount.
@@ -117,6 +159,51 @@ export default function App() {
               >
                 ×
               </button>
+            </div>
+          )}
+
+          {loadState.status === 'ready' && showOrphanNotice && (
+            <div
+              className="config-status"
+              role="status"
+              style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+                <span>
+                  Hay cambios guardados que ya no corresponden a ningún elemento del catálogo actual.
+                  Se conservan por si el elemento vuelve en una futura actualización; puedes eliminarlos si ya no los necesitas:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setOrphanNoticeDismissed(true)}
+                  aria-label="Cerrar aviso de registros huérfanos"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {orphanedUserLayerEntries.map(entry => (
+                  <li
+                    key={`${entry.kind}-${entry.targetId}`}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}
+                  >
+                    <span>
+                      {describeOrphanKind(entry.kind)} de {ORPHAN_CATALOG_NAME[entry.kind]} para «{entry.targetId}»
+                    </span>
+                    <button type="button" onClick={() => removeOrphan(entry)}>
+                      Eliminar «{entry.targetId}»
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

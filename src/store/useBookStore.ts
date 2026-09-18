@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   Binding,
+  BindingPatch,
   BindingSpineResult,
   BookConfig,
   BookFormat,
@@ -9,9 +10,13 @@ import type {
   CustomGrammageOption,
   GrammageOption,
   ImpositionResult,
+  OrphanedUserLayerEntry,
   Press,
+  PressPatch,
   Proportion,
+  ProportionPatch,
   SheetSize,
+  SheetSizePatch,
   SignaturePlanResult,
   SpineResult,
   UserLayer,
@@ -22,17 +27,69 @@ import { planSignatures } from '../engine/signatures';
 import { creepCompensation, spineWithBinding, validatePageCount } from '../engine/binding';
 import { planCover } from '../engine/cover';
 import { MAX_BINDING_PAGES } from '../config/validateCatalog';
-import { emptyUserLayer, getDefaultUserLayerStorage, isUserLayerStorageAvailable, writeUserLayer } from '../config/userLayer';
+import {
+  emptyUserLayer,
+  getDefaultUserLayerStorage,
+  isUserLayerStorageAvailable,
+  isValidBinding,
+  isValidPress,
+  isValidProportion,
+  isValidSheetSize,
+  writeUserLayer,
+} from '../config/userLayer';
 
 /**
- * Get all sheet sizes (catalog + custom).
+ * Apply a catalog's patches to its factory entries (dropping any patch whose
+ * target no longer exists among them — that patch is an orphan, handled
+ * separately by `computeOrphanedUserLayerEntries`, not silently applied),
+ * exclude hidden entries, and append the user's own additions ("altas").
+ * Order matters, per UX-6 (`docs/UX-REVIEW.md` §3.2-3.3): patch, then hide,
+ * then add — an alta can never be hidden or patched, and a hide always wins
+ * over a patch on the same factory entry.
  */
-function getAllSheetSizes(catalog: Catalog, customSheetSizes: SheetSize[]): SheetSize[] {
-  return [...catalog.sheetSizes, ...customSheetSizes];
+function mergeCatalogWithPatches<Entry, Patch extends { changes: Partial<Entry> }>(
+  factoryEntries: Entry[],
+  getKey: (entry: Entry) => string,
+  patches: Patch[],
+  getPatchKey: (patch: Patch) => string,
+  hiddenKeys: readonly string[],
+  customEntries: Entry[]
+): Entry[] {
+  const patchByKey = new Map(patches.map(patch => [getPatchKey(patch), patch]));
+  const hidden = new Set(hiddenKeys);
+
+  const effective = factoryEntries
+    .filter(entry => !hidden.has(getKey(entry)))
+    .map(entry => {
+      const patch = patchByKey.get(getKey(entry));
+      return patch ? { ...entry, ...patch.changes } : entry;
+    });
+
+  return [...effective, ...customEntries];
 }
 
 /**
- * Get all grammage options for a substrate (catalog + custom).
+ * Get all sheet sizes (factory, patched and with hidden ones excluded, + custom).
+ */
+function getAllSheetSizes(
+  catalog: Catalog,
+  customSheetSizes: SheetSize[],
+  sheetSizePatches: SheetSizePatch[],
+  hiddenSheetSizeIds: readonly string[]
+): SheetSize[] {
+  return mergeCatalogWithPatches(
+    catalog.sheetSizes, sheet => sheet.id,
+    sheetSizePatches, patch => patch.id,
+    hiddenSheetSizeIds,
+    customSheetSizes
+  );
+}
+
+/**
+ * Get all grammage options for a substrate (catalog + custom). Grammages are
+ * options nested per substrate rather than entries with their own id, so
+ * UX-6's patch/hide model does not apply to them (see the `UserLayer` doc
+ * comment in `src/types/index.ts`); this stays exactly as UX-5 left it.
  */
 function getAllGrammageOptions(
   catalog: Catalog,
@@ -62,38 +119,81 @@ function getCaliper(
 /**
  * Get sheet dimensions by ID.
  */
-function getSheetDimensions(catalog: Catalog, sheetSizeId: string, customSheetSizes: SheetSize[]) {
-  const allSheets = getAllSheetSizes(catalog, customSheetSizes);
+function getSheetDimensions(
+  catalog: Catalog,
+  sheetSizeId: string,
+  customSheetSizes: SheetSize[],
+  sheetSizePatches: SheetSizePatch[],
+  hiddenSheetSizeIds: readonly string[]
+) {
+  const allSheets = getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds);
   const sheet = allSheets.find(s => s.id === sheetSizeId);
   return sheet ? { width: sheet.width_mm, height: sheet.height_mm } : { width: 0, height: 0 };
 }
 
 /**
- * Get all presses (catalog + custom).
+ * Get all presses (factory, patched and with hidden ones excluded, + custom).
  */
-function getAllPresses(catalog: Catalog, customPresses: Press[]): Press[] {
-  return [...catalog.presses, ...customPresses];
+function getAllPresses(
+  catalog: Catalog,
+  customPresses: Press[],
+  pressPatches: PressPatch[],
+  hiddenPressIds: readonly string[]
+): Press[] {
+  return mergeCatalogWithPatches(
+    catalog.presses, press => press.id,
+    pressPatches, patch => patch.id,
+    hiddenPressIds,
+    customPresses
+  );
 }
 
 /**
- * Get all bindings (catalog + custom).
+ * Get all bindings (factory, patched and with hidden ones excluded, + custom).
  */
-function getAllBindings(catalog: Catalog, customBindings: Binding[]): Binding[] {
-  return [...catalog.bindings, ...customBindings];
+function getAllBindings(
+  catalog: Catalog,
+  customBindings: Binding[],
+  bindingPatches: BindingPatch[],
+  hiddenBindingIds: readonly string[]
+): Binding[] {
+  return mergeCatalogWithPatches(
+    catalog.bindings, binding => binding.id,
+    bindingPatches, patch => patch.id,
+    hiddenBindingIds,
+    customBindings
+  );
 }
 
 /**
- * Get all proportions (catalog + custom).
+ * Get all proportions (factory, patched and with hidden ones excluded, + custom).
+ * Proportions have no id field: their label is their identity.
  */
-function getAllProportions(catalog: Catalog, customProportions: Proportion[]): Proportion[] {
-  return [...catalog.proportions, ...customProportions];
+function getAllProportions(
+  catalog: Catalog,
+  customProportions: Proportion[],
+  proportionPatches: ProportionPatch[],
+  hiddenProportionLabels: readonly string[]
+): Proportion[] {
+  return mergeCatalogWithPatches(
+    catalog.proportions, proportion => proportion.label,
+    proportionPatches, patch => patch.label,
+    hiddenProportionLabels,
+    customProportions
+  );
 }
 
 /**
  * Get a press by ID (catalog + custom).
  */
-function getPress(catalog: Catalog, pressId: string, customPresses: Press[]): Press | undefined {
-  return getAllPresses(catalog, customPresses).find(p => p.id === pressId);
+function getPress(
+  catalog: Catalog,
+  pressId: string,
+  customPresses: Press[],
+  pressPatches: PressPatch[],
+  hiddenPressIds: readonly string[]
+): Press | undefined {
+  return getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds).find(p => p.id === pressId);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -114,55 +214,109 @@ function namesMatch(a: string, b: string): boolean {
  * Merge a persisted user layer into a freshly loaded catalog for `initialize`.
  * Only `customGrammages` references another catalog by id (`substrateId`):
  * an entry whose substrate no longer exists is dropped instead of breaking
- * startup, since the orphan warning itself is UX-6's job, not this one's.
- * The other four catalogs are self-contained records, so they pass through
- * unfiltered.
+ * startup, since that isn't a patch or a hide to begin with. The five "alta"
+ * catalogs and the eight UX-6 patch/hide lists are otherwise self-contained
+ * records, so they pass through unfiltered — a patch or hide whose target no
+ * longer exists in `catalog` is kept exactly as read (see
+ * `computeOrphanedUserLayerEntries`) rather than dropped here.
  */
-function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Pick<
-  BookConfig,
-  'customProportions' | 'customGrammages' | 'customSheetSizes' | 'customPresses' | 'customBindings'
-> {
+function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Omit<UserLayer, 'customGrammages'> & Pick<UserLayer, 'customGrammages'> {
   const knownSubstrateIds = new Set(catalog.substrates.map(s => s.id));
   return {
-    customProportions: userLayer.customProportions,
+    ...userLayer,
     customGrammages: userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId)),
-    customSheetSizes: userLayer.customSheetSizes,
-    customPresses: userLayer.customPresses,
-    customBindings: userLayer.customBindings,
+  };
+}
+
+/** Extract the persistable user layer (the thirteen fields UX-5/UX-6 own) from the current book config. */
+function extractUserLayer(state: BookConfig): UserLayer {
+  return {
+    customProportions: state.customProportions,
+    customGrammages: state.customGrammages,
+    customSheetSizes: state.customSheetSizes,
+    customPresses: state.customPresses,
+    customBindings: state.customBindings,
+    proportionPatches: state.proportionPatches,
+    sheetSizePatches: state.sheetSizePatches,
+    pressPatches: state.pressPatches,
+    bindingPatches: state.bindingPatches,
+    hiddenProportionLabels: state.hiddenProportionLabels,
+    hiddenSheetSizeIds: state.hiddenSheetSizeIds,
+    hiddenPressIds: state.hiddenPressIds,
+    hiddenBindingIds: state.hiddenBindingIds,
   };
 }
 
 /**
- * Persist the five custom catalogs found in `mergedState` (the state a `set`
- * updater is about to return, not the state before it) and report whether
- * the write succeeded, so the caller can fold `userLayerWriteFailed` into
- * that very same update. On failure the caller keeps whatever it just added
- * in memory regardless: this function only reports the outcome, it never
- * undoes a change.
+ * Find every patch or hide in the user layer that targets a factory id (or,
+ * for proportions, a label) no longer present in the loaded catalog. An
+ * orphan is never dropped here — it stays in the persisted layer exactly as
+ * read — this only reports it so the interface can warn about it once
+ * (docs/UX-REVIEW.md §3.3): "un huérfano no se aplica pero tampoco se borra".
+ */
+function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer): OrphanedUserLayerEntry[] {
+  const knownProportionLabels = new Set(catalog.proportions.map(p => p.label));
+  const knownSheetSizeIds = new Set(catalog.sheetSizes.map(s => s.id));
+  const knownPressIds = new Set(catalog.presses.map(p => p.id));
+  const knownBindingIds = new Set(catalog.bindings.map(b => b.id));
+
+  const orphans: OrphanedUserLayerEntry[] = [];
+  for (const patch of userLayer.proportionPatches) {
+    if (!knownProportionLabels.has(patch.label)) orphans.push({ kind: 'proportionPatch', targetId: patch.label });
+  }
+  for (const patch of userLayer.sheetSizePatches) {
+    if (!knownSheetSizeIds.has(patch.id)) orphans.push({ kind: 'sheetSizePatch', targetId: patch.id });
+  }
+  for (const patch of userLayer.pressPatches) {
+    if (!knownPressIds.has(patch.id)) orphans.push({ kind: 'pressPatch', targetId: patch.id });
+  }
+  for (const patch of userLayer.bindingPatches) {
+    if (!knownBindingIds.has(patch.id)) orphans.push({ kind: 'bindingPatch', targetId: patch.id });
+  }
+  for (const label of userLayer.hiddenProportionLabels) {
+    if (!knownProportionLabels.has(label)) orphans.push({ kind: 'hiddenProportion', targetId: label });
+  }
+  for (const id of userLayer.hiddenSheetSizeIds) {
+    if (!knownSheetSizeIds.has(id)) orphans.push({ kind: 'hiddenSheetSize', targetId: id });
+  }
+  for (const id of userLayer.hiddenPressIds) {
+    if (!knownPressIds.has(id)) orphans.push({ kind: 'hiddenPress', targetId: id });
+  }
+  for (const id of userLayer.hiddenBindingIds) {
+    if (!knownBindingIds.has(id)) orphans.push({ kind: 'hiddenBinding', targetId: id });
+  }
+  return orphans;
+}
+
+/**
+ * Persist the user layer found in `mergedState` (the state a `set` updater is
+ * about to return, not the state before it) and report whether the write
+ * succeeded, so the caller can fold `userLayerWriteFailed` into that very
+ * same update. On failure the caller keeps whatever it just added in memory
+ * regardless: this function only reports the outcome, it never undoes a change.
  */
 function persistUserLayer(storage: Storage | null, mergedState: BookConfig): { userLayerWriteFailed: boolean } {
-  const layer: UserLayer = {
-    customProportions: mergedState.customProportions,
-    customGrammages: mergedState.customGrammages,
-    customSheetSizes: mergedState.customSheetSizes,
-    customPresses: mergedState.customPresses,
-    customBindings: mergedState.customBindings,
-  };
-  return { userLayerWriteFailed: !writeUserLayer(layer, storage) };
+  return { userLayerWriteFailed: !writeUserLayer(extractUserLayer(mergedState), storage) };
 }
 
 /**
- * Fold a custom-catalog alta/baja's patch together with the outcome of
- * persisting it, so every caller returns a single object from its `set`
- * updater. `state` is the state the patch is about to be applied on top of,
- * not the state after it.
+ * Fold a custom-catalog action's patch together with the outcome of
+ * persisting it and a fresh orphan check, so every caller returns a single
+ * object from its `set` updater. `state` is the state the patch is about to
+ * be applied on top of, not the state after it.
  */
 function withPersistedCatalogPatch(
   storage: Storage | null,
+  catalog: Catalog,
   state: BookConfig,
   patch: Partial<BookStore>
 ): Partial<BookStore> {
-  return { ...patch, ...persistUserLayer(storage, { ...state, ...patch }) };
+  const mergedState: BookConfig = { ...state, ...patch };
+  return {
+    ...patch,
+    ...persistUserLayer(storage, mergedState),
+    orphanedUserLayerEntries: computeOrphanedUserLayerEntries(catalog, extractUserLayer(mergedState)),
+  };
 }
 
 type CalculationResults = Pick<
@@ -188,12 +342,14 @@ function calculateSignaturePlan(
   previousPlan: SignaturePlanResult | null
 ): { signaturePlan: SignaturePlanResult | null; signatureError: string | null } {
   try {
-    const press = getPress(catalog, state.pressId, state.customPresses);
+    const press = getPress(catalog, state.pressId, state.customPresses, state.pressPatches, state.hiddenPressIds);
     if (!press) {
       throw new RangeError(`La prensa "${state.pressId}" no existe en la configuración`);
     }
 
-    const sheet = getSheetDimensions(catalog, state.sheetSizeId, state.customSheetSizes);
+    const sheet = getSheetDimensions(
+      catalog, state.sheetSizeId, state.customSheetSizes, state.sheetSizePatches, state.hiddenSheetSizeIds
+    );
 
     const basePlan = planSignatures({
       pageWidth_mm: state.pageWidth_mm,
@@ -268,7 +424,8 @@ function calculateBindingResults(
   spineResult: SpineResult | null,
   pagesPerSignature: number | null
 ): BindingResults {
-  const binding = getAllBindings(catalog, state.customBindings).find(b => b.id === state.bindingId);
+  const binding = getAllBindings(catalog, state.customBindings, state.bindingPatches, state.hiddenBindingIds)
+    .find(b => b.id === state.bindingId);
   if (!binding) {
     return {
       bindingPageCount: null,
@@ -331,7 +488,8 @@ function calculateCoverResult(
       throw new RangeError(`La tapa "${state.coverId}" no existe en la configuración`);
     }
 
-    const binding = getAllBindings(catalog, state.customBindings).find(b => b.id === state.bindingId);
+    const binding = getAllBindings(catalog, state.customBindings, state.bindingPatches, state.hiddenBindingIds)
+      .find(b => b.id === state.bindingId);
     if (!binding) {
       throw new RangeError(`La encuadernación "${state.bindingId}" no existe en la configuración`);
     }
@@ -391,7 +549,9 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
       throw new RangeError('El sangrado pierde su contribución por precisión numérica');
     }
 
-    const sheet = getSheetDimensions(catalog, state.sheetSizeId, state.customSheetSizes);
+    const sheet = getSheetDimensions(
+      catalog, state.sheetSizeId, state.customSheetSizes, state.sheetSizePatches, state.hiddenSheetSizeIds
+    );
 
     impositionResult = calculateImposition(
       pageWithBleedW,
@@ -479,6 +639,16 @@ function dimensionsFromProportion(
   return { width: baseWidth, height: baseWidth * (rw / rh) };
 }
 
+/**
+ * Resolve a selected id against its effective catalog: keep it if it is
+ * still visible there, otherwise fall back to the first visible entry —
+ * the same least-destructive criterion hideX/removeCustomX already apply
+ * when the entry they act on happens to be the current selection.
+ */
+function resolveVisibleId<T extends { id: string }>(effective: T[], selectedId: string): string {
+  return effective.some(item => item.id === selectedId) ? selectedId : (effective[0]?.id ?? selectedId);
+}
+
 let customSheetCounter = 0;
 let customPressCounter = 0;
 let customBindingCounter = 0;
@@ -498,6 +668,8 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   format: 'vertical',
   proportionId: null,
   customProportions: [],
+  proportionPatches: [],
+  hiddenProportionLabels: [],
   pageWidth_mm: 0,
   pageHeight_mm: 0,
   bleed_mm: 0,
@@ -512,10 +684,14 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   // Imposition
   sheetSizeId: '',
   customSheetSizes: [],
+  sheetSizePatches: [],
+  hiddenSheetSizeIds: [],
 
   // Signature imposition
   pressId: '',
   customPresses: [],
+  pressPatches: [],
+  hiddenPressIds: [],
   foldingSchemeId: null,
 
   // Spine
@@ -524,6 +700,8 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   // Binding
   bindingId: '',
   customBindings: [],
+  bindingPatches: [],
+  hiddenBindingIds: [],
 
   // Cover
   coverId: '',
@@ -542,6 +720,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   coverPlan: null,
   coverError: null,
   customGrammageError: null,
+  customSheetSizeError: null,
   customPressError: null,
   customBindingError: null,
   customProportionError: null,
@@ -549,41 +728,60 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   // User layer persistence
   userLayerStorageAvailable: isUserLayerStorageAvailable(storage),
   userLayerWriteFailed: false,
+  orphanedUserLayerEntries: [],
 
   // ─── Actions ─────────────────────────────────────────────────────
 
   initialize: (catalog, userLayer = emptyUserLayer()) => {
     set(state => {
       const { defaults } = catalog;
-      const dimensions = dimensionsFromProportion(
-        catalog.proportions,
-        defaults.proportionId,
-        state.format,
-        defaults.pageWidth_mm
-      );
       const merged = mergeUserLayer(catalog, userLayer);
+
+      // Resolve every default selection against its effective catalog, not
+      // the raw factory one: a default the user hid must not come back
+      // selected after a reload just because it is still factory's default.
+      const effectiveProportions = getAllProportions(
+        catalog, merged.customProportions, merged.proportionPatches, merged.hiddenProportionLabels
+      );
+      const effectiveSheetSizes = getAllSheetSizes(
+        catalog, merged.customSheetSizes, merged.sheetSizePatches, merged.hiddenSheetSizeIds
+      );
+      const effectivePresses = getAllPresses(
+        catalog, merged.customPresses, merged.pressPatches, merged.hiddenPressIds
+      );
+      const effectiveBindings = getAllBindings(
+        catalog, merged.customBindings, merged.bindingPatches, merged.hiddenBindingIds
+      );
+
+      const resolvedProportionId = effectiveProportions.some(p => p.label === defaults.proportionId)
+        ? defaults.proportionId
+        : (effectiveProportions[0]?.label ?? null);
+      // Every proportion hidden: there is no visible entry to fall back to,
+      // so land on Manual with a square base, the same result
+      // dimensionsFromProportion already returns when a label isn't found.
+      const dimensions = resolvedProportionId
+        ? dimensionsFromProportion(effectiveProportions, resolvedProportionId, state.format, defaults.pageWidth_mm)
+        : { width: defaults.pageWidth_mm, height: defaults.pageWidth_mm };
+
       const inputPatch: Partial<BookConfig> = {
-        proportionId: defaults.proportionId,
-        customProportions: merged.customProportions,
+        proportionId: resolvedProportionId,
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
         bleed_mm: defaults.bleed_mm,
         substrateId: defaults.substrateId,
         selectedGrammage: defaults.grammage,
-        customGrammages: merged.customGrammages,
-        sheetSizeId: defaults.sheetSizeId,
-        customSheetSizes: merged.customSheetSizes,
-        pressId: defaults.pressId,
-        customPresses: merged.customPresses,
+        sheetSizeId: resolveVisibleId(effectiveSheetSizes, defaults.sheetSizeId),
+        pressId: resolveVisibleId(effectivePresses, defaults.pressId),
         foldingSchemeId: null,
         totalPages: defaults.totalPages,
-        bindingId: defaults.bindingId,
-        customBindings: merged.customBindings,
+        bindingId: resolveVisibleId(effectiveBindings, defaults.bindingId),
         coverId: defaults.coverId,
+        ...merged,
       };
 
       return {
         catalog,
+        orphanedUserLayerEntries: computeOrphanedUserLayerEntries(catalog, userLayer),
         ...withUpdatedCalculations(state, catalog, inputPatch),
       };
     });
@@ -598,7 +796,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       }
 
       const dimensions = dimensionsFromProportion(
-        getAllProportions(state.catalog, state.customProportions),
+        getAllProportions(state.catalog, state.customProportions, state.proportionPatches, state.hiddenProportionLabels),
         state.proportionId,
         format,
         state.pageWidth_mm
@@ -620,7 +818,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       }
 
       const dimensions = dimensionsFromProportion(
-        getAllProportions(state.catalog, state.customProportions),
+        getAllProportions(state.catalog, state.customProportions, state.proportionPatches, state.hiddenProportionLabels),
         proportionId,
         state.format,
         state.pageWidth_mm
@@ -751,7 +949,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         customSheetSizes: [...state.customSheetSizes, newSheet],
         sheetSizeId: id,
       });
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
     return true;
   },
@@ -763,16 +961,99 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         return state;
       }
 
+      const remainingCustomSheetSizes = state.customSheetSizes.filter(sheet => sheet.id !== id);
       const inputPatch: Partial<BookConfig> = {
-        customSheetSizes: state.customSheetSizes.filter(sheet => sheet.id !== id),
+        customSheetSizes: remainingCustomSheetSizes,
       };
       if (state.sheetSizeId === id) {
-        inputPatch.sheetSizeId = state.catalog.sheetSizes[0].id;
+        const effective = getAllSheetSizes(
+          state.catalog, remainingCustomSheetSizes, state.sheetSizePatches, state.hiddenSheetSizeIds
+        );
+        inputPatch.sheetSizeId = effective[0]?.id ?? state.catalog.sheetSizes[0].id;
       }
 
       const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
+  },
+
+  patchSheetSize: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.sheetSizes.find(sheet => sheet.id === id);
+    if (!factoryEntry) {
+      set({ customSheetSizeError: `El pliego "${id}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: SheetSize = { ...factoryEntry, ...changes };
+    if (!isValidSheetSize(candidate)) {
+      set({ customSheetSizeError: 'Los cambios dejarían el pliego con datos inválidos.' });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.sheetSizePatches.filter(p => p.id !== id);
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          sheetSizePatches: [...remainingPatches, { id, changes }],
+        }),
+        customSheetSizeError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchSheetSize: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.sheetSizePatches.some(p => p.id === id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          sheetSizePatches: state.sheetSizePatches.filter(p => p.id !== id),
+        }),
+        customSheetSizeError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hideSheetSize: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.sheetSizes.some(sheet => sheet.id === id)) return state;
+      if (state.hiddenSheetSizeIds.includes(id)) return state;
+
+      const hiddenSheetSizeIds = [...state.hiddenSheetSizeIds, id];
+      const inputPatch: Partial<BookConfig> = { hiddenSheetSizeIds };
+      if (state.sheetSizeId === id) {
+        const effective = getAllSheetSizes(state.catalog, state.customSheetSizes, state.sheetSizePatches, hiddenSheetSizeIds);
+        inputPatch.sheetSizeId = effective[0]?.id ?? id;
+      }
+
+      const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showSheetSize: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenSheetSizeIds.includes(id)) return state;
+
+      const patch = withUpdatedCalculations(state, state.catalog, {
+        hiddenSheetSizeIds: state.hiddenSheetSizeIds.filter(hiddenId => hiddenId !== id),
+      });
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  clearCustomSheetSizeError: () => {
+    set(state => (state.catalog ? { customSheetSizeError: null } : state));
   },
 
   // ─── Custom Grammages ────────────────────────────────────────────
@@ -815,7 +1096,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         }),
         customGrammageError: null,
       };
-      return withPersistedCatalogPatch(storage, currentState, patch);
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
     });
     return true;
   },
@@ -852,7 +1133,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customGrammageError: null,
       };
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
   },
 
@@ -901,7 +1182,8 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return false;
     }
 
-    const duplicate = getAllPresses(state.catalog, state.customPresses).some(press => namesMatch(press.name, name));
+    const duplicate = getAllPresses(state.catalog, state.customPresses, state.pressPatches, state.hiddenPressIds)
+      .some(press => namesMatch(press.name, name));
     if (duplicate) {
       set({ customPressError: `Ya existe una prensa llamada "${name}". Introduce otro nombre o cancela.` });
       return false;
@@ -921,7 +1203,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         }),
         customPressError: null,
       };
-      return withPersistedCatalogPatch(storage, currentState, patch);
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
     });
     return true;
   },
@@ -937,18 +1219,95 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         return state;
       }
 
+      const remainingCustomPresses = state.customPresses.filter(press => press.id !== id);
       const inputPatch: Partial<BookConfig> = {
-        customPresses: state.customPresses.filter(press => press.id !== id),
+        customPresses: remainingCustomPresses,
       };
       if (state.pressId === id) {
-        inputPatch.pressId = state.catalog.presses[0].id;
+        const effective = getAllPresses(state.catalog, remainingCustomPresses, state.pressPatches, state.hiddenPressIds);
+        inputPatch.pressId = effective[0]?.id ?? state.catalog.presses[0].id;
       }
 
       const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customPressError: null,
       };
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  patchPress: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.presses.find(press => press.id === id);
+    if (!factoryEntry) {
+      set({ customPressError: `La prensa "${id}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: Press = { ...factoryEntry, ...changes };
+    if (!isValidPress(candidate)) {
+      set({ customPressError: 'Los cambios dejarían la prensa con datos inválidos.' });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.pressPatches.filter(p => p.id !== id);
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          pressPatches: [...remainingPatches, { id, changes }],
+        }),
+        customPressError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchPress: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.pressPatches.some(p => p.id === id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          pressPatches: state.pressPatches.filter(p => p.id !== id),
+        }),
+        customPressError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hidePress: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.presses.some(press => press.id === id)) return state;
+      if (state.hiddenPressIds.includes(id)) return state;
+
+      const hiddenPressIds = [...state.hiddenPressIds, id];
+      const inputPatch: Partial<BookConfig> = { hiddenPressIds };
+      if (state.pressId === id) {
+        const effective = getAllPresses(state.catalog, state.customPresses, state.pressPatches, hiddenPressIds);
+        inputPatch.pressId = effective[0]?.id ?? id;
+      }
+
+      const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showPress: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenPressIds.includes(id)) return state;
+
+      const patch = withUpdatedCalculations(state, state.catalog, {
+        hiddenPressIds: state.hiddenPressIds.filter(hiddenId => hiddenId !== id),
+      });
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
   },
 
@@ -1001,7 +1360,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return false;
     }
 
-    const duplicate = getAllBindings(state.catalog, state.customBindings)
+    const duplicate = getAllBindings(state.catalog, state.customBindings, state.bindingPatches, state.hiddenBindingIds)
       .some(binding => namesMatch(binding.name, name));
     if (duplicate) {
       set({ customBindingError: `Ya existe una encuadernación llamada "${name}". Introduce otro nombre o cancela.` });
@@ -1022,7 +1381,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         }),
         customBindingError: null,
       };
-      return withPersistedCatalogPatch(storage, currentState, patch);
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
     });
     return true;
   },
@@ -1038,18 +1397,95 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         return state;
       }
 
+      const remainingCustomBindings = state.customBindings.filter(binding => binding.id !== id);
       const inputPatch: Partial<BookConfig> = {
-        customBindings: state.customBindings.filter(binding => binding.id !== id),
+        customBindings: remainingCustomBindings,
       };
       if (state.bindingId === id) {
-        inputPatch.bindingId = state.catalog.bindings[0].id;
+        const effective = getAllBindings(state.catalog, remainingCustomBindings, state.bindingPatches, state.hiddenBindingIds);
+        inputPatch.bindingId = effective[0]?.id ?? state.catalog.bindings[0].id;
       }
 
       const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customBindingError: null,
       };
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  patchBinding: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.bindings.find(binding => binding.id === id);
+    if (!factoryEntry) {
+      set({ customBindingError: `La encuadernación "${id}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: Binding = { ...factoryEntry, ...changes };
+    if (!isValidBinding(candidate)) {
+      set({ customBindingError: 'Los cambios dejarían la encuadernación con datos inválidos.' });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.bindingPatches.filter(p => p.id !== id);
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          bindingPatches: [...remainingPatches, { id, changes }],
+        }),
+        customBindingError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchBinding: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.bindingPatches.some(p => p.id === id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          bindingPatches: state.bindingPatches.filter(p => p.id !== id),
+        }),
+        customBindingError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hideBinding: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.bindings.some(binding => binding.id === id)) return state;
+      if (state.hiddenBindingIds.includes(id)) return state;
+
+      const hiddenBindingIds = [...state.hiddenBindingIds, id];
+      const inputPatch: Partial<BookConfig> = { hiddenBindingIds };
+      if (state.bindingId === id) {
+        const effective = getAllBindings(state.catalog, state.customBindings, state.bindingPatches, hiddenBindingIds);
+        inputPatch.bindingId = effective[0]?.id ?? id;
+      }
+
+      const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showBinding: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenBindingIds.includes(id)) return state;
+
+      const patch = withUpdatedCalculations(state, state.catalog, {
+        hiddenBindingIds: state.hiddenBindingIds.filter(hiddenId => hiddenId !== id),
+      });
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
   },
 
@@ -1077,7 +1513,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return false;
     }
 
-    const duplicate = getAllProportions(state.catalog, state.customProportions)
+    const duplicate = getAllProportions(state.catalog, state.customProportions, state.proportionPatches, state.hiddenProportionLabels)
       .some(proportion => namesMatch(proportion.label, trimmedLabel));
     if (duplicate) {
       set({ customProportionError: `Ya existe la proporción "${trimmedLabel}". Introduce otra etiqueta o cancela.` });
@@ -1103,7 +1539,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         }),
         customProportionError: null,
       };
-      return withPersistedCatalogPatch(storage, currentState, patch);
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
     });
     return true;
   },
@@ -1119,19 +1555,18 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         return state;
       }
 
+      const remainingCustomProportions = state.customProportions.filter(proportion => proportion.label !== label);
       const inputPatch: Partial<BookConfig> = {
-        customProportions: state.customProportions.filter(proportion => proportion.label !== label),
+        customProportions: remainingCustomProportions,
       };
 
       if (state.proportionId === label) {
-        const fallbackLabel = state.catalog.proportions[0].label;
-        const dimensions = dimensionsFromProportion(
-          state.catalog.proportions,
-          fallbackLabel,
-          state.format,
-          state.pageWidth_mm
+        const effective = getAllProportions(
+          state.catalog, remainingCustomProportions, state.proportionPatches, state.hiddenProportionLabels
         );
-        inputPatch.proportionId = fallbackLabel;
+        const fallback = effective[0] ?? state.catalog.proportions[0];
+        const dimensions = dimensionsFromProportion(effective, fallback.label, state.format, state.pageWidth_mm);
+        inputPatch.proportionId = fallback.label;
         inputPatch.pageWidth_mm = dimensions.width;
         inputPatch.pageHeight_mm = dimensions.height;
       }
@@ -1140,7 +1575,109 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customProportionError: null,
       };
-      return withPersistedCatalogPatch(storage, state, patch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  patchProportion: (label, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.proportions.find(proportion => proportion.label === label);
+    if (!factoryEntry) {
+      set({ customProportionError: `La proporción "${label}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: Proportion = { ...factoryEntry, ...changes };
+    if (!isValidProportion(candidate)) {
+      set({ customProportionError: 'Los cambios dejarían la proporción con datos inválidos.' });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.proportionPatches.filter(p => p.label !== label);
+      const inputPatch: Partial<BookConfig> = {
+        proportionPatches: [...remainingPatches, { label, changes }],
+      };
+      if (currentState.proportionId === label) {
+        const dimensions = dimensionsFromProportion([candidate], label, currentState.format, currentState.pageWidth_mm);
+        inputPatch.pageWidth_mm = dimensions.width;
+        inputPatch.pageHeight_mm = dimensions.height;
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, inputPatch),
+        customProportionError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchProportion: (label) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.proportionPatches.some(p => p.label === label)) return state;
+
+      const inputPatch: Partial<BookConfig> = {
+        proportionPatches: state.proportionPatches.filter(p => p.label !== label),
+      };
+      if (state.proportionId === label) {
+        const factoryEntry = state.catalog.proportions.find(proportion => proportion.label === label);
+        if (factoryEntry) {
+          const dimensions = dimensionsFromProportion([factoryEntry], label, state.format, state.pageWidth_mm);
+          inputPatch.pageWidth_mm = dimensions.width;
+          inputPatch.pageHeight_mm = dimensions.height;
+        }
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customProportionError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hideProportion: (label) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.proportions.some(proportion => proportion.label === label)) return state;
+      if (state.hiddenProportionLabels.includes(label)) return state;
+
+      const hiddenProportionLabels = [...state.hiddenProportionLabels, label];
+      const inputPatch: Partial<BookConfig> = { hiddenProportionLabels };
+      if (state.proportionId === label) {
+        const effective = getAllProportions(
+          state.catalog, state.customProportions, state.proportionPatches, hiddenProportionLabels
+        );
+        const fallback = effective[0];
+        if (fallback) {
+          const dimensions = dimensionsFromProportion(effective, fallback.label, state.format, state.pageWidth_mm);
+          inputPatch.proportionId = fallback.label;
+          inputPatch.pageWidth_mm = dimensions.width;
+          inputPatch.pageHeight_mm = dimensions.height;
+        } else {
+          inputPatch.proportionId = null;
+        }
+      }
+
+      const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showProportion: (label) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenProportionLabels.includes(label)) return state;
+
+      const patch = withUpdatedCalculations(state, state.catalog, {
+        hiddenProportionLabels: state.hiddenProportionLabels.filter(hiddenLabel => hiddenLabel !== label),
+      });
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
   },
 

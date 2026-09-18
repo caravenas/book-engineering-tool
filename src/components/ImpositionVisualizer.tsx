@@ -3,7 +3,8 @@ import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookS
 import { layoutSide } from '../engine/signatures';
 import { roundTo } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
-import type { SheetSize, SignatureOption } from '../types';
+import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import type { Press, SheetSize, SignatureOption } from '../types';
 
 const SVG_PADDING = 30;
 const SVG_MAX_WIDTH = 500;
@@ -128,8 +129,13 @@ export function ImpositionVisualizer() {
     catalog,
     sheetSizeId,
     customSheetSizes,
+    sheetSizePatches,
+    hiddenSheetSizeIds,
+    customSheetSizeError,
     pressId,
     customPresses,
+    pressPatches,
+    hiddenPressIds,
     customPressError,
     userLayerStorageAvailable,
     foldingSchemeId,
@@ -138,9 +144,18 @@ export function ImpositionVisualizer() {
     setSheetSize,
     addCustomSheetSize,
     removeCustomSheetSize,
+    hideSheetSize,
+    showSheetSize,
+    patchSheetSize,
+    unpatchSheetSize,
+    clearCustomSheetSizeError,
     setPress,
     addCustomPress,
     removeCustomPress,
+    hidePress,
+    showPress,
+    patchPress,
+    unpatchPress,
     clearCustomPressError,
     setFoldingScheme,
   } = useBookStore();
@@ -161,13 +176,30 @@ export function ImpositionVisualizer() {
   const [pressTailMargin, setPressTailMargin] = useState('');
   const [pressGutter, setPressGutter] = useState('');
 
+  const [showSheetEditForm, setShowSheetEditForm] = useState(false);
+  const [editSheetName, setEditSheetName] = useState('');
+  const [editSheetWidth, setEditSheetWidth] = useState('');
+  const [editSheetHeight, setEditSheetHeight] = useState('');
+
+  const [showPressEditForm, setShowPressEditForm] = useState(false);
+  const [editPressName, setEditPressName] = useState('');
+  const [editPressMaxWidth, setEditPressMaxWidth] = useState('');
+  const [editPressMaxHeight, setEditPressMaxHeight] = useState('');
+  const [editPressGripperMargin, setEditPressGripperMargin] = useState('');
+  const [editPressSideMargin, setEditPressSideMargin] = useState('');
+  const [editPressTailMargin, setEditPressTailMargin] = useState('');
+  const [editPressGutter, setEditPressGutter] = useState('');
+
   const customWidthIsValid = isPositiveFinite(Number(customW));
   const customHeightIsValid = isPositiveFinite(Number(customH));
-  const allSheets = catalog ? getAllSheetSizes(catalog, customSheetSizes) : customSheetSizes;
+  const allSheets = catalog ? getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds) : customSheetSizes;
   const currentSheet = allSheets.find(sheet => sheet.id === sheetSizeId);
   const isSelectedSheetCustom = customSheetSizes.some(sheet => sheet.id === sheetSizeId);
-  const allPresses = catalog ? getAllPresses(catalog, customPresses) : customPresses;
+  const sheetOrigin = getCatalogOrigin(sheetSizeId, customSheetSizes.map(sheet => sheet.id), sheetSizePatches.map(patch => patch.id));
+  const allPresses = catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses;
+  const currentPress = allPresses.find(press => press.id === pressId);
   const isSelectedPressCustom = customPresses.some(press => press.id === pressId);
+  const pressOrigin = getCatalogOrigin(pressId, customPresses.map(press => press.id), pressPatches.map(patch => patch.id));
 
   const handleAddCustom = () => {
     const width = Number(customW);
@@ -215,6 +247,100 @@ export function ImpositionVisualizer() {
       setPressSideMargin('');
       setPressTailMargin('');
       setPressGutter('');
+    }
+  };
+
+  const handleOpenSheetEdit = () => {
+    if (currentSheet) {
+      setEditSheetName(currentSheet.name);
+      setEditSheetWidth(String(currentSheet.width_mm));
+      setEditSheetHeight(String(currentSheet.height_mm));
+    }
+    clearCustomSheetSizeError();
+    setShowSheetEditForm(true);
+  };
+
+  const handleCancelSheetEdit = () => {
+    setShowSheetEditForm(false);
+    clearCustomSheetSizeError();
+  };
+
+  const handleSaveSheetEdit = () => {
+    if (!catalog) return;
+    const factorySheet = catalog.sheetSizes.find(sheet => sheet.id === sheetSizeId);
+    if (!factorySheet) return;
+
+    // The diff is computed against the factory entry, not the previous patch,
+    // because patchSheetSize replaces the whole patch rather than merging it.
+    const changes: Partial<Pick<SheetSize, 'name' | 'width_mm' | 'height_mm'>> = {};
+    const trimmedName = editSheetName.trim();
+    if (trimmedName !== factorySheet.name) changes.name = trimmedName;
+    const width = Number(editSheetWidth);
+    if (width !== factorySheet.width_mm) changes.width_mm = width;
+    const height = Number(editSheetHeight);
+    if (height !== factorySheet.height_mm) changes.height_mm = height;
+
+    if (Object.keys(changes).length === 0) {
+      unpatchSheetSize(sheetSizeId);
+      setShowSheetEditForm(false);
+      return;
+    }
+
+    if (patchSheetSize(sheetSizeId, changes)) {
+      setShowSheetEditForm(false);
+    }
+  };
+
+  const handleOpenPressEdit = () => {
+    if (currentPress) {
+      setEditPressName(currentPress.name);
+      setEditPressMaxWidth(String(currentPress.maxSheetWidth_mm));
+      setEditPressMaxHeight(String(currentPress.maxSheetHeight_mm));
+      setEditPressGripperMargin(String(currentPress.gripperMargin_mm));
+      setEditPressSideMargin(String(currentPress.sideMargin_mm));
+      setEditPressTailMargin(String(currentPress.tailMargin_mm));
+      setEditPressGutter(String(currentPress.gutter_mm));
+    }
+    clearCustomPressError();
+    setShowPressEditForm(true);
+  };
+
+  const handleCancelPressEdit = () => {
+    setShowPressEditForm(false);
+    clearCustomPressError();
+  };
+
+  const handleSavePressEdit = () => {
+    if (!catalog) return;
+    const factoryPress = catalog.presses.find(press => press.id === pressId);
+    if (!factoryPress) return;
+
+    // The diff is computed against the factory entry, not the previous patch,
+    // because patchPress replaces the whole patch rather than merging it.
+    const changes: Partial<Omit<Press, 'id'>> = {};
+    const trimmedName = editPressName.trim();
+    if (trimmedName !== factoryPress.name) changes.name = trimmedName;
+    const maxWidth = Number(editPressMaxWidth);
+    if (maxWidth !== factoryPress.maxSheetWidth_mm) changes.maxSheetWidth_mm = maxWidth;
+    const maxHeight = Number(editPressMaxHeight);
+    if (maxHeight !== factoryPress.maxSheetHeight_mm) changes.maxSheetHeight_mm = maxHeight;
+    const gripperMargin = Number(editPressGripperMargin);
+    if (gripperMargin !== factoryPress.gripperMargin_mm) changes.gripperMargin_mm = gripperMargin;
+    const sideMargin = Number(editPressSideMargin);
+    if (sideMargin !== factoryPress.sideMargin_mm) changes.sideMargin_mm = sideMargin;
+    const tailMargin = Number(editPressTailMargin);
+    if (tailMargin !== factoryPress.tailMargin_mm) changes.tailMargin_mm = tailMargin;
+    const gutter = Number(editPressGutter);
+    if (gutter !== factoryPress.gutter_mm) changes.gutter_mm = gutter;
+
+    if (Object.keys(changes).length === 0) {
+      unpatchPress(pressId);
+      setShowPressEditForm(false);
+      return;
+    }
+
+    if (patchPress(pressId, changes)) {
+      setShowPressEditForm(false);
     }
   };
 
@@ -282,22 +408,184 @@ export function ImpositionVisualizer() {
         >
           <div className="form-label-row">
             <span id="press-group-label" className="form-label">Prensa</span>
-            <button
-              type="button"
-              onClick={handleTogglePressForm}
-              aria-expanded={showPressForm}
-              aria-controls="custom-press-form"
-              aria-label={showPressForm ? 'Cancelar prensa personalizada' : 'Añadir prensa personalizada'}
-              style={{
-                background: 'none', border: 'none', color: 'var(--color-amber-600)',
-                cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
-              }}
-            >
-              {showPressForm ? 'Cancelar' : '+ Person.'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {!isSelectedPressCustom && !showPressForm && (
+                <button
+                  type="button"
+                  onClick={showPressEditForm ? handleCancelPressEdit : handleOpenPressEdit}
+                  aria-expanded={showPressEditForm}
+                  aria-controls="edit-press-form"
+                  aria-label={showPressEditForm ? 'Cancelar edición de prensa' : 'Editar prensa de fábrica'}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  {showPressEditForm ? 'Cancelar' : 'Editar'}
+                </button>
+              )}
+              {pressOrigin === 'edited' && !showPressForm && !showPressEditForm && (
+                <button
+                  type="button"
+                  onClick={() => unpatchPress(pressId)}
+                  aria-label="Volver la prensa a fábrica"
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  Volver a fábrica
+                </button>
+              )}
+              {!showPressEditForm && (
+                <button
+                  type="button"
+                  onClick={handleTogglePressForm}
+                  aria-expanded={showPressForm}
+                  aria-controls="custom-press-form"
+                  aria-label={showPressForm ? 'Cancelar prensa personalizada' : 'Añadir prensa personalizada'}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  {showPressForm ? 'Cancelar' : '+ Person.'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {showPressForm ? (
+          {showPressEditForm ? (
+            <div id="edit-press-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <label className="form-label" htmlFor="input-edit-press-name">Nombre</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editPressName}
+                  onChange={event => setEditPressName(event.target.value)}
+                  id="input-edit-press-name"
+                />
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-max-width">Ancho máximo de pliego</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressMaxWidth}
+                      onChange={event => setEditPressMaxWidth(event.target.value)}
+                      min="1"
+                      id="input-edit-press-max-width"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-max-height">Alto máximo de pliego</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressMaxHeight}
+                      onChange={event => setEditPressMaxHeight(event.target.value)}
+                      min="1"
+                      id="input-edit-press-max-height"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-gripper-margin">Margen de pinza</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressGripperMargin}
+                      onChange={event => setEditPressGripperMargin(event.target.value)}
+                      min="0"
+                      id="input-edit-press-gripper-margin"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-tail-margin">Margen de cola</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressTailMargin}
+                      onChange={event => setEditPressTailMargin(event.target.value)}
+                      min="0"
+                      id="input-edit-press-tail-margin"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-side-margin">Margen lateral</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressSideMargin}
+                      onChange={event => setEditPressSideMargin(event.target.value)}
+                      min="0"
+                      id="input-edit-press-side-margin"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-press-gutter">Calle</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editPressGutter}
+                      onChange={event => setEditPressGutter(event.target.value)}
+                      min="0"
+                      id="input-edit-press-gutter"
+                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              {customPressError && (
+                <p className="calculation-error" id="edit-press-error" role="alert">
+                  {customPressError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleSavePressEdit}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2)',
+                  background: 'var(--color-text-primary)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Guardar cambios de la prensa
+              </button>
+            </div>
+          ) : showPressForm ? (
             <div id="custom-press-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
               <div style={{ marginBottom: 'var(--space-3)' }}>
                 <label className="form-label" htmlFor="input-custom-press-name">Nombre</label>
@@ -441,7 +729,7 @@ export function ImpositionVisualizer() {
                   <option key={press.id} value={press.id}>{press.name}</option>
                 ))}
               </select>
-              {isSelectedPressCustom && (
+              {isSelectedPressCustom ? (
                 <button
                   type="button"
                   className="remove-sheet-button"
@@ -463,6 +751,28 @@ export function ImpositionVisualizer() {
                 >
                   ×
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  className="remove-sheet-button"
+                  onClick={() => hidePress(pressId)}
+                  title="Ocultar prensa de fábrica"
+                  aria-label="Ocultar prensa de fábrica"
+                  style={{
+                    background: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text-secondary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    width: '42px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                  }}
+                >
+                  –
+                </button>
               )}
             </div>
           )}
@@ -470,6 +780,28 @@ export function ImpositionVisualizer() {
             <ConfigSourceNote text={userLayerStorageAvailable ? 'prensa personalizada' : 'prensa personalizada, guardada solo para esta sesión'} />
           ) : catalog && (
             <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
+          )}
+          <CatalogOriginNote origin={pressOrigin} />
+          {hiddenPressIds.length > 0 && (
+            <p className="config-source-note">
+              {hiddenPressIds.length} {hiddenPressIds.length === 1 ? 'prensa de fábrica oculta' : 'prensas de fábrica ocultas'}.{' '}
+              <button
+                type="button"
+                onClick={() => hiddenPressIds.forEach(id => showPress(id))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--color-amber-600)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+              >
+                Mostrar prensas ocultas
+              </button>
+            </p>
           )}
         </div>
 
@@ -511,29 +843,127 @@ export function ImpositionVisualizer() {
         >
           <div className="form-label-row">
             <span id="sheet-size-group-label" className="form-label">Tamaño del pliego</span>
-            <button
-              type="button"
-              onClick={() => {
-                if (showCustomForm) {
-                  setCustomSheetError(null);
-                }
-                setShowCustomForm(!showCustomForm);
-              }}
-              aria-expanded={showCustomForm}
-              aria-controls="custom-sheet-form"
-              aria-label={showCustomForm
-                ? 'Cancelar pliego personalizado'
-                : 'Añadir pliego personalizado'}
-              style={{
-                background: 'none', border: 'none', color: 'var(--color-amber-600)',
-                cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
-              }}
-            >
-              {showCustomForm ? 'Cancelar' : '+ Person.'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {!isSelectedSheetCustom && !showCustomForm && (
+                <button
+                  type="button"
+                  onClick={showSheetEditForm ? handleCancelSheetEdit : handleOpenSheetEdit}
+                  aria-expanded={showSheetEditForm}
+                  aria-controls="edit-sheet-form"
+                  aria-label={showSheetEditForm ? 'Cancelar edición de pliego' : 'Editar pliego de fábrica'}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  {showSheetEditForm ? 'Cancelar' : 'Editar'}
+                </button>
+              )}
+              {sheetOrigin === 'edited' && !showCustomForm && !showSheetEditForm && (
+                <button
+                  type="button"
+                  onClick={() => unpatchSheetSize(sheetSizeId)}
+                  aria-label="Volver el pliego a fábrica"
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  Volver a fábrica
+                </button>
+              )}
+              {!showSheetEditForm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (showCustomForm) {
+                      setCustomSheetError(null);
+                    }
+                    setShowCustomForm(!showCustomForm);
+                  }}
+                  aria-expanded={showCustomForm}
+                  aria-controls="custom-sheet-form"
+                  aria-label={showCustomForm
+                    ? 'Cancelar pliego personalizado'
+                    : 'Añadir pliego personalizado'}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
+                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
+                  }}
+                >
+                  {showCustomForm ? 'Cancelar' : '+ Person.'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {showCustomForm ? (
+          {showSheetEditForm ? (
+            <div id="edit-sheet-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <label className="form-label" htmlFor="input-edit-sheet-name">Nombre</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editSheetName}
+                  onChange={event => setEditSheetName(event.target.value)}
+                  id="input-edit-sheet-name"
+                />
+              </div>
+              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-sheet-width">Ancho</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editSheetWidth}
+                      onChange={event => setEditSheetWidth(event.target.value)}
+                      min="1"
+                      id="input-edit-sheet-width"
+                      aria-describedby={customSheetSizeError ? 'edit-sheet-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="input-edit-sheet-height">Alto</label>
+                  <div className="input-with-unit">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={editSheetHeight}
+                      onChange={event => setEditSheetHeight(event.target.value)}
+                      min="1"
+                      id="input-edit-sheet-height"
+                      aria-describedby={customSheetSizeError ? 'edit-sheet-error' : undefined}
+                    />
+                    <span className="input-unit">mm</span>
+                  </div>
+                </div>
+              </div>
+              {customSheetSizeError && (
+                <p className="calculation-error" id="edit-sheet-error" role="alert">
+                  {customSheetSizeError}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleSaveSheetEdit}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2)',
+                  background: 'var(--color-text-primary)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Guardar cambios del pliego
+              </button>
+            </div>
+          ) : showCustomForm ? (
             <div id="custom-sheet-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
               <div style={{ marginBottom: 'var(--space-3)' }}>
                 <label className="form-label" htmlFor="input-custom-sheet-name">Nombre (opcional)</label>
@@ -617,7 +1047,7 @@ export function ImpositionVisualizer() {
                   </option>
                 ))}
               </select>
-              {customSheetSizes.some(sheet => sheet.id === sheetSizeId) && (
+              {isSelectedSheetCustom ? (
                 <button
                   type="button"
                   className="remove-sheet-button"
@@ -639,6 +1069,28 @@ export function ImpositionVisualizer() {
                 >
                   ×
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  className="remove-sheet-button"
+                  onClick={() => hideSheetSize(sheetSizeId)}
+                  title="Ocultar pliego de fábrica"
+                  aria-label="Ocultar pliego de fábrica"
+                  style={{
+                    background: 'var(--color-bg-secondary)',
+                    color: 'var(--color-text-secondary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    width: '42px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '18px',
+                  }}
+                >
+                  –
+                </button>
               )}
             </div>
           )}
@@ -646,6 +1098,28 @@ export function ImpositionVisualizer() {
             <ConfigSourceNote text={userLayerStorageAvailable ? 'pliego personalizado' : 'pliego personalizado, guardado solo para esta sesión'} />
           ) : catalog && (
             <ConfigSourceNote file="config/pliegos.json" text={catalog.sheetSizesSource} />
+          )}
+          <CatalogOriginNote origin={sheetOrigin} />
+          {hiddenSheetSizeIds.length > 0 && (
+            <p className="config-source-note">
+              {hiddenSheetSizeIds.length} {hiddenSheetSizeIds.length === 1 ? 'pliego de fábrica oculto' : 'pliegos de fábrica ocultos'}.{' '}
+              <button
+                type="button"
+                onClick={() => hiddenSheetSizeIds.forEach(id => showSheetSize(id))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--color-amber-600)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+              >
+                Mostrar pliegos ocultos
+              </button>
+            </p>
           )}
         </div>
       </div>
