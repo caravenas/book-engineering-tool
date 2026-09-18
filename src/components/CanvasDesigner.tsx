@@ -32,7 +32,7 @@ export function CanvasDesigner() {
   const {
     format, proportionId, pageWidth_mm, pageHeight_mm,
     bleed_mm, unitSystem, catalog,
-    customProportions, customProportionError,
+    customProportions, customProportionError, userLayerStorageAvailable,
     setFormat, setProportion, setPageDimensions, setBleed,
     addCustomProportion, removeCustomProportion, clearCustomProportionError,
   } = useBookStore();
@@ -319,7 +319,7 @@ export function CanvasDesigner() {
           </div>
         )}
         {isSelectedProportionCustom && (
-          <ConfigSourceNote text="proporción personalizada" />
+          <ConfigSourceNote text={userLayerStorageAvailable ? 'proporción personalizada' : 'proporción personalizada, guardada solo para esta sesión'} />
         )}
       </div>
 

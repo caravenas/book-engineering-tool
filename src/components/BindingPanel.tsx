@@ -14,6 +14,7 @@ export function BindingPanel() {
     bindingId,
     customBindings,
     customBindingError,
+    userLayerStorageAvailable,
     setBinding,
     addCustomBinding,
     removeCustomBinding,
@@ -242,7 +243,7 @@ export function BindingPanel() {
           </div>
         )}
         {isSelectedBindingCustom ? (
-          <ConfigSourceNote text="encuadernación personalizada" />
+          <ConfigSourceNote text={userLayerStorageAvailable ? 'encuadernación personalizada' : 'encuadernación personalizada, guardada solo para esta sesión'} />
         ) : catalog && (
           <ConfigSourceNote file="config/encuadernaciones.json" text={catalog.bindingsSource} />
         )}

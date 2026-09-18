@@ -300,6 +300,17 @@ export interface SpineResult {
 
 export type UnitSystem = 'metric' | 'imperial';
 
+// ─── User Layer Persistence ───────────────────────────────────────────────
+
+/** The five user-added catalogs, exactly as persisted to and read from browser storage. */
+export interface UserLayer {
+  customProportions: Proportion[];
+  customGrammages: CustomGrammageOption[];
+  customSheetSizes: SheetSize[];
+  customPresses: Press[];
+  customBindings: Binding[];
+}
+
 // ─── Global Book Configuration (Store State) ─────────────────────────────
 
 export interface BookConfig {
@@ -362,8 +373,13 @@ export interface BookStore extends BookConfig {
   customBindingError: string | null;
   customProportionError: string | null;
 
+  // User layer persistence (checked once at startup; the write flag updates
+  // after every alta/baja of the five custom catalogs)
+  userLayerStorageAvailable: boolean;
+  userLayerWriteFailed: boolean;
+
   // Actions
-  initialize: (catalog: Catalog) => void;
+  initialize: (catalog: Catalog, userLayer?: UserLayer) => void;
   setFormat: (format: BookFormat) => void;
   setProportion: (proportionId: string | null) => void;
   setPageDimensions: (width_mm: number, height_mm: number) => void;

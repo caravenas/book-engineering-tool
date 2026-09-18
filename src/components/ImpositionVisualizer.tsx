@@ -131,6 +131,7 @@ export function ImpositionVisualizer() {
     pressId,
     customPresses,
     customPressError,
+    userLayerStorageAvailable,
     foldingSchemeId,
     signaturePlan,
     signatureError,
@@ -466,7 +467,7 @@ export function ImpositionVisualizer() {
             </div>
           )}
           {isSelectedPressCustom ? (
-            <ConfigSourceNote text="prensa personalizada" />
+            <ConfigSourceNote text={userLayerStorageAvailable ? 'prensa personalizada' : 'prensa personalizada, guardada solo para esta sesión'} />
           ) : catalog && (
             <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
           )}
@@ -642,7 +643,7 @@ export function ImpositionVisualizer() {
             </div>
           )}
           {isSelectedSheetCustom ? (
-            <ConfigSourceNote text="pliego personalizado" />
+            <ConfigSourceNote text={userLayerStorageAvailable ? 'pliego personalizado' : 'pliego personalizado, guardado solo para esta sesión'} />
           ) : catalog && (
             <ConfigSourceNote file="config/pliegos.json" text={catalog.sheetSizesSource} />
           )}

@@ -9,6 +9,7 @@ export function SubstrateSelector() {
     customGrammages,
     customGrammageError,
     catalog,
+    userLayerStorageAvailable,
     setSubstrate,
     setGrammage,
     addCustomGrammage,
@@ -141,7 +142,7 @@ export function SubstrateSelector() {
           </button>
         </div>
         {isSelectedGrammageCustom ? (
-          <ConfigSourceNote text="gramaje personalizado" />
+          <ConfigSourceNote text={userLayerStorageAvailable ? 'gramaje personalizado' : 'gramaje personalizado, guardado solo para esta sesión'} />
         ) : catalog && (
           <ConfigSourceNote file="config/sustratos.json" text={catalog.substratesSource} />
         )}

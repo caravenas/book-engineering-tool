@@ -14,6 +14,7 @@ import type {
   SheetSize,
   SignaturePlanResult,
   SpineResult,
+  UserLayer,
 } from '../types';
 import { calculateImposition } from '../engine/imposition';
 import { calculateSpineAndWeight } from '../engine/spine';
@@ -21,6 +22,7 @@ import { planSignatures } from '../engine/signatures';
 import { creepCompensation, spineWithBinding, validatePageCount } from '../engine/binding';
 import { planCover } from '../engine/cover';
 import { MAX_BINDING_PAGES } from '../config/validateCatalog';
+import { emptyUserLayer, getDefaultUserLayerStorage, isUserLayerStorageAvailable, writeUserLayer } from '../config/userLayer';
 
 /**
  * Get all sheet sizes (catalog + custom).
@@ -106,6 +108,61 @@ function isPositiveSafeInteger(value: unknown): value is number {
 /** Case- and surrounding-whitespace-insensitive equality, for duplicate checks on user-typed names/labels. */
 function namesMatch(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * Merge a persisted user layer into a freshly loaded catalog for `initialize`.
+ * Only `customGrammages` references another catalog by id (`substrateId`):
+ * an entry whose substrate no longer exists is dropped instead of breaking
+ * startup, since the orphan warning itself is UX-6's job, not this one's.
+ * The other four catalogs are self-contained records, so they pass through
+ * unfiltered.
+ */
+function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Pick<
+  BookConfig,
+  'customProportions' | 'customGrammages' | 'customSheetSizes' | 'customPresses' | 'customBindings'
+> {
+  const knownSubstrateIds = new Set(catalog.substrates.map(s => s.id));
+  return {
+    customProportions: userLayer.customProportions,
+    customGrammages: userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId)),
+    customSheetSizes: userLayer.customSheetSizes,
+    customPresses: userLayer.customPresses,
+    customBindings: userLayer.customBindings,
+  };
+}
+
+/**
+ * Persist the five custom catalogs found in `mergedState` (the state a `set`
+ * updater is about to return, not the state before it) and report whether
+ * the write succeeded, so the caller can fold `userLayerWriteFailed` into
+ * that very same update. On failure the caller keeps whatever it just added
+ * in memory regardless: this function only reports the outcome, it never
+ * undoes a change.
+ */
+function persistUserLayer(storage: Storage | null, mergedState: BookConfig): { userLayerWriteFailed: boolean } {
+  const layer: UserLayer = {
+    customProportions: mergedState.customProportions,
+    customGrammages: mergedState.customGrammages,
+    customSheetSizes: mergedState.customSheetSizes,
+    customPresses: mergedState.customPresses,
+    customBindings: mergedState.customBindings,
+  };
+  return { userLayerWriteFailed: !writeUserLayer(layer, storage) };
+}
+
+/**
+ * Fold a custom-catalog alta/baja's patch together with the outcome of
+ * persisting it, so every caller returns a single object from its `set`
+ * updater. `state` is the state the patch is about to be applied on top of,
+ * not the state after it.
+ */
+function withPersistedCatalogPatch(
+  storage: Storage | null,
+  state: BookConfig,
+  patch: Partial<BookStore>
+): Partial<BookStore> {
+  return { ...patch, ...persistUserLayer(storage, { ...state, ...patch }) };
 }
 
 type CalculationResults = Pick<
@@ -426,7 +483,14 @@ let customSheetCounter = 0;
 let customPressCounter = 0;
 let customBindingCounter = 0;
 
-export const useBookStore = create<BookStore>((set, get) => ({
+/**
+ * Build a book store bound to the given storage for the user layer.
+ * `storage` defaults to the real browser storage, resolved once here (not
+ * re-resolved on every write), so tests can inject one that fails without
+ * touching `window.localStorage`.
+ */
+export function createBookStore(storage: Storage | null = getDefaultUserLayerStorage()) {
+  return create<BookStore>((set, get) => ({
   // Runtime configuration catalog
   catalog: null,
 
@@ -482,9 +546,13 @@ export const useBookStore = create<BookStore>((set, get) => ({
   customBindingError: null,
   customProportionError: null,
 
+  // User layer persistence
+  userLayerStorageAvailable: isUserLayerStorageAvailable(storage),
+  userLayerWriteFailed: false,
+
   // ─── Actions ─────────────────────────────────────────────────────
 
-  initialize: (catalog) => {
+  initialize: (catalog, userLayer = emptyUserLayer()) => {
     set(state => {
       const { defaults } = catalog;
       const dimensions = dimensionsFromProportion(
@@ -493,23 +561,24 @@ export const useBookStore = create<BookStore>((set, get) => ({
         state.format,
         defaults.pageWidth_mm
       );
+      const merged = mergeUserLayer(catalog, userLayer);
       const inputPatch: Partial<BookConfig> = {
         proportionId: defaults.proportionId,
-        customProportions: [],
+        customProportions: merged.customProportions,
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
         bleed_mm: defaults.bleed_mm,
         substrateId: defaults.substrateId,
         selectedGrammage: defaults.grammage,
-        customGrammages: [],
+        customGrammages: merged.customGrammages,
         sheetSizeId: defaults.sheetSizeId,
-        customSheetSizes: [],
+        customSheetSizes: merged.customSheetSizes,
         pressId: defaults.pressId,
-        customPresses: [],
+        customPresses: merged.customPresses,
         foldingSchemeId: null,
         totalPages: defaults.totalPages,
         bindingId: defaults.bindingId,
-        customBindings: [],
+        customBindings: merged.customBindings,
         coverId: defaults.coverId,
       };
 
@@ -678,10 +747,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
     set(state => {
       if (!state.catalog) return state;
-      return withUpdatedCalculations(state, state.catalog, {
+      const patch = withUpdatedCalculations(state, state.catalog, {
         customSheetSizes: [...state.customSheetSizes, newSheet],
         sheetSizeId: id,
       });
+      return withPersistedCatalogPatch(storage, state, patch);
     });
     return true;
   },
@@ -700,7 +770,8 @@ export const useBookStore = create<BookStore>((set, get) => ({
         inputPatch.sheetSizeId = state.catalog.sheetSizes[0].id;
       }
 
-      return withUpdatedCalculations(state, state.catalog, inputPatch);
+      const patch = withUpdatedCalculations(state, state.catalog, inputPatch);
+      return withPersistedCatalogPatch(storage, state, patch);
     });
   },
 
@@ -736,7 +807,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
     const newOption: CustomGrammageOption = { substrateId, grammage, caliper };
     set(currentState => {
       if (!currentState.catalog) return currentState;
-      return {
+      const patch = {
         ...withUpdatedCalculations(currentState, currentState.catalog, {
           substrateId,
           customGrammages: [...currentState.customGrammages, newOption],
@@ -744,6 +815,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
         }),
         customGrammageError: null,
       };
+      return withPersistedCatalogPatch(storage, currentState, patch);
     });
     return true;
   },
@@ -776,10 +848,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
         }
       }
 
-      return {
+      const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customGrammageError: null,
       };
+      return withPersistedCatalogPatch(storage, state, patch);
     });
   },
 
@@ -841,13 +914,14 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
     set(currentState => {
       if (!currentState.catalog) return currentState;
-      return {
+      const patch = {
         ...withUpdatedCalculations(currentState, currentState.catalog, {
           customPresses: [...currentState.customPresses, newPress],
           pressId: id,
         }),
         customPressError: null,
       };
+      return withPersistedCatalogPatch(storage, currentState, patch);
     });
     return true;
   },
@@ -870,10 +944,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
         inputPatch.pressId = state.catalog.presses[0].id;
       }
 
-      return {
+      const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customPressError: null,
       };
+      return withPersistedCatalogPatch(storage, state, patch);
     });
   },
 
@@ -940,13 +1015,14 @@ export const useBookStore = create<BookStore>((set, get) => ({
 
     set(currentState => {
       if (!currentState.catalog) return currentState;
-      return {
+      const patch = {
         ...withUpdatedCalculations(currentState, currentState.catalog, {
           customBindings: [...currentState.customBindings, newBinding],
           bindingId: id,
         }),
         customBindingError: null,
       };
+      return withPersistedCatalogPatch(storage, currentState, patch);
     });
     return true;
   },
@@ -969,10 +1045,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
         inputPatch.bindingId = state.catalog.bindings[0].id;
       }
 
-      return {
+      const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customBindingError: null,
       };
+      return withPersistedCatalogPatch(storage, state, patch);
     });
   },
 
@@ -1017,7 +1094,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
         currentState.format,
         currentState.pageWidth_mm
       );
-      return {
+      const patch = {
         ...withUpdatedCalculations(currentState, currentState.catalog, {
           customProportions: [...currentState.customProportions, newProportion],
           proportionId: trimmedLabel,
@@ -1026,6 +1103,7 @@ export const useBookStore = create<BookStore>((set, get) => ({
         }),
         customProportionError: null,
       };
+      return withPersistedCatalogPatch(storage, currentState, patch);
     });
     return true;
   },
@@ -1058,10 +1136,11 @@ export const useBookStore = create<BookStore>((set, get) => ({
         inputPatch.pageHeight_mm = dimensions.height;
       }
 
-      return {
+      const patch = {
         ...withUpdatedCalculations(state, state.catalog, inputPatch),
         customProportionError: null,
       };
+      return withPersistedCatalogPatch(storage, state, patch);
     });
   },
 
@@ -1070,7 +1149,14 @@ export const useBookStore = create<BookStore>((set, get) => ({
   recalculate: () => {
     set(state => (state.catalog ? calculateResults(state, state.catalog) : state));
   },
-}));
+  }));
+}
+
+// Resolved once and reused by the interface for its own startup read
+// (`readUserLayer(userLayerStorage)` in App.tsx), so the app never resolves
+// `window.localStorage` a second, independent time.
+export const userLayerStorage = getDefaultUserLayerStorage();
+export const useBookStore = createBookStore(userLayerStorage);
 
 // ─── Exported helpers for components ─────────────────────────────────────
 

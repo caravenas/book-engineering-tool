@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useBookStore } from './store/useBookStore';
+import { useBookStore, userLayerStorage } from './store/useBookStore';
 import { loadCatalog } from './config/loadCatalog';
+import { readUserLayer } from './config/userLayer';
 import type { ConfigError } from './config/validateCatalog';
 import { CanvasDesigner } from './components/CanvasDesigner';
 import { SubstrateSelector } from './components/SubstrateSelector';
@@ -22,7 +23,11 @@ const UNEXPECTED_ERROR: ConfigError = {
 
 export default function App() {
   const initialize = useBookStore(state => state.initialize);
+  const userLayerStorageAvailable = useBookStore(state => state.userLayerStorageAvailable);
+  const userLayerWriteFailed = useBookStore(state => state.userLayerWriteFailed);
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
+  const [persistenceNoticeDismissed, setPersistenceNoticeDismissed] = useState(false);
+  const showPersistenceNotice = (!userLayerStorageAvailable || userLayerWriteFailed) && !persistenceNoticeDismissed;
 
   // Load the runtime catalog once on mount; guard against StrictMode's
   // double effect invocation and against state updates after unmount.
@@ -38,7 +43,7 @@ export default function App() {
           return;
         }
 
-        initialize(result.catalog);
+        initialize(result.catalog, readUserLayer(userLayerStorage));
         setLoadState({ status: 'ready' });
       })
       .catch(error => {
@@ -85,6 +90,33 @@ export default function App() {
                 ))}
               </ul>
               <p className="config-error-hint">Revisa los archivos en config/ y recarga la página.</p>
+            </div>
+          )}
+
+          {loadState.status === 'ready' && showPersistenceNotice && (
+            <div
+              className="config-status"
+              role="status"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}
+            >
+              <span>
+                No se pudo guardar la configuración personalizada en este navegador. Los cambios se perderán al recargar la página.
+              </span>
+              <button
+                type="button"
+                onClick={() => setPersistenceNoticeDismissed(true)}
+                aria-label="Cerrar aviso"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 
