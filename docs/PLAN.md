@@ -242,6 +242,12 @@ La alternativa, un booleano de validez junto al número, guarda dos veces lo mis
 
 Por eso R-2 va en dos entregas: primero las tres extracciones que no tocan el store, que fijan el patrón; después la del lomo, que sí lo toca y lleva revisión cruzada.
 
+**Primera entrega cerrada el 2026-09-19** en `cb96e7a`: `BindingSpineResults`, `CoverResults` e `ImpositionResults`, ninguno con props, cada uno montado donde estaba su bloque.
+Cuatro formateadores subieron de tres componentes a `src/engine/units.ts`, donde ya vivía `formatMeasurement`, porque los paneles los siguen necesitando para lo que no se extrajo.
+
+Queda anotado un efecto de la restricción, observado por el builder: `hasFlatSpine` se deriva ahora dos veces, idéntica, en `BindingPanel` y en `BindingSpineResults`.
+Unificarlo exige un selector en el store, que es precisamente lo que abre la segunda entrega, así que se resuelve allí y no antes.
+
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
 Aceptación: la página renderizada es idéntica a la de antes del incremento, `npm run test:browser` sigue en verde, y los tests, `tsc` y el build siguen en cero.
