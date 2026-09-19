@@ -240,6 +240,16 @@ Si los resultados se van a otra columna, dejan de saberlo, y la propuesta pide j
 Decisión, 2026-09-19: el texto crudo del número de páginas pasa al store como fuente única, y el número se deriva de él dentro de la misma actualización atómica que ya usa el resto del store.
 La alternativa, un booleano de validez junto al número, guarda dos veces lo mismo y obliga a mantenerlos en sincronía.
 
+**Corrección a esa decisión, el mismo día, al mirar el componente en vez de solo el store.**
+La decisión original decía que una entrada inválida conserva el último número de páginas válido.
+Eso contradice lo que la app hace hoy: `SpineCalculator.tsx:67` llama a `setTotalPages(parsePositiveSafeInteger(rawValue) ?? 0)`, es decir, pone el número a cero, y de ahí sale el error que muestran Imposición, Encuadernación y Tapa.
+Conservar el último valor válido dejaría a esos tres paneles enseñando cifras viejas como si fueran actuales mientras alguien teclea.
+R-2 es un refactor y no puede cambiar comportamiento, así que la semántica se alinea con la de hoy: texto inválido pone el número a cero, y el texto crudo viaja aparte para que los resultados sepan que la entrada no es válida.
+
+Qué debería ocurrir de verdad mientras alguien teclea algo inválido es una pregunta de producto, no de refactor.
+La propuesta pide que las cifras dependientes se oculten y vuelvan al corregir el valor, que no es ni lo uno ni lo otro: exige que cada panel conozca el estado de entrada inválida, cosa que ahora es posible porque el texto vive en el store.
+Queda para R-3 o para una decisión de Chris, y no se resuelve por inercia dentro de un refactor.
+
 Por eso R-2 va en dos entregas: primero las tres extracciones que no tocan el store, que fijan el patrón; después la del lomo, que sí lo toca y lleva revisión cruzada.
 
 **Primera entrega cerrada el 2026-09-19** en `cb96e7a`: `BindingSpineResults`, `CoverResults` e `ImpositionResults`, ninguno con props, cada uno montado donde estaba su bloque.
