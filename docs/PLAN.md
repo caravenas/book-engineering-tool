@@ -209,6 +209,10 @@ El incremento 5 es el siguiente y todavía no está planificado en detalle.
 - 2026-09-17, pendiente de confirmar con una imprenta real: la convención de dónde cae el sangrado en una tapa con solapas, en el borde exterior de la solapa porque la unión tapa-solapa es hendido y no corte, debe confirmarse contra un taller real.
 - Chris decidió el 2026-09-16 no añadir un `spineType` a la encuadernación: el lomo plano se deriva de `nests`, que ya existe.
 - 2026-09-16: la revisión de UX en `docs/UX-REVIEW.md` fue aprobada para ejecutarse después del incremento 4, empezando por sus tres primeros incrementos y dejando la capa de personalización al final; con el incremento 4 cerrado el 2026-09-17, es ahora ejecutable.
+- 2026-09-19, decisión de Chris: la ejecución de `docs/UX-REVIEW.md` queda **en pausa** tras cerrar UX-6.
+  UX-7, la pantalla de Configuración, y UX-8, exportar e importar, no se implementan hasta que Chris replantee la interfaz del sitio.
+  No los retomes por inercia: los seis incrementos cerrados no implican que los dos restantes sigan siendo el plan correcto, porque UX-7 introduce una vista nueva y esa es justamente la decisión que está en revisión.
+  UX-9, el editor visual de esquemas de plegado, nunca fue una tarea: el propio documento deja abierto si se hace.
 - 2026-09-16, pendiente de confirmar con una imprenta real: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema de plegado elegido.
   Si un cuadernillo grapado se arma anidando pliegos plegados de 16 páginas, la unidad no es 4 y el corrimiento queda sobreestimado.
   Hasta confirmarlo, el valor mostrado debe leerse como una referencia preliminar más.
