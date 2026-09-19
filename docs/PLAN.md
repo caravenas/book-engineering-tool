@@ -229,6 +229,19 @@ El arnés de navegador llegó justo después, en `ef3531d`, y se comprobó en ro
 Objetivo: que cada panel exponga sus resultados y su diagrama como regiones propias, sin cambiar todavía dónde se dibujan.
 Hoy los resultados están en cuatro `stat-grid` repartidos entre `SpineCalculator`, `BindingPanel` y `CoverPanel`, más seis `stat-label` sueltos dentro de `ImpositionVisualizer`, que tiene 1171 líneas y es el riesgo del incremento.
 
+La restricción que le da forma: **un componente de resultados no recibe props**.
+Lee el store por su cuenta, porque en R-3 va a vivir en otra columna y su panel ya no podrá pasarle nada.
+
+Eso se cumple solo en tres de los cuatro casos.
+`BindingPanel`, `CoverPanel` e `ImpositionVisualizer` derivan sus resultados del store y salen limpios: `bindingSpine`, `coverResult` y `signaturePlan.selected`.
+`SpineCalculator` no: su `safeResult` depende de `rawTotalPages`, un `useState` local con el texto que el usuario está escribiendo, y por eso sabe que la entrada es inválida.
+Si los resultados se van a otra columna, dejan de saberlo, y la propuesta pide justamente que se oculten mientras la entrada no sea válida.
+
+Decisión, 2026-09-19: el texto crudo del número de páginas pasa al store como fuente única, y el número se deriva de él dentro de la misma actualización atómica que ya usa el resto del store.
+La alternativa, un booleano de validez junto al número, guarda dos veces lo mismo y obliga a mantenerlos en sincronía.
+
+Por eso R-2 va en dos entregas: primero las tres extracciones que no tocan el store, que fijan el patrón; después la del lomo, que sí lo toca y lleva revisión cruzada.
+
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
 Aceptación: la página renderizada es idéntica a la de antes del incremento, `npm run test:browser` sigue en verde, y los tests, `tsc` y el build siguen en cero.
