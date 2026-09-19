@@ -286,6 +286,21 @@ Los encargos de R-3, que mueven seis paneles, tienen que decirlo por adelantado.
   La rama alternativa de ese ternario es además la nota «Corrige los valores indicados», que hoy sustituye a la vez al dibujo y a los resultados, y necesitará dueño cuando los dos se separen.
   Se resuelve junto con la extracción de las vistas previas, que es cuando el ternario se deshace.
 
+**Vistas previas cerradas el 2026-09-19** en `92ed5ee` y `86db602`, salvo la del pliego, aplazada arriba.
+`CoverPreview`, `SpinePreview` y `SpineThicknessPreview`, ninguna con props.
+El ternario quedó deshecho: el panel del lomo monta las tres piezas sin condicionarlas y conserva solo la nota «Corrige los valores indicados», que es lo único que sí le pertenece.
+`SpineCalculator` pasó de 160 líneas a 82 y `CoverPanel` de 420 a 82.
+
+Dos cosas que el builder hizo bien y conviene que queden escritas.
+
+Se desvió del encargo con motivo y lo midió antes: pedí un solo componente con los dos dibujos del lomo, sin darme cuenta de que viven en columnas distintas de `.spine-calculator-grid`.
+Juntarlos habría subido una columna de 280 a unos 390 px y roto el alto fijado por el guardián.
+Quedaron dos componentes que comparten la derivación por un hook privado y se montan cada uno en su columna.
+El encargo estaba mal, no la implementación.
+
+Y avisó de un cambio de comportamiento en un caso extremo: la nota de fallback de tapa cubría también el caso de un plan válido con geometría no finita, y ahora ese caso mostraría un contenedor vacío.
+No se encontró forma de alcanzarlo desde la interfaz, así que se deja, pero conviene saber que «inalcanzable» aquí está afirmado y no demostrado.
+
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
 Aceptación: la página renderizada es idéntica a la de antes del incremento, `npm run test:browser` sigue en verde, y los tests, `tsc` y el build siguen en cero.
