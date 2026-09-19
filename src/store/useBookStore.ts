@@ -603,6 +603,15 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
   };
 }
 
+function parsePositiveSafeInteger(rawValue: string): number | null {
+  if (!/^\d+$/.test(rawValue)) {
+    return null;
+  }
+
+  const parsedValue = Number(rawValue);
+  return Number.isSafeInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
 function withUpdatedCalculations(
   state: BookStore,
   catalog: Catalog,
@@ -696,6 +705,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
 
   // Spine
   totalPages: 0,
+  totalPagesInput: '0',
 
   // Binding
   bindingId: '',
@@ -782,6 +792,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return {
         catalog,
         orphanedUserLayerEntries: computeOrphanedUserLayerEntries(catalog, userLayer),
+        totalPagesInput: String(inputPatch.totalPages),
         ...withUpdatedCalculations(state, catalog, inputPatch),
       };
     });
@@ -907,7 +918,18 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   setTotalPages: (totalPages) => {
     set(state => {
       if (!state.catalog) return state;
-      return withUpdatedCalculations(state, state.catalog, { totalPages });
+      return { totalPagesInput: String(totalPages), ...withUpdatedCalculations(state, state.catalog, { totalPages }) };
+    });
+  },
+
+  setTotalPagesInput: (rawValue) => {
+    set(state => {
+      const parsed = parsePositiveSafeInteger(rawValue);
+      if (parsed === null) {
+        return { totalPagesInput: rawValue };
+      }
+      if (!state.catalog) return { totalPagesInput: rawValue };
+      return { totalPagesInput: rawValue, ...withUpdatedCalculations(state, state.catalog, { totalPages: parsed }) };
     });
   },
 

@@ -432,6 +432,9 @@ export interface BookStore extends BookConfig {
   // Runtime configuration catalog (null until loaded)
   catalog: Catalog | null;
 
+  // Raw text of the "number of pages" input; `totalPages` is derived from it.
+  totalPagesInput: string;
+
   // Computed results
   impositionResult: ImpositionResult | null;
   impositionError: string | null;
@@ -476,6 +479,7 @@ export interface BookStore extends BookConfig {
   setPress: (pressId: string) => void;
   setFoldingScheme: (foldingSchemeId: string | null) => void;
   setTotalPages: (pages: number) => void;
+  setTotalPagesInput: (rawValue: string) => void;
   setBinding: (bindingId: string) => void;
   setCover: (coverId: string) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;

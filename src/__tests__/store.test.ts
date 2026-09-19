@@ -777,3 +777,38 @@ describe('Initialize resolves default selections against the effective catalog (
     expect(useBookStore.getState().proportionId).toBeNull();
   });
 });
+
+describe('totalPagesInput', () => {
+  it('updates totalPagesInput and recalculates totalPages and the spine result for valid text', () => {
+    useBookStore.getState().setTotalPagesInput('33');
+
+    const state = useBookStore.getState();
+    expect(state.totalPagesInput).toBe('33');
+    expect(state.totalPages).toBe(33);
+    expect(state.spineResult).not.toBeNull();
+    expect(state.spineError).toBeNull();
+  });
+
+  it('updates totalPagesInput but leaves totalPages and its calculations untouched for invalid text', () => {
+    useBookStore.getState().setTotalPagesInput('33');
+    const spineResultBefore = useBookStore.getState().spineResult;
+
+    useBookStore.getState().setTotalPagesInput('30x');
+    let state = useBookStore.getState();
+    expect(state.totalPagesInput).toBe('30x');
+    expect(state.totalPages).toBe(33);
+    expect(state.spineResult).toBe(spineResultBefore);
+
+    useBookStore.getState().setTotalPagesInput('');
+    state = useBookStore.getState();
+    expect(state.totalPagesInput).toBe('');
+    expect(state.totalPages).toBe(33);
+    expect(state.spineResult).toBe(spineResultBefore);
+  });
+
+  it('keeps totalPagesInput in sync with totalPages when setTotalPages is called directly', () => {
+    useBookStore.getState().setTotalPages(48);
+
+    expect(useBookStore.getState().totalPagesInput).toBe('48');
+  });
+});
