@@ -11,7 +11,8 @@
     "build": "tsc --noEmit && vite build --configLoader runner",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -19,6 +20,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^18.3.12",

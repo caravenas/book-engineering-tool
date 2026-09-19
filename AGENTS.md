@@ -16,6 +16,9 @@ PliegoStack es una herramienta de ingeniería editorial para imprentas y editori
 - `npm test` corre los tests con Vitest.
 - `npm run build` hace el chequeo de tipos y el build de producción.
 - `npm run preview` sirve el build para verificarlo en un navegador real.
+- `npm run test:browser` corre el arnés de navegador con Playwright, en `e2e/`.
+  Compila, sirve el build y mide en Chromium.
+  Ahí van las afirmaciones sobre lo que la página mide, porque los tests de Vitest corren en jsdom, que no maqueta: allí `getBoundingClientRect` devuelve ceros y una aserción sobre anchos pasa diga lo que diga el CSS.
 
 ## Reglas del proyecto
 
