@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBookStore, getAllBindings } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { formatRoundedValue } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
@@ -50,8 +50,7 @@ export function BindingPanel() {
   const allBindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
   const isSelectedBindingCustom = customBindings.some(binding => binding.id === bindingId);
   const bindingOrigin = getCatalogOrigin(bindingId, customBindings.map(binding => binding.id), bindingPatches.map(patch => patch.id));
-  const selectedBinding = allBindings.find(binding => binding.id === bindingId) ?? null;
-  const hasFlatSpine = selectedBinding ? !selectedBinding.nests : true;
+  const { selectedBinding, hasFlatSpine } = getSelectedBindingInfo(allBindings, bindingId);
 
   const handleToggleCustomForm = () => {
     setShowCustomForm(!showCustomForm);

@@ -634,6 +634,21 @@ export function getSafeSpineResult(
   return spineResult;
 }
 
+/**
+ * The binding panel and its spine results component both need the selected
+ * binding (the panel, for its edit form; the results, only for its label)
+ * and whether it has a flat spine, derived from that same binding not
+ * nesting its folded sheets. A single pure function keeps that lookup and
+ * derivation in one place instead of two copies drifting apart.
+ */
+export function getSelectedBindingInfo(
+  allBindings: Binding[],
+  bindingId: string
+): { selectedBinding: Binding | null; hasFlatSpine: boolean } {
+  const selectedBinding = allBindings.find(binding => binding.id === bindingId) ?? null;
+  return { selectedBinding, hasFlatSpine: selectedBinding ? !selectedBinding.nests : true };
+}
+
 function withUpdatedCalculations(
   state: BookStore,
   catalog: Catalog,

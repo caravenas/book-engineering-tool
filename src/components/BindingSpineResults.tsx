@@ -1,4 +1,4 @@
-import { useBookStore, getAllBindings } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { formatRoundedValue } from '../engine/units';
 
 /**
@@ -10,8 +10,7 @@ export function BindingSpineResults() {
   const { catalog, bindingId, customBindings, bindingPatches, hiddenBindingIds, bindingSpine } = useBookStore();
 
   const allBindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
-  const selectedBinding = allBindings.find(binding => binding.id === bindingId) ?? null;
-  const hasFlatSpine = selectedBinding ? !selectedBinding.nests : true;
+  const { hasFlatSpine } = getSelectedBindingInfo(allBindings, bindingId);
 
   if (!bindingSpine) return null;
 
