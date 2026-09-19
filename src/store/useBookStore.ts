@@ -773,6 +773,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         ? dimensionsFromProportion(effectiveProportions, resolvedProportionId, state.format, defaults.pageWidth_mm)
         : { width: defaults.pageWidth_mm, height: defaults.pageWidth_mm };
 
+      const totalPages = defaults.totalPages;
       const inputPatch: Partial<BookConfig> = {
         proportionId: resolvedProportionId,
         pageWidth_mm: dimensions.width,
@@ -783,7 +784,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         sheetSizeId: resolveVisibleId(effectiveSheetSizes, defaults.sheetSizeId),
         pressId: resolveVisibleId(effectivePresses, defaults.pressId),
         foldingSchemeId: null,
-        totalPages: defaults.totalPages,
+        totalPages,
         bindingId: resolveVisibleId(effectiveBindings, defaults.bindingId),
         coverId: defaults.coverId,
         ...merged,
@@ -792,8 +793,8 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return {
         catalog,
         orphanedUserLayerEntries: computeOrphanedUserLayerEntries(catalog, userLayer),
-        totalPagesInput: String(inputPatch.totalPages),
         ...withUpdatedCalculations(state, catalog, inputPatch),
+        totalPagesInput: String(totalPages),
       };
     });
   },
@@ -918,18 +919,19 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   setTotalPages: (totalPages) => {
     set(state => {
       if (!state.catalog) return state;
-      return { totalPagesInput: String(totalPages), ...withUpdatedCalculations(state, state.catalog, { totalPages }) };
+      return { ...withUpdatedCalculations(state, state.catalog, { totalPages }), totalPagesInput: String(totalPages) };
     });
   },
 
   setTotalPagesInput: (rawValue) => {
     set(state => {
+      if (!state.catalog) return state;
+
       const parsed = parsePositiveSafeInteger(rawValue);
       if (parsed === null) {
         return { totalPagesInput: rawValue };
       }
-      if (!state.catalog) return { totalPagesInput: rawValue };
-      return { totalPagesInput: rawValue, ...withUpdatedCalculations(state, state.catalog, { totalPages: parsed }) };
+      return { ...withUpdatedCalculations(state, state.catalog, { totalPages: parsed }), totalPagesInput: rawValue };
     });
   },
 

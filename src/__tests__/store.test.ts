@@ -702,6 +702,7 @@ describe('Actions before initialize', () => {
       before.setGrammage(90);
       before.setSheetSize('carta');
       before.setTotalPages(10);
+      before.setTotalPagesInput('10');
       addedSheet = before.addCustomSheetSize('Custom', 100, 100);
       before.removeCustomSheetSize('anything');
       addedGrammage = before.addCustomGrammage('bond', 90, 100);
@@ -810,5 +811,9 @@ describe('totalPagesInput', () => {
     useBookStore.getState().setTotalPages(48);
 
     expect(useBookStore.getState().totalPagesInput).toBe('48');
+  });
+
+  it('sets totalPagesInput to the catalog default total pages after initialize', () => {
+    expect(useBookStore.getState().totalPagesInput).toBe(String(catalog.defaults.totalPages));
   });
 });
