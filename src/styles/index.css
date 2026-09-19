@@ -202,6 +202,9 @@ body::before {
 }
 
 .app-cell {
+  /* A grid item's automatic minimum is min-content, not zero, so a cell
+     stretched past its own track and the page scrolled sideways at 390px. */
+  min-width: 0;
   padding: var(--space-6);
 }
 
