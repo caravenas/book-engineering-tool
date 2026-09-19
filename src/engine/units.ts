@@ -47,3 +47,28 @@ export function formatMeasurement(
   }
   return `${roundTo(value_mm, decimals)} mm`;
 }
+
+/**
+ * Round a value for display, falling back to exponential notation for a
+ * value that can't be rounded to a finite number (e.g. Infinity or NaN),
+ * so the interface never shows "NaN" or "Infinity" to the user.
+ */
+export function formatRoundedValue(value: number, decimals: number): string {
+  const roundedValue = roundTo(value, decimals);
+  return Number.isFinite(roundedValue) ? String(roundedValue) : value.toExponential();
+}
+
+/** Format a millimeter value, rounded to 2 decimals. */
+export function formatMm(value: number): string {
+  return formatRoundedValue(value, 2);
+}
+
+/** Format a weight in grams, switching to kilograms above 1000 g. */
+export function formatWeight(grams: number): string {
+  return grams >= 1000 ? `${formatMm(grams / 1000)} kg` : `${formatMm(grams)} g`;
+}
+
+/** Format an area in square meters, rounded to 4 decimals. */
+export function formatArea(area_m2: number): string {
+  return formatRoundedValue(area_m2, 4);
+}

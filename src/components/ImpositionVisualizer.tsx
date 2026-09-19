@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
 import { layoutSide } from '../engine/signatures';
-import { roundTo } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { ImpositionResults } from './ImpositionResults';
 import type { Press, SheetSize, SignatureOption } from '../types';
 
 const SVG_PADDING = 30;
@@ -1138,34 +1138,7 @@ export function ImpositionVisualizer() {
         )}
       </div>
 
-      {selected && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', marginTop: 'var(--space-6)' }}>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.cols * selected.rows}</div>
-            <div className="stat-label">Páginas / cara del pliego</div>
-          </div>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.signatures}</div>
-            <div className="stat-label">Firmas por ejemplar</div>
-          </div>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.blankPages}</div>
-            <div className="stat-label">Páginas en blanco</div>
-          </div>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.sheetsPerCopy}</div>
-            <div className="stat-label">Pliegos de prensa por ejemplar</div>
-          </div>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderRight: '1px solid var(--color-border)', borderTop: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{roundTo(selected.wastePercentage, 1)}%</div>
-            <div className="stat-label">Área imprimible no utilizada</div>
-          </div>
-          <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderTop: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{selected.pageRotated ? 'Rotada' : 'Normal'}</div>
-            <div className="stat-label">Orientación de página</div>
-          </div>
-        </div>
-      )}
+      <ImpositionResults />
     </div>
   );
 }

@@ -1,14 +1,10 @@
 import { useState } from 'react';
 import { useBookStore, getAllBindings } from '../store/useBookStore';
-import { roundTo } from '../engine/units';
+import { formatRoundedValue } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { BindingSpineResults } from './BindingSpineResults';
 import type { Binding } from '../types';
-
-function formatRoundedValue(value: number, decimals: number): string {
-  const roundedValue = roundTo(value, decimals);
-  return Number.isFinite(roundedValue) ? String(roundedValue) : value.toExponential();
-}
 
 export function BindingPanel() {
   const {
@@ -513,30 +509,7 @@ export function BindingPanel() {
         <p className="calculation-error" id="binding-calculation-error" role="status">{bindingError}</p>
       )}
 
-      {bindingSpine && (
-        <div className="stat-grid spine-stat-grid" style={{ gap: '8px', marginTop: 'var(--space-4)' }}>
-          <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-            <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-              {formatRoundedValue(bindingSpine.interior_mm, 2)}
-            </div>
-            <div className="stat-label">Lomo del papel interior (mm)</div>
-          </div>
-          <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-            <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-              {formatRoundedValue(bindingSpine.allowance_mm, 2)}
-            </div>
-            <div className="stat-label">Aporte de la encuadernación (mm)</div>
-          </div>
-          <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-            <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-              {formatRoundedValue(bindingSpine.total_mm, 2)}
-            </div>
-            <div className="stat-label">
-              {hasFlatSpine ? 'Lomo final con encuadernación (mm)' : 'Grosor del papel en el pliegue (mm)'}
-            </div>
-          </div>
-        </div>
-      )}
+      <BindingSpineResults />
 
       {bindingSpine && !hasFlatSpine && (
         <p className="calculation-note" style={{ marginTop: 'var(--space-2)' }}>
