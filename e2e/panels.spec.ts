@@ -90,4 +90,44 @@ test.describe('panel results and layout, at 1440x900', () => {
       expect(labels).toEqual(EXPECTED_LABELS[id]);
     });
   }
+
+  /**
+   * Counts measured at 1440x900 on 2026-09-19, on Chromium via this harness,
+   * with the number of pages field left empty. Every downstream result that
+   * depends on the page count (spine, imposition, binding, cover) must clear
+   * its stat cards while the field is invalid, and recover them exactly once
+   * a valid value is typed back in: the redesign this test guards against
+   * will replace this invalid state, but must not leave any of these four
+   * panels stuck empty or half-populated afterward.
+   */
+  const PANELS_DEPENDENT_ON_PAGE_COUNT = {
+    'spine-calculator': 4,
+    'imposition-visualizer': 6,
+    'binding-panel': 3,
+    'cover-panel': 3,
+  } as const;
+
+  test('an invalid page count clears the four dependent panels, and a valid one restores them', async ({ page }) => {
+    const pagesInput = page.locator('#input-pages');
+
+    await expect(pagesInput).toHaveValue('32');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
+    for (const [id, count] of Object.entries(PANELS_DEPENDENT_ON_PAGE_COUNT)) {
+      expect((await panelStatLabels(page, id)).length).toBe(count);
+    }
+
+    // `fill('')` drives React's onChange, unlike assigning `.value` directly.
+    await pagesInput.fill('');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'true');
+    for (const id of Object.keys(PANELS_DEPENDENT_ON_PAGE_COUNT)) {
+      expect((await panelStatLabels(page, id)).length).toBe(0);
+    }
+    await expect(page.locator('.calculation-error').first()).toBeVisible();
+
+    await pagesInput.fill('32');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
+    for (const [id, count] of Object.entries(PANELS_DEPENDENT_ON_PAGE_COUNT)) {
+      expect((await panelStatLabels(page, id)).length).toBe(count);
+    }
+  });
 });
