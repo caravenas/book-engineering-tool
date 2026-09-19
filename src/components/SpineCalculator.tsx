@@ -1,25 +1,12 @@
-import { useState } from 'react';
-import { useBookStore } from '../store/useBookStore';
-import { roundTo } from '../engine/units';
-
-function formatRoundedValue(value: number, decimals: number): string {
-  const roundedValue = roundTo(value, decimals);
-  return Number.isFinite(roundedValue) ? String(roundedValue) : value.toExponential();
-}
-
-function parsePositiveSafeInteger(rawValue: string): number | null {
-  if (!/^\d+$/.test(rawValue)) {
-    return null;
-  }
-
-  const parsedValue = Number(rawValue);
-  return Number.isSafeInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
-}
+import { useBookStore, parsePositiveSafeInteger, getSafeSpineResult } from '../store/useBookStore';
+import { formatRoundedValue } from '../engine/units';
+import { SpineResults } from './SpineResults';
 
 export function SpineCalculator() {
   const {
     totalPages,
-    setTotalPages,
+    totalPagesInput,
+    setTotalPagesInput,
     spineResult,
     spineError,
     pageWidth_mm,
@@ -27,16 +14,8 @@ export function SpineCalculator() {
     selectedGrammage,
   } = useBookStore();
 
-  const [rawTotalPages, setRawTotalPages] = useState(() => String(totalPages));
-  const parsedTotalPages = parsePositiveSafeInteger(rawTotalPages);
-  const hasInvalidPageCount = parsedTotalPages === null;
-  const safeResult = parsedTotalPages !== null && spineResult
-    && Number.isFinite(spineResult.thickness_mm)
-    && spineResult.thickness_mm > 0
-    && Number.isFinite(spineResult.totalWeight_g)
-    && spineResult.totalWeight_g > 0
-    ? spineResult
-    : null;
+  const hasInvalidPageCount = parsePositiveSafeInteger(totalPagesInput) === null;
+  const safeResult = getSafeSpineResult(totalPagesInput, spineResult);
   const spineBarWidth = safeResult
     ? Math.max(2, Math.min(60, safeResult.thickness_mm * 3))
     : null;
@@ -60,12 +39,8 @@ export function SpineCalculator() {
             <input
               type="number"
               className="form-input"
-              value={rawTotalPages}
-              onChange={event => {
-                const rawValue = event.target.value;
-                setRawTotalPages(rawValue);
-                setTotalPages(parsePositiveSafeInteger(rawValue) ?? 0);
-              }}
+              value={totalPagesInput}
+              onChange={event => setTotalPagesInput(event.target.value)}
               step={1}
               min={1}
               id="input-pages"
@@ -109,30 +84,7 @@ export function SpineCalculator() {
                 </div>
               </div>
 
-              <div className="stat-grid spine-stat-grid" style={{ gap: '8px' }}>
-                <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-                  <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-                    {formatRoundedValue(safeResult.thickness_mm, 2)}
-                  </div>
-                  <div className="stat-label">Lomo estimado (mm)</div>
-                </div>
-                <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-                  <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-                    {safeResult.totalWeight_g >= 1000
-                      ? `${formatRoundedValue(safeResult.totalWeight_g / 1000, 2)} kg`
-                      : `${formatRoundedValue(safeResult.totalWeight_g, 1)} g`}
-                  </div>
-                  <div className="stat-label">Peso estimado del papel interior</div>
-                </div>
-                <div className="stat-card" role="group" aria-label="Hojas de papel (interior)" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-                  <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>{sheetCount}</div>
-                  <div className="stat-label">Hojas de papel (interior)</div>
-                </div>
-                <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-                  <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>{selectedGrammage} g/m²</div>
-                  <div className="stat-label">Gramaje</div>
-                </div>
-              </div>
+              <SpineResults />
             </>
           ) : (
             <p className="calculation-note">

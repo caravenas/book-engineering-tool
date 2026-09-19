@@ -790,21 +790,22 @@ describe('totalPagesInput', () => {
     expect(state.spineError).toBeNull();
   });
 
-  it('updates totalPagesInput but leaves totalPages and its calculations untouched for invalid text', () => {
+  it('updates totalPagesInput and resets totalPages to zero for invalid text, so dependent panels show the error', () => {
     useBookStore.getState().setTotalPagesInput('33');
-    const spineResultBefore = useBookStore.getState().spineResult;
 
     useBookStore.getState().setTotalPagesInput('30x');
     let state = useBookStore.getState();
     expect(state.totalPagesInput).toBe('30x');
-    expect(state.totalPages).toBe(33);
-    expect(state.spineResult).toBe(spineResultBefore);
+    // Zeroing totalPages on invalid input is today's behavior; keeping the
+    // last valid value instead is a pending product decision, not this fix.
+    expect(state.totalPages).toBe(0);
+    expect(state.spineResult).toBeNull();
 
     useBookStore.getState().setTotalPagesInput('');
     state = useBookStore.getState();
     expect(state.totalPagesInput).toBe('');
-    expect(state.totalPages).toBe(33);
-    expect(state.spineResult).toBe(spineResultBefore);
+    expect(state.totalPages).toBe(0);
+    expect(state.spineResult).toBeNull();
   });
 
   it('keeps totalPagesInput in sync with totalPages when setTotalPages is called directly', () => {

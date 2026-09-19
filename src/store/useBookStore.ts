@@ -603,13 +603,35 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
   };
 }
 
-function parsePositiveSafeInteger(rawValue: string): number | null {
+export function parsePositiveSafeInteger(rawValue: string): number | null {
   if (!/^\d+$/.test(rawValue)) {
     return null;
   }
 
   const parsedValue = Number(rawValue);
   return Number.isSafeInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
+/**
+ * The spine panel and its results component both need to know whether the
+ * calculated spine is safe to display: valid page-count text and a
+ * positive, finite thickness and weight. A single pure function keeps that
+ * definition in one place instead of two copies drifting apart.
+ */
+export function getSafeSpineResult(
+  totalPagesInput: string,
+  spineResult: SpineResult | null
+): SpineResult | null {
+  if (parsePositiveSafeInteger(totalPagesInput) === null || !spineResult) {
+    return null;
+  }
+  if (!Number.isFinite(spineResult.thickness_mm) || spineResult.thickness_mm <= 0) {
+    return null;
+  }
+  if (!Number.isFinite(spineResult.totalWeight_g) || spineResult.totalWeight_g <= 0) {
+    return null;
+  }
+  return spineResult;
 }
 
 function withUpdatedCalculations(
@@ -928,10 +950,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       if (!state.catalog) return state;
 
       const parsed = parsePositiveSafeInteger(rawValue);
-      if (parsed === null) {
-        return { totalPagesInput: rawValue };
-      }
-      return { ...withUpdatedCalculations(state, state.catalog, { totalPages: parsed }), totalPagesInput: rawValue };
+      return { ...withUpdatedCalculations(state, state.catalog, { totalPages: parsed ?? 0 }), totalPagesInput: rawValue };
     });
   },
 
