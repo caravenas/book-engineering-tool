@@ -202,8 +202,46 @@ El incremento 5 es el siguiente y todavía no está planificado en detalle.
 
 - Revertir el único commit del incremento.
 
+## Rediseño de la interfaz — R-1, R-2 y R-3
+
+Ejecutan `docs/UI-REDESIGN.md`, aprobado por Chris el 2026-09-19.
+Ese documento manda sobre `docs/UX-REVIEW.md` allí donde difieran.
+Se parte en tres porque la hipótesis central del rediseño, que la herramienta cabe en una pantalla, no se puede probar moviendo los paneles actuales a tres columnas: lo que tiene que separarse, los controles, la vista previa y los resultados, vive soldado dentro de cada panel.
+
+### R-1 — El desbordamiento horizontal a 390 px
+
+Objetivo: cerrar el defecto que el inventario midió, 397 px de contenido en un viewport de 390.
+Es independiente del rediseño y se hace primero porque es pequeño y verificable por sí solo.
+No basta con llevar las pistas de `app-grid` a `minmax(0, 1fr)`: eso mueve el desbordamiento al hijo rígido en vez de eliminarlo, así que hay que encontrar ese hijo.
+
+Aceptación: a 390 px, `document.documentElement.scrollWidth` es igual al ancho del viewport, comprobado en un navegador real sobre `npm run preview`; ningún cambio visible a 1440 px.
+
+### R-2 — Separar controles, vista previa y resultados
+
+Objetivo: que cada panel exponga sus resultados y su diagrama como regiones propias, sin cambiar todavía dónde se dibujan.
+Hoy los resultados están en cuatro `stat-grid` repartidos entre `SpineCalculator`, `BindingPanel` y `CoverPanel`, más seis `stat-label` sueltos dentro de `ImpositionVisualizer`, que tiene 1171 líneas y es el riesgo del incremento.
+
+No objetivo: cambiar la disposición, los tokens o cualquier cifra.
+
+Aceptación: la página renderizada es idéntica a la de antes del incremento, y los tests, `tsc` y el build siguen en cero.
+
+### R-3 — Las tres columnas
+
+Objetivo: componer ficha, vista previa y resultados en tres columnas a partir de las regiones de R-2, con el acordeón de cinco pasos y el selector de vista.
+
+No objetivos: el Catálogo unificado, los tokens nuevos y la paleta.
+Esos vienen después, porque R-3 existe para probar la hipótesis antes de invertir en ellos.
+
+Aceptación: a 1440 px la página no se desplaza y solo se desplazan las columnas; a 390 px sigue sin haber desplazamiento horizontal; ningún control del inventario desaparece.
+
+### Rollback
+
+- Revertir el único commit del incremento que falle; los tres son independientes en ese orden.
+
 ## Decisiones pendientes
 
+- 2026-09-19, decisión de Chris: se ejecuta `docs/UI-REDESIGN.md` en los incrementos R-1, R-2 y R-3, empezando por la estructura y sin tocar tokens.
+  UX-7 y UX-8 siguen en pausa y quedan además reemplazados en su contenido: el Catálogo unificado del rediseño ocupa el lugar que iba a ocupar la pantalla de Configuración de UX-7.
 - 2026-09-17, pendiente de confirmar con una imprenta real: el peso del cartón no se calcula porque el catálogo no declara su densidad; queda pendiente añadirla cuando se necesite.
 - 2026-09-17, pendiente de confirmar con una imprenta real: las tolerancias de encajado de la tapa dura dependen de cada taller y no están modeladas.
 - 2026-09-17, pendiente de confirmar con una imprenta real: la convención de dónde cae el sangrado en una tapa con solapas, en el borde exterior de la solapa porque la unión tapa-solapa es hendido y no corte, debe confirmarse contra un taller real.
