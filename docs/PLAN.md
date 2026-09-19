@@ -206,6 +206,8 @@ El incremento 5 es el siguiente y todavía no está planificado en detalle.
 
 Ejecutan `docs/UI-REDESIGN.md`, aprobado por Chris el 2026-09-19.
 Ese documento manda sobre `docs/UX-REVIEW.md` allí donde difieran.
+Las afirmaciones sobre lo que la página mide van en `e2e/`, el arnés de navegador que entró con R-1; ninguna vale en Vitest, que corre en jsdom y no maqueta.
+
 Se parte en tres porque la hipótesis central del rediseño, que la herramienta cabe en una pantalla, no se puede probar moviendo los paneles actuales a tres columnas: lo que tiene que separarse, los controles, la vista previa y los resultados, vive soldado dentro de cada panel.
 
 ### R-1 — El desbordamiento horizontal a 390 px
@@ -214,7 +216,13 @@ Objetivo: cerrar el defecto que el inventario midió, 397 px de contenido en un 
 Es independiente del rediseño y se hace primero porque es pequeño y verificable por sí solo.
 No basta con llevar las pistas de `app-grid` a `minmax(0, 1fr)`: eso mueve el desbordamiento al hijo rígido en vez de eliminarlo, así que hay que encontrar ese hijo.
 
-Aceptación: a 390 px, `document.documentElement.scrollWidth` es igual al ancho del viewport, comprobado en un navegador real sobre `npm run preview`; ningún cambio visible a 1440 px.
+Aceptación: a 390 px, `document.documentElement.scrollWidth` no supera el ancho del viewport, y ningún elemento termina más allá del borde; sin cambio a 1440 ni a 1024.
+
+**Cerrado el 2026-09-19** en `f28b2ce`.
+La causa no era la que parecía: ningún descendiente sobresalía.
+`.app-cell` es elemento de rejilla y su `min-width` automático vale `min-content`, así que la celda se estiraba por encima de su pista y arrastraba a la página.
+Una sola declaración, `min-width: 0`, lleva 397 px a 384 a 390 px y no cambia nada a 1440 ni a 1024.
+El arnés de navegador llegó justo después, en `ef3531d`, y se comprobó en rojo antes que en verde contra esta misma regla.
 
 ### R-2 — Separar controles, vista previa y resultados
 
@@ -223,7 +231,7 @@ Hoy los resultados están en cuatro `stat-grid` repartidos entre `SpineCalculato
 
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
-Aceptación: la página renderizada es idéntica a la de antes del incremento, y los tests, `tsc` y el build siguen en cero.
+Aceptación: la página renderizada es idéntica a la de antes del incremento, `npm run test:browser` sigue en verde, y los tests, `tsc` y el build siguen en cero.
 
 ### R-3 — Las tres columnas
 
@@ -232,7 +240,7 @@ Objetivo: componer ficha, vista previa y resultados en tres columnas a partir de
 No objetivos: el Catálogo unificado, los tokens nuevos y la paleta.
 Esos vienen después, porque R-3 existe para probar la hipótesis antes de invertir en ellos.
 
-Aceptación: a 1440 px la página no se desplaza y solo se desplazan las columnas; a 390 px sigue sin haber desplazamiento horizontal; ningún control del inventario desaparece.
+Aceptación, como specs de `e2e/`: a 1440 px la página no se desplaza en vertical y solo se desplazan las columnas; a 390 px sigue sin haber desplazamiento horizontal; ningún control del inventario desaparece, comprobado contra la tabla de `docs/UI-REDESIGN.md`.
 
 ### Rollback
 
@@ -240,6 +248,12 @@ Aceptación: a 1440 px la página no se desplaza y solo se desplazan las columna
 
 ## Decisiones pendientes
 
+- 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.
+  Es la primera dependencia nueva desde el incremento 1 y entra con su aprobación explícita.
+  Playwright Test, solo Chromium, en `e2e/`, separado de Vitest en vez de sustituirlo: los motores puros y el store se siguen probando en jsdom, que es más rápido y suficiente para ellos.
+  Lo que cambia es que una afirmación sobre lo que la página mide ya no se verifica a mano.
+- 2026-09-19, decisión de Chris: como la delegación quedó bloqueada por permisos, R-1 lo aplicó el capitán en vez de un builder.
+  Es una excepción autorizada para ese incremento, no un cambio del modo de trabajo.
 - 2026-09-19, decisión de Chris: se ejecuta `docs/UI-REDESIGN.md` en los incrementos R-1, R-2 y R-3, empezando por la estructura y sin tocar tokens.
   UX-7 y UX-8 siguen en pausa y quedan además reemplazados en su contenido: el Catálogo unificado del rediseño ocupa el lugar que iba a ocupar la pantalla de Configuración de UX-7.
 - 2026-09-17, pendiente de confirmar con una imprenta real: el peso del cartón no se calcula porque el catálogo no declara su densidad; queda pendiente añadirla cuando se necesite.
