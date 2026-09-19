@@ -278,8 +278,13 @@ Los encargos de R-3, que mueven seis paneles, tienen que decirlo por adelantado.
   Extraer la vista previa dejándole el selector al panel exige pasarle una prop, que es justo lo que R-2 prohíbe porque rompería R-3.
   Moverlo ahora resolvería el nudo, pero el selector cambiaría de sitio y R-2 promete que la página queda idéntica.
   En R-3 el nudo se deshace solo: la propuesta pone ese conmutador sobre la vista previa, así que estado y control viajan juntos al mismo componente y no hace falta ni prop ni store.
-- La unificación de `hasFlatSpine`, ahora que el patrón de función pura compartida ya existe.
-- Un guardián del estado de entrada inválida, que hoy solo está verificado a mano.
+- ~~La unificación de `hasFlatSpine`~~ y ~~un guardián del estado de entrada inválida~~: cerrados el 2026-09-19 en `a1c48e4` y `541e525`.
+- **Desacoplar `SpineResults` de la geometría del dibujo del lomo.**
+  Lo encontró un builder al intentar probar el guardián: `SpineCalculator.tsx:76` monta `<SpineResults />` dentro de un ternario condicionado por `safeResult && spineBarWidth !== null`, y `spineBarWidth` es el ancho de la barra del dibujo.
+  Hoy las dos condiciones son equivalentes, así que no hay defecto visible, pero significa que la guarda propia de `SpineResults` nunca llega a ejercitarse: el padre decide si se dibuja.
+  Eso contradice el objetivo de R-2, porque en R-3 el padre ya no estará ahí para decidir.
+  La rama alternativa de ese ternario es además la nota «Corrige los valores indicados», que hoy sustituye a la vez al dibujo y a los resultados, y necesitará dueño cuando los dos se separen.
+  Se resuelve junto con la extracción de las vistas previas, que es cuando el ternario se deshace.
 
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
