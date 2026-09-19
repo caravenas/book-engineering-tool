@@ -114,7 +114,10 @@ Son reglas muertas, y el rediseño es la ocasión de borrarlas.
 
 ## Decisiones abiertas
 
-1. Si «Cara mostrada» debe seguir en la ficha, porque hoy forma parte del estado del store, o puede pasar a ser un estado de la vista.
+1. ~~Si «Cara mostrada» debe seguir en la ficha, porque hoy forma parte del estado del store, o puede pasar a ser un estado de la vista.~~
+   **Cerrada el 2026-09-19: la premisa era falsa.**
+   «Cara mostrada» nunca estuvo en el store; es un `useState` local de `ImpositionVisualizer.tsx`, línea 168, y el store no conoce ese concepto.
+   Subirla a un conmutador sobre la vista previa no cuesta nada ni cambia ningún cálculo.
 2. Si la selección actual debe persistirse (punto abierto 1): con una ficha visible, perderla al recargar se notará más.
 3. Que el acordeón deje un solo paso abierto a la vez es una hipótesis; hay que probar si alguien necesita comparar dos pasos.
 4. La vista a 1024 px está descrita, no dibujada.
