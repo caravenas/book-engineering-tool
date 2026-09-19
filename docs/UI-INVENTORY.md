@@ -30,7 +30,7 @@ Es un defecto, no una decisión: ningún contenido lo justifica.
 | Panel | Alto | Controles | Tarjetas de estadística |
 | --- | --- | --- | --- |
 | Formato de página | 603 px | 13 | 0 |
-| Sustrato (Papel) | 424 px | 7 | 0 |
+| Sustrato (Papel) | 424 px | 7 | 1 |
 | Lomo y peso del interior | 461 px | 1 | 4 |
 | Encuadernación | 482 px | 4 | 3 |
 | Imposición por firmas | 1126 px | 10 | 6 |
@@ -50,6 +50,7 @@ Distintivo de origen visible.
 ### Sustrato (Papel)
 
 Un desplegable de tipo de papel con 7 opciones; cinco botones de segmento de gramaje; y añadir gramaje personalizado.
+Una tarjeta, el calibre declarado.
 **No tiene editar ni ocultar**: los gramajes quedaron fuera del modelo de parches.
 
 ### Lomo y peso del interior
