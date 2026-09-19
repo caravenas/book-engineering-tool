@@ -258,6 +258,22 @@ Cuatro formateadores subieron de tres componentes a `src/engine/units.ts`, donde
 Queda anotado un efecto de la restricción, observado por el builder: `hasFlatSpine` se deriva ahora dos veces, idéntica, en `BindingPanel` y en `BindingSpineResults`.
 Unificarlo exige un selector en el store, que es precisamente lo que abre la segunda entrega, así que se resuelve allí y no antes.
 
+**Segunda entrega cerrada el 2026-09-19** en `3c2bbc5`, `1fbabed` y `e3df2c1`: el campo `totalPagesInput` en `BookStore`, sus correcciones tras revisión independiente, y `SpineResults`.
+El store exporta ahora `parsePositiveSafeInteger` y `getSafeSpineResult`, funciones puras que panel y resultados comparten en vez de duplicar.
+
+Verificado en navegador lo que ningún test automático cubría, porque es justo lo que esta entrega tocaba: al vaciar el campo de páginas, `aria-invalid` pasa a verdadero, los cuatro paneles ocultan sus resultados y cada uno muestra su propio error; al restaurar el valor, todo vuelve.
+Ese comportamiento es idéntico al de antes del incremento.
+
+Lección de las dos entregas, para R-3: extraer un componente tienta a copiar la derivación en vez de compartirla.
+Ocurrió tres veces, con tres formateadores, con el parser del número de páginas y con `safeResult`, y ninguna la habría detectado un test.
+Los encargos de R-3, que mueven seis paneles, tienen que decirlo por adelantado.
+
+### Lo que falta para cerrar R-2
+
+- Las vistas previas: el dibujo de página de `CanvasDesigner`, el del lomo en `SpineCalculator`, el SVG del pliego en `ImpositionVisualizer` y los de tapa en `CoverPanel`.
+- La unificación de `hasFlatSpine`, ahora que el patrón de función pura compartida ya existe.
+- Un guardián del estado de entrada inválida, que hoy solo está verificado a mano.
+
 No objetivo: cambiar la disposición, los tokens o cualquier cifra.
 
 Aceptación: la página renderizada es idéntica a la de antes del incremento, `npm run test:browser` sigue en verde, y los tests, `tsc` y el build siguen en cero.
