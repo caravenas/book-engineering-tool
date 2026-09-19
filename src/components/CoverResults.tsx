@@ -1,4 +1,4 @@
-import { useBookStore } from '../store/useBookStore';
+import { useBookStore, getPlannedCover } from '../store/useBookStore';
 import { formatMm, formatWeight, formatArea } from '../engine/units';
 
 /**
@@ -10,7 +10,7 @@ import { formatMm, formatWeight, formatArea } from '../engine/units';
  */
 export function CoverResults() {
   const { coverPlan } = useBookStore();
-  const plan = coverPlan?.ok ? coverPlan.cover : null;
+  const plan = getPlannedCover(coverPlan);
 
   if (plan && plan.kind === 'blanda') {
     return (

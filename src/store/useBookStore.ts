@@ -7,8 +7,10 @@ import type {
   BookFormat,
   BookStore,
   Catalog,
+  CoverPlanResult,
   CustomGrammageOption,
   GrammageOption,
+  HardCoverResult,
   ImpositionResult,
   OrphanedUserLayerEntry,
   Press,
@@ -18,6 +20,7 @@ import type {
   SheetSize,
   SheetSizePatch,
   SignaturePlanResult,
+  SoftCoverResult,
   SpineResult,
   UserLayer,
 } from '../types';
@@ -632,6 +635,16 @@ export function getSafeSpineResult(
     return null;
   }
   return spineResult;
+}
+
+/**
+ * The cover panel's preview and its results component both need the same
+ * successful cover plan, narrowed out of the `ok`/`ok: false` union. A
+ * single pure function keeps that narrowing in one place instead of two
+ * copies drifting apart.
+ */
+export function getPlannedCover(coverPlan: CoverPlanResult | null): SoftCoverResult | HardCoverResult | null {
+  return coverPlan?.ok ? coverPlan.cover : null;
 }
 
 /**
