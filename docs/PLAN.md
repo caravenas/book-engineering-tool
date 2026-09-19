@@ -270,7 +270,14 @@ Los encargos de R-3, que mueven seis paneles, tienen que decirlo por adelantado.
 
 ### Lo que falta para cerrar R-2
 
-- Las vistas previas: el dibujo de página de `CanvasDesigner`, el del lomo en `SpineCalculator`, el SVG del pliego en `ImpositionVisualizer` y los de tapa en `CoverPanel`.
+- Las vistas previas, pero solo tres de las cuatro.
+  El dibujo de página de `CanvasDesigner`, el del lomo en `SpineCalculator` y los SVG de tapa en `CoverPanel` derivan todo del store y salen como salieron los resultados.
+
+  **El SVG del pliego de `ImpositionVisualizer` se aplaza a R-3, con motivo.**
+  Depende de `side`, la cara mostrada, que es un `useState` local del panel, y su selector vive hoy en el área de controles.
+  Extraer la vista previa dejándole el selector al panel exige pasarle una prop, que es justo lo que R-2 prohíbe porque rompería R-3.
+  Moverlo ahora resolvería el nudo, pero el selector cambiaría de sitio y R-2 promete que la página queda idéntica.
+  En R-3 el nudo se deshace solo: la propuesta pone ese conmutador sobre la vista previa, así que estado y control viajan juntos al mismo componente y no hace falta ni prop ni store.
 - La unificación de `hasFlatSpine`, ahora que el patrón de función pura compartida ya existe.
 - Un guardián del estado de entrada inválida, que hoy solo está verificado a mano.
 
