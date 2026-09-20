@@ -156,4 +156,32 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     expect(labels.length).toBe(EXPECTED_STAT_LABEL_COUNT);
     expect(new Set(labels)).toEqual(new Set(EXPECTED_STAT_LABELS));
   });
+
+  /**
+   * Every result on the page depends on the page count, directly or through
+   * the spine, so an invalid one has to clear all of them and a valid one has
+   * to bring all of them back. This used to be asserted panel by panel; it is
+   * asserted for the whole document now, because R-3 moves results out of the
+   * panels that compute them and into a column of their own. What matters is
+   * the round trip: an invalid value must not leave anything stuck empty.
+   */
+  test('an invalid page count clears every result, and a valid one restores them', async ({ page }) => {
+    const pagesInput = page.locator('#input-pages');
+
+    await expect(pagesInput).toHaveValue('32');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
+    expect((await allStatLabels(page)).length).toBe(EXPECTED_STAT_LABEL_COUNT);
+
+    // `fill('')` drives React's onChange, unlike assigning `.value` directly.
+    await pagesInput.fill('');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('.calculation-error').first()).toBeVisible();
+    // The substrate's declared caliper is the one result that does not depend
+    // on the page count, so it is the only label that survives an invalid one.
+    expect(await allStatLabels(page)).toEqual(['Calibre declarado']);
+
+    await pagesInput.fill('32');
+    await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
+    expect((await allStatLabels(page)).length).toBe(EXPECTED_STAT_LABEL_COUNT);
+  });
 });
