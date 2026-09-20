@@ -357,7 +357,27 @@ Esa es exactamente la propiedad que R-3 promete conservar, y hoy no la comprobab
 
   Dos hallazgos más que valen para lo que queda: un `aria-label` sobre un `div` no anuncia nada, porque sin rol no hay región que nombrar; y bloquear el alto del viewport tira contenido en silencio al imprimir y en ventanas bajas, así que hay escapes para ambos, con su test.
 - **R-3b**, el acordeón de cinco pasos en la columna de la ficha.
+
+  **Cerrado el 2026-09-20** en `0e14979` y `6ee707a`.
+  Seis paneles pasan a cinco pasos, porque un número de páginas y el método que lo rechaza son una decisión y no dos.
+  Construido sobre `<details name>`, que trae el comportamiento exclusivo, el teclado y el estado anunciado sin escribir nada.
+  La cabecera bajó de 161 a 65 px: con la anterior la ficha no cabía debajo, que es justo lo que el acordeón promete.
+
 - **R-3c**, el selector de vista y la mudanza del SVG del pliego, con su conmutador de cara mostrada, que es cuando se deshace el nudo aplazado en R-2.
+
+  **Cerrado el 2026-09-20** en `975bbd6`.
+  El nudo se deshizo como estaba previsto: el conmutador de cara viajó con el dibujo, así que no hizo falta ni prop ni store.
+  El lomo tiene vista propia, que la propuesta no contemplaba: dibuja algo que los otros tres no, y perder un dibujo mientras se dice que solo se mueven cosas no es un cambio que este incremento pueda hacer.
+
+### Cómo evolucionó la red, que es lo que hizo posible R-3
+
+Cada incremento retiró la parte del guardián que él mismo invalidaba, pero solo después de que existiera la que sobrevive.
+
+`e2e/panels.spec.ts` fijaba alturas y la correspondencia panel-etiqueta; lo sustituyó `e2e/inventory.spec.ts`, que fija el recuento por nombre de los controles y el conjunto de etiquetas de resultado sin mirar dónde viven.
+Cuando el acordeón dejó controles en el DOM pero fuera de alcance, el guardián pasó a recorrer los pasos abriéndolos; cuando el conmutador empezó a desmontar las vistas no elegidas, pasó a recorrerlas también.
+Y como un recorrido por regiones con nombre puede no mirar donde alguien añada algo, una segunda prueba exige que un barrido del documento no encuentre nada que el recorrido no haya contado.
+
+La lección, para quien siga: retirar una aserción obsoleta no es debilitar la red si la propiedad que protegía queda cubierta por otra más difícil de engañar. Lo que no vale es retirarla y no reemplazarla.
 
 ### Rollback
 
