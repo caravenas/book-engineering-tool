@@ -48,7 +48,6 @@ export function SubstrateSelector() {
 
   return (
     <div className="panel" id="substrate-selector">
-      <h2 className="panel-title">Sustrato (Papel)</h2>
 
       <div className="form-group">
         <label className="form-label" htmlFor="select-substrate">Tipo de papel</label>

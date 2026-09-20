@@ -134,7 +134,6 @@ export function BindingPanel() {
 
   return (
     <div className="panel" id="binding-panel">
-      <h2 className="panel-title">Encuadernación</h2>
 
       <div
         className="form-group"

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
  * docs/PLAN.md's R-3 reorganizes the page into three columns, which makes
@@ -31,9 +31,11 @@ async function openTheApp(page: Page): Promise<void> {
  * that name drops. Order is still not part of what's asserted, since R-3 is
  * free to reorder controls along with moving them.
  */
-function controlNameCounts(page: Page): Promise<Record<string, number>> {
-  return page.evaluate(() => {
-    const controls = Array.from(document.querySelectorAll('button, input, select, textarea'));
+function controlNameCounts(page: Page, root = 'body'): Promise<Record<string, number>> {
+  return page.evaluate(selector => {
+    const scope = document.querySelector(selector);
+    if (!scope) throw new Error(`No element matches ${selector}`);
+    const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -64,7 +66,48 @@ function controlNameCounts(page: Page): Promise<Record<string, number>> {
       counts[name] = (counts[name] ?? 0) + 1;
       return counts;
     }, {});
-  });
+  }, root);
+}
+
+/**
+ * The spec sheet is an exclusive accordion, so its steps cannot all be open at
+ * once and a control inside a closed step, while still in the DOM, is not
+ * reachable. Counting the document in one pass would therefore count controls
+ * nobody can touch. Walking the steps instead asserts the stronger thing: that
+ * every step opens, and that between them they still hold every control.
+ */
+async function reachableControlNameCounts(page: Page): Promise<Record<string, number>> {
+  const totals: Record<string, number> = {};
+  const add = (counts: Record<string, number>) => {
+    for (const [name, count] of Object.entries(counts)) {
+      totals[name] = (totals[name] ?? 0) + count;
+    }
+  };
+
+  const steps = page.locator('details.spec-step');
+  const stepCount = await steps.count();
+  for (let index = 0; index < stepCount; index += 1) {
+    await ensureOpen(steps.nth(index));
+    add(await controlNameCounts(page, `details.spec-step:nth-of-type(${index + 1}) .spec-step-body`));
+  }
+
+  // Whatever lives outside the accordion: the notices, and anything the other
+  // two columns grow later.
+  add(await controlNameCounts(page, '.column-preview'));
+  add(await controlNameCounts(page, '.column-results'));
+  return totals;
+}
+
+/** Opens a step, or leaves it open: clicking one already open would close it. */
+async function ensureOpen(step: Locator): Promise<void> {
+  if (await step.evaluate(element => (element as HTMLDetailsElement).open)) return;
+  await step.locator('summary').click();
+  await expect(step).toHaveAttribute('open', '');
+}
+
+/** Opens the step a control lives in, so a test can reach it. */
+async function openStep(page: Page, title: string): Promise<void> {
+  await ensureOpen(page.locator('details.spec-step', { has: page.getByRole('heading', { name: title, exact: true }) }));
 }
 
 /** Every `.stat-label` on the page, regardless of which panel or column contains it. */
@@ -146,8 +189,8 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     await openTheApp(page);
   });
 
-  test('every interactive control is still present, wherever R-3 puts it', async ({ page }) => {
-    const counts = await controlNameCounts(page);
+  test('every interactive control is reachable, wherever R-3 puts it', async ({ page }) => {
+    const counts = await reachableControlNameCounts(page);
     expect(counts).toEqual(EXPECTED_CONTROL_NAME_COUNTS);
   });
 
@@ -166,6 +209,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
    * the round trip: an invalid value must not leave anything stuck empty.
    */
   test('an invalid page count clears every result, and a valid one restores them', async ({ page }) => {
+    await openStep(page, 'Páginas y encuadernación');
     const pagesInput = page.locator('#input-pages');
 
     await expect(pagesInput).toHaveValue('32');

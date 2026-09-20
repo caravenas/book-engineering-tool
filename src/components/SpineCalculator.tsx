@@ -19,7 +19,6 @@ export function SpineCalculator() {
 
   return (
     <div className="panel" id="spine-calculator">
-      <h2 className="panel-title">Lomo y peso del interior</h2>
       <p className="calculation-note">
         El lomo, el calibre y el peso son referencias preliminares.
         Confirma materiales y encuadernación antes de producir.

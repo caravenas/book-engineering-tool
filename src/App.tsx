@@ -4,12 +4,7 @@ import { loadCatalog } from './config/loadCatalog';
 import { readUserLayer } from './config/userLayer';
 import type { ConfigError } from './config/validateCatalog';
 import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
-import { CanvasDesigner } from './components/CanvasDesigner';
-import { SubstrateSelector } from './components/SubstrateSelector';
-import { ImpositionVisualizer } from './components/ImpositionVisualizer';
-import { SpineCalculator } from './components/SpineCalculator';
-import { BindingPanel } from './components/BindingPanel';
-import { CoverPanel } from './components/CoverPanel';
+import { SpecSteps } from './components/SpecSteps';
 import { PagePreview } from './components/PagePreview';
 import { SpinePreview, SpineThicknessPreview } from './components/SpinePreview';
 import { CoverPreview } from './components/CoverPreview';
@@ -110,7 +105,7 @@ export default function App() {
     <div className="page-wrapper">
       <div className="header-section">
         <header className="app-header" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '7rem', width: 'auto' }} />
+          <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '2.5rem', width: 'auto' }} />
           <h1 className="app-logo">PliegoStack</h1>
         </header>
       </div>
@@ -217,12 +212,7 @@ export default function App() {
           {loadState.status === 'ready' && (
             <div className="app-grid">
               <section className="app-column column-spec" aria-label="Ficha técnica">
-                <CanvasDesigner />
-                <SubstrateSelector />
-                <SpineCalculator />
-                <BindingPanel />
-                <ImpositionVisualizer />
-                <CoverPanel />
+                <SpecSteps />
               </section>
               <section className="app-column column-preview" aria-label="Vista previa">
                 <PagePreview />

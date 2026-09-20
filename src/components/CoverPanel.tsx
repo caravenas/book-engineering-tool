@@ -23,7 +23,6 @@ export function CoverPanel() {
 
   return (
     <div className="panel" id="cover-panel">
-      <h2 className="panel-title">Tapa</h2>
       <p className="calculation-note">
         Medidas, peso y plantilla de la tapa son referencias preliminares a partir del lomo final calculado.
         Confirma encajado y tolerancias de producción con tu taller antes de producir.

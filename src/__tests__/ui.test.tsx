@@ -1,11 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SubstrateSelector } from '../components/SubstrateSelector';
-import { CanvasDesigner } from '../components/CanvasDesigner';
-import { SpineCalculator } from '../components/SpineCalculator';
-import { BindingPanel } from '../components/BindingPanel';
-import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
-import { CoverPanel } from '../components/CoverPanel';
+import { SpecSteps } from '../components/SpecSteps';
 import {
   CanvasDesignerScreen,
   SpineCalculatorScreen,
@@ -24,29 +20,36 @@ afterEach(() => {
   useBookStore.setState(initialState);
 });
 
-describe('Panel layout (UX-1)', () => {
-  it('renders the panel titles in the order laid out in App.tsx', () => {
-    const { container } = render(
-      <>
-        <CanvasDesigner />
-        <SubstrateSelector />
-        <SpineCalculator />
-        <BindingPanel />
-        <ImpositionVisualizer />
-        <CoverPanel />
-      </>
-    );
+describe('Spec steps (R-3b)', () => {
+  // Six panels became five steps, and the titles were renamed with them:
+  // pages and binding are one decision, so they are one step.
+  it('names the five steps in order', () => {
+    const { container } = render(<SpecSteps />);
 
     const titles = Array.from(container.querySelectorAll('.panel-title'))
       .map(title => title.textContent?.trim());
 
     expect(titles).toEqual([
-      'Formato de página',
-      'Sustrato (Papel)',
-      'Lomo y peso del interior',
-      'Encuadernación',
-      'Imposición por firmas',
+      'Formato',
+      'Papel interior',
+      'Páginas y encuadernación',
+      'Imposición',
       'Tapa',
+    ]);
+  });
+
+  it('shows what each closed step currently says, so the sheet reads without opening it', () => {
+    const { container } = render(<SpecSteps />);
+
+    const values = Array.from(container.querySelectorAll('.spec-step-value'))
+      .map(value => value.textContent?.trim());
+
+    expect(values).toEqual([
+      '140 × 210 mm · 2:3',
+      'Couché Mate · 150 g/m²',
+      '32 págs · Grapa (caballete)',
+      'Prensa formato 70×100',
+      'Tapa blanda sin solapas',
     ]);
   });
 });

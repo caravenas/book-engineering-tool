@@ -104,8 +104,8 @@ describe('App runtime config loading', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Formato de página' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Sustrato (Papel)' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Formato' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Papel interior' })).toBeTruthy();
     expect((screen.getByLabelText('Tipo de papel') as HTMLSelectElement).value).toBe('couche_matte');
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
@@ -130,7 +130,7 @@ describe('App runtime config loading', () => {
       </StrictMode>
     );
 
-    expect(await screen.findByRole('heading', { name: 'Formato de página' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Formato' })).toBeTruthy();
     expect(initializeSpy).toHaveBeenCalledTimes(1);
   });
 

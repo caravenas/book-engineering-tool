@@ -393,7 +393,6 @@ export function ImpositionVisualizer() {
 
   return (
     <div className="panel" id="imposition-visualizer">
-      <h2 className="panel-title">Imposición por firmas</h2>
       <p className="calculation-note">
         Muestra la firma elegida sobre el pliego, con la pinza y los márgenes de la prensa descontados.
         Es una referencia preliminar, no una imposición industrial certificada.

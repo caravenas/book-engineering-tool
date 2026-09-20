@@ -95,7 +95,7 @@ describe('Orphaned user-layer entries (UX-6, §3.3)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
 
     const notices = screen.getAllByRole('status');
     expect(notices).toHaveLength(1);
@@ -115,7 +115,7 @@ describe('Orphaned user-layer entries (UX-6, §3.3)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     fireEvent.click(screen.getByRole('button', { name: `Eliminar «${GHOST_PRESS_ID}»` }));
 
     const notice = screen.getByRole('status');
@@ -136,7 +136,7 @@ describe('Orphaned user-layer entries (UX-6, §3.3)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar aviso de registros huérfanos' }));
     expect(screen.queryByRole('status')).toBeNull();
 

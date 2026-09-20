@@ -104,7 +104,7 @@ describe('Healthy storage (UX-5)', () => {
     const App = await importFreshApp();
     const firstMount = render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     expect(screen.queryByRole('status')).toBeNull();
 
     addCustomProportion('Panorámico');
@@ -119,7 +119,7 @@ describe('Healthy storage (UX-5)', () => {
     stubFetch();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     expect(screen.queryAllByRole('status')).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Panorámico' })).toBeTruthy();
   });
@@ -132,7 +132,7 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
 
     const notice = screen.getByRole('status');
     expect(notice.textContent).toContain('No se pudo guardar la configuración personalizada');
@@ -161,7 +161,7 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar aviso' }));
     expect(screen.queryByRole('status')).toBeNull();
 
@@ -181,7 +181,7 @@ describe('A write that fails mid-session (UX-5, §3.5)', () => {
     const App = await importFreshApp();
     render(<App />);
 
-    await screen.findByRole('heading', { name: 'Formato de página' });
+    await screen.findByRole('heading', { name: 'Formato' });
     expect(screen.queryByRole('status')).toBeNull();
 
     storage.throwOnWrite = true;

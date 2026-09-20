@@ -49,10 +49,9 @@ for (const { label, width, height } of VIEWPORTS) {
 
 /**
  * R-3's hypothesis, stated as a test: above the breakpoint the tool fits one
- * screen. The page itself must not scroll, and the columns must, which is the
- * difference between fitting and merely being cut off. Asserting only that the
- * page does not scroll would also pass if the columns clipped their content
- * away, so each column is checked for content taller than the space it has.
+ * screen. Asserting only that the page does not scroll would also pass if the
+ * columns clipped their content away, so each is checked for the overflow rule
+ * that makes anything past its bottom reachable rather than lost.
  */
 test('at 1440px the page does not scroll, its columns do', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -78,10 +77,6 @@ test('at 1440px the page does not scroll, its columns do', async ({ page }) => {
   for (const column of measured.columns) {
     expect(column.overflowY, `${column.name} must scroll on its own`).toBe('auto');
   }
-  // The spec column holds all six panels, so it is the one that certainly
-  // overflows; asserting it by name keeps the test honest if the others fit.
-  const spec = measured.columns.find(column => column.name === 'Ficha técnica');
-  expect(spec?.scrollHeight).toBeGreaterThan(spec?.clientHeight ?? 0);
 });
 
 /**
@@ -105,4 +100,30 @@ test('on a short window the page scrolls as a whole instead of the columns', asy
 
   expect(measured.pageScrollHeight).toBeGreaterThan(measured.viewportHeight);
   expect(measured.columnOverflow).toEqual(['visible', 'visible', 'visible']);
+});
+
+/**
+ * The spec sheet earns the accordion only if it can be read without opening
+ * anything, so a summary that ends in an ellipsis is a silent failure: it
+ * still looks fine and no longer says what the step holds. A long title
+ * squeezing its value is exactly how that happens.
+ */
+test('no closed step truncates what it says, and the whole sheet fits', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.locator('.app-grid')).toBeVisible();
+
+  const measured = await page.evaluate(() => ({
+    clipped: Array.from(document.querySelectorAll<HTMLElement>('.spec-step-value'))
+      .filter(value => value.scrollWidth > value.clientWidth + 1)
+      .map(value => value.textContent ?? ''),
+    specScrolls: (() => {
+      const column = document.querySelector<HTMLElement>('.column-spec');
+      return column ? column.scrollHeight > column.clientHeight : true;
+    })(),
+  }));
+
+  expect(measured.clipped).toEqual([]);
+  // With four of five steps closed the sheet is short enough to sit still.
+  expect(measured.specScrolls).toBe(false);
 });

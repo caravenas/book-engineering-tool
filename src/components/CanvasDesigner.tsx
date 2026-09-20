@@ -114,10 +114,6 @@ export function CanvasDesigner() {
 
   return (
     <div className="panel" id="canvas-designer">
-      <h2 className="panel-title">
-        Formato de página
-      </h2>
-
       {/* Format selector */}
       <div
         className="form-group"
