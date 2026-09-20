@@ -26,7 +26,7 @@ export function SpineCalculator() {
 
       <div className="form-group">
         <label className="form-label" htmlFor="input-pages" style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>
-          NÚMERO DE PÁGINAS
+          Número de páginas
         </label>
         <input
           type="number"

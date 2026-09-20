@@ -190,7 +190,7 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Encuadernación seleccionada': 1,
   'Esquema de plegado': 1,
   'Manual': 1,
-  'NÚMERO DE PÁGINAS': 1,
+  'Número de páginas': 1,
   'Ocultar encuadernación de fábrica': 1,
   'Ocultar pliego de fábrica': 1,
   'Ocultar prensa de fábrica': 1,
@@ -268,6 +268,46 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
   test('the declared caliper is shown with the paper it describes', async ({ page }) => {
     await openStep(page, 'Papel interior');
     await expect(page.getByText(CALIPER_LABEL, { exact: true })).toBeVisible();
+  });
+
+  /**
+   * A hard cover reports nine figures the default state never shows, because
+   * the shipped default is a saddle-stitched book and a saddle stitch has no
+   * flat spine to glue boards to. Nothing was checking them: the guard audits
+   * the default state, so the whole hardcover branch could break without a
+   * single test noticing.
+   */
+  test('a hard cover reports the boards and the wrap it needs', async ({ page }) => {
+    await openStep(page, 'Páginas y encuadernación');
+    await page.locator('#select-binding').selectOption('hotmelt');
+
+    await openStep(page, 'Tapa');
+    await page.locator('#select-cover').selectOption('dura_estandar');
+
+    expect(new Set(await resultLabels(page))).toEqual(new Set([
+      'Ancho del cartón lateral (mm)',
+      'Alto del cartón (mm)',
+      'Ancho del cartón de lomo (mm)',
+      'Ancho del forro (mm)',
+      'Alto del forro (mm)',
+      'Peso del forro',
+      'Área de cartón lateral (m²)',
+      'Área de cartón de lomo (m²)',
+      'Área total de cartón (m²)',
+      'Lomo estimado (mm)',
+      'Peso estimado del papel interior',
+      'Hojas de papel (interior)',
+      'Gramaje',
+      'Lomo del papel interior (mm)',
+      'Aporte de la encuadernación (mm)',
+      'Lomo final con encuadernación (mm)',
+      'Páginas / cara del pliego',
+      'Firmas por ejemplar',
+      'Páginas en blanco',
+      'Pliegos de prensa por ejemplar',
+      'Área imprimible no utilizada',
+      'Orientación de página',
+    ]));
   });
 
   /**

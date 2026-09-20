@@ -284,7 +284,7 @@ describe('Honest and recoverable UI', () => {
     });
 
     render(<SpineCalculatorScreen />);
-    const pagesInput = screen.getByRole('spinbutton', { name: 'NÚMERO DE PÁGINAS' });
+    const pagesInput = screen.getByRole('spinbutton', { name: 'Número de páginas' });
 
     expect(pagesInput.getAttribute('aria-invalid')).toBe('false');
     expect(pagesInput.getAttribute('aria-describedby')).toBe('pages-page-count-requirement');
@@ -312,7 +312,7 @@ describe('Honest and recoverable UI', () => {
   it('preserves invalid page-count text while calculations invalidate, then recovers', () => {
     useBookStore.getState().recalculate();
     render(<SpineCalculatorScreen />);
-    const pagesInput = screen.getByRole('spinbutton', { name: 'NÚMERO DE PÁGINAS' });
+    const pagesInput = screen.getByRole('spinbutton', { name: 'Número de páginas' });
 
     fireEvent.change(pagesInput, { target: { value: '' } });
 
