@@ -381,6 +381,14 @@ Se parte en cortes verticales y no por capas, para que no haya una ventana en la
 
 - **R-4a**: el panel, su navegación por los ocho catálogos agrupados en Formato, Papel y Producción, con candado en los tres que solo se leen, y **Prensas** completo dentro.
   Los controles de prensa desaparecen del paso 04 en el mismo incremento.
+
+  **Cerrado el 2026-09-20** en `db8dd0c` y `fdb9544`.
+  El paso 04 pasa de tres controles a uno que abre el catálogo, y `ImpositionVisualizer` de 950 a 473 líneas.
+  Los tres catálogos que solo se leen —papeles, esquemas y tapas— se pueden mirar por primera vez.
+
+  **Una entrada propia no se puede editar**, y el formulario ahora lo dice en vez de ofrecer un guardado que no guarda: el store solo parchea entradas de fábrica.
+  Es una limitación anterior a R-4, que el formulario en línea escondía ocultando su control de editar.
+  Darles edición de verdad exige una acción nueva en el store y queda como punto abierto.
 - **R-4b**: Pliegos, Proporciones y Encuadernaciones entran igual, y salen de sus pasos.
 - **R-4c**: Gramajes anidados bajo Papeles, la sección de ocultas para restaurar, y el indicador de persistencia en la cabecera del panel.
 
@@ -391,6 +399,15 @@ y los gramajes no son un catálogo hermano sino una lista dentro de un papel, po
 El panel se construye sobre `<dialog>` y `showModal()`, por la misma razón que el acordeón sobre `<details>`: la plataforma ya trae el foco atrapado, el cierre con Escape y el fondo inerte, y escribir eso a mano es la parte que se hace mal.
 
 Exportar e importar siguen sin sitio, y siguen anotados: cuando UX-8 se retome, su lugar es la cabecera de este panel.
+
+### Puntos abiertos tras R-4a
+
+- Una entrada propia no se edita, solo se elimina y se vuelve a añadir.
+  Exige una acción de store que hoy no existe.
+- El formulario edita la prensa **seleccionada**, y la lista de arriba no deja elegir otra para editarla ni marca cuál es.
+  Funciona, pero no es lo que el canvas dibuja.
+- La prueba de reconciliación del guardián perdió fuerza con el modal: al barrer el documento con el panel cerrado, seis de los siete catálogos están desmontados, así que ese barrido ya no puede delatar un control que el recorrido no visite.
+- El recorrido tampoco abre los formularios condicionales que quedan en los pasos, así que sus campos siguen fuera del inventario.
 
 ### Puntos abiertos tras R-3
 
