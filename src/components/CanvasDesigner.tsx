@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useBookStore, getAllProportions } from '../store/useBookStore';
-import { mmToInches, roundTo } from '../engine/units';
+import { getPageDisplayDimensions } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { PagePreview } from './PagePreview';
 import type { BookFormat, Proportion } from '../types';
 
 const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
@@ -10,24 +11,6 @@ const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
   { value: 'landscape', label: 'Apaisado' },
   { value: 'square', label: 'Cuadrado' },
 ];
-
-function toDisplayValue(value_mm: number, unitSystem: 'metric' | 'imperial', decimals: number): number | '' {
-  if (!Number.isFinite(value_mm)) {
-    return '';
-  }
-
-  const converted = unitSystem === 'imperial' ? mmToInches(value_mm) : value_mm;
-  if (!Number.isFinite(converted)) {
-    return '';
-  }
-
-  const rounded = roundTo(converted, decimals);
-  if (!Number.isFinite(rounded) || (converted !== 0 && rounded === 0)) {
-    return converted;
-  }
-
-  return rounded;
-}
 
 export function CanvasDesigner() {
   const {
@@ -126,64 +109,9 @@ export function CanvasDesigner() {
     }
   };
 
-  // Convert finite values for display without passing invalid geometry to number inputs.
-  const displayW = toDisplayValue(pageWidth_mm, unitSystem, unitSystem === 'imperial' ? 2 : 1);
-  const displayH = toDisplayValue(pageHeight_mm, unitSystem, unitSystem === 'imperial' ? 2 : 1);
-  const displayBleed = toDisplayValue(bleed_mm, unitSystem, unitSystem === 'imperial' ? 3 : 1);
-  const unit = unitSystem === 'imperial' ? '″' : 'mm';
-
-  // Keep invalid input away from CSS geometry while the calculators report how to recover.
-  const canRenderPreview = Number.isFinite(pageWidth_mm)
-    && pageWidth_mm > 0
-    && Number.isFinite(pageHeight_mm)
-    && pageHeight_mm > 0
-    && Number.isFinite(bleed_mm)
-    && bleed_mm >= 0;
-  const maxPreviewH = 140;
-  const maxPreviewW = 120;
-  const bleedSpan = bleed_mm * 2;
-  const outerPageWidth = pageWidth_mm + bleedSpan;
-  const outerPageHeight = pageHeight_mm + bleedSpan;
-  const hasValidOuterGeometry = canRenderPreview
-    && Number.isFinite(bleedSpan)
-    && (bleed_mm === 0 || bleedSpan > 0)
-    && Number.isFinite(outerPageWidth)
-    && outerPageWidth > bleedSpan
-    && Number.isFinite(outerPageHeight)
-    && outerPageHeight > bleedSpan
-    && (bleed_mm === 0 || (
-      outerPageWidth > pageWidth_mm
-      && outerPageHeight > pageHeight_mm
-    ));
-  const scale = hasValidOuterGeometry
-    ? Math.min(maxPreviewW / outerPageWidth, maxPreviewH / outerPageHeight, 1)
-    : 0;
-  const previewW = hasValidOuterGeometry ? pageWidth_mm * scale : 0;
-  const previewH = hasValidOuterGeometry ? pageHeight_mm * scale : 0;
-  const bleedScale = hasValidOuterGeometry ? bleed_mm * scale : 0;
-  const previewWidthWithBleed = hasValidOuterGeometry ? outerPageWidth * scale : 0;
-  const previewHeightWithBleed = hasValidOuterGeometry ? outerPageHeight * scale : 0;
-  const safeZoneRight = previewWidthWithBleed - (bleedScale + previewW);
-  const safeZoneBottom = previewHeightWithBleed - (bleedScale + previewH);
-  const hasValidPreviewGeometry = hasValidOuterGeometry
-    && Number.isFinite(scale)
-    && scale > 0
-    && Number.isFinite(previewW)
-    && previewW > 0
-    && Number.isFinite(previewH)
-    && previewH > 0
-    && Number.isFinite(bleedScale)
-    && Number.isFinite(previewWidthWithBleed)
-    && previewWidthWithBleed > 0
-    && previewWidthWithBleed <= maxPreviewW
-    && Number.isFinite(previewHeightWithBleed)
-    && previewHeightWithBleed > 0
-    && previewHeightWithBleed <= maxPreviewH
-    && (bleed_mm === 0 || (
-      bleedScale > 0
-      && safeZoneRight > 0
-      && safeZoneBottom > 0
-    ));
+  const { displayW, displayH, displayBleed, unit } = getPageDisplayDimensions(
+    pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem
+  );
 
   return (
     <div className="panel" id="canvas-designer">
@@ -582,36 +510,7 @@ export function CanvasDesigner() {
         </div>
       </div>
 
-      {/* Page Preview */}
-      <div className="page-preview-container">
-        {hasValidPreviewGeometry ? (
-          <div>
-            <div
-              className="page-preview"
-              style={{ width: previewWidthWithBleed, height: previewHeightWithBleed }}
-            >
-              <div className="bleed-zone" />
-              <div
-                className="safe-zone"
-                style={{
-                  top: bleedScale,
-                  left: bleedScale,
-                  width: previewW,
-                  height: previewH,
-                }}
-              />
-            </div>
-            <div className="page-preview-label">
-              {displayW} × {displayH} {unit}
-              {bleed_mm > 0 && ` + ${displayBleed} ${unit} sangrado`}
-            </div>
-          </div>
-        ) : (
-          <p className="calculation-note">
-            Introduce dimensiones finitas mayores que cero y un sangrado no negativo para recuperar la vista previa.
-          </p>
-        )}
-      </div>
+      <PagePreview />
     </div>
   );
 }

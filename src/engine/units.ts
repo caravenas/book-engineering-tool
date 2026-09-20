@@ -72,3 +72,45 @@ export function formatWeight(grams: number): string {
 export function formatArea(area_m2: number): string {
   return formatRoundedValue(area_m2, 4);
 }
+
+// Convert a finite mm value for display without passing invalid geometry to number inputs.
+function toDisplayValue(value_mm: number, unitSystem: 'metric' | 'imperial', decimals: number): number | '' {
+  if (!Number.isFinite(value_mm)) {
+    return '';
+  }
+
+  const converted = unitSystem === 'imperial' ? mmToInches(value_mm) : value_mm;
+  if (!Number.isFinite(converted)) {
+    return '';
+  }
+
+  const rounded = roundTo(converted, decimals);
+  if (!Number.isFinite(rounded) || (converted !== 0 && rounded === 0)) {
+    return converted;
+  }
+
+  return rounded;
+}
+
+/**
+ * The page-dimensions panel and the page preview both display the same
+ * width/height/bleed converted to the active unit system, with bleed
+ * rounded to an extra decimal under imperial units. A single pure function
+ * keeps that conversion and its unit label in one place instead of two
+ * copies drifting apart.
+ */
+export function getPageDisplayDimensions(
+  pageWidth_mm: number,
+  pageHeight_mm: number,
+  bleed_mm: number,
+  unitSystem: 'metric' | 'imperial'
+): { displayW: number | ''; displayH: number | ''; displayBleed: number | ''; unit: string } {
+  const dimensionDecimals = unitSystem === 'imperial' ? 2 : 1;
+  const bleedDecimals = unitSystem === 'imperial' ? 3 : 1;
+  return {
+    displayW: toDisplayValue(pageWidth_mm, unitSystem, dimensionDecimals),
+    displayH: toDisplayValue(pageHeight_mm, unitSystem, dimensionDecimals),
+    displayBleed: toDisplayValue(bleed_mm, unitSystem, bleedDecimals),
+    unit: unitSystem === 'imperial' ? '″' : 'mm',
+  };
+}
