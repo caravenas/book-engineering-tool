@@ -3,7 +3,6 @@ import { useBookStore, getAllProportions } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
-import { PagePreview } from './PagePreview';
 import type { BookFormat, Proportion } from '../types';
 
 const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
@@ -510,7 +509,6 @@ export function CanvasDesigner() {
         </div>
       </div>
 
-      <PagePreview />
     </div>
   );
 }

@@ -1,7 +1,5 @@
-import { useBookStore, getAllBindings, getPlannedCover } from '../store/useBookStore';
+import { useBookStore, getAllBindings } from '../store/useBookStore';
 import { ConfigSourceNote } from './ConfigSourceNote';
-import { CoverResults } from './CoverResults';
-import { CoverPreview } from './CoverPreview';
 import type { Binding, Cover } from '../types';
 
 /**
@@ -22,7 +20,6 @@ export function CoverPanel() {
   const selectedBinding = catalog
     ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds).find(binding => binding.id === bindingId) ?? null
     : null;
-  const plan = getPlannedCover(coverPlan);
 
   return (
     <div className="panel" id="cover-panel">
@@ -65,18 +62,6 @@ export function CoverPanel() {
         <p className="calculation-note" role="status">{coverPlan.message}</p>
       )}
 
-      <CoverResults />
-
-      <div className="cover-svg-container">
-        <CoverPreview />
-        {!plan && (
-          <p className="calculation-note" role="status">
-            {coverPlan && !coverPlan.ok
-              ? 'No hay plantilla disponible: revisa el mensaje anterior.'
-              : 'Corrige los valores indicados para recuperar la plantilla de la tapa.'}
-          </p>
-        )}
-      </div>
     </div>
   );
 }

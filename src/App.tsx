@@ -10,6 +10,13 @@ import { ImpositionVisualizer } from './components/ImpositionVisualizer';
 import { SpineCalculator } from './components/SpineCalculator';
 import { BindingPanel } from './components/BindingPanel';
 import { CoverPanel } from './components/CoverPanel';
+import { PagePreview } from './components/PagePreview';
+import { SpinePreview, SpineThicknessPreview } from './components/SpinePreview';
+import { CoverPreview } from './components/CoverPreview';
+import { SpineResults } from './components/SpineResults';
+import { BindingSpineResults } from './components/BindingSpineResults';
+import { ImpositionResults } from './components/ImpositionResults';
+import { CoverResults } from './components/CoverResults';
 
 type LoadState =
   | { status: 'loading' }
@@ -209,23 +216,25 @@ export default function App() {
 
           {loadState.status === 'ready' && (
             <div className="app-grid">
-              <div className="app-cell cell-tl">
+              <div className="app-column column-spec" aria-label="Ficha técnica">
                 <CanvasDesigner />
-              </div>
-              <div className="app-cell cell-tr">
                 <SubstrateSelector />
-              </div>
-              <div className="app-cell cell-bl">
                 <SpineCalculator />
-              </div>
-              <div className="app-cell cell-br">
                 <BindingPanel />
-              </div>
-              <div className="app-cell cell-bottom">
                 <ImpositionVisualizer />
-              </div>
-              <div className="app-cell cell-bottom">
                 <CoverPanel />
+              </div>
+              <div className="app-column column-preview" aria-label="Vista previa">
+                <PagePreview />
+                <SpinePreview />
+                <SpineThicknessPreview />
+                <CoverPreview />
+              </div>
+              <div className="app-column column-results" aria-label="Resultados">
+                <SpineResults />
+                <BindingSpineResults />
+                <ImpositionResults />
+                <CoverResults />
               </div>
             </div>
           )}

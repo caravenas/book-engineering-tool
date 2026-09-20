@@ -3,7 +3,6 @@ import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/u
 import { formatRoundedValue } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
-import { BindingSpineResults } from './BindingSpineResults';
 import type { Binding } from '../types';
 
 export function BindingPanel() {
@@ -507,8 +506,6 @@ export function BindingPanel() {
       {bindingError && (
         <p className="calculation-error" id="binding-calculation-error" role="status">{bindingError}</p>
       )}
-
-      <BindingSpineResults />
 
       {bindingSpine && !hasFlatSpine && (
         <p className="calculation-note" style={{ marginTop: 'var(--space-2)' }}>

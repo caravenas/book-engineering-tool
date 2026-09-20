@@ -3,7 +3,6 @@ import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookS
 import { layoutSide } from '../engine/signatures';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
-import { ImpositionResults } from './ImpositionResults';
 import type { Press, SheetSize, SignatureOption } from '../types';
 
 const SVG_PADDING = 30;
@@ -1138,7 +1137,6 @@ export function ImpositionVisualizer() {
         )}
       </div>
 
-      <ImpositionResults />
     </div>
   );
 }

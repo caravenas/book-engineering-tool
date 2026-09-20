@@ -1,11 +1,18 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CanvasDesigner } from '../components/CanvasDesigner';
-import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { SpineCalculator } from '../components/SpineCalculator';
 import { BindingPanel } from '../components/BindingPanel';
-import { SubstrateSelector } from '../components/SubstrateSelector';
+import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { CoverPanel } from '../components/CoverPanel';
+import {
+  CanvasDesignerScreen,
+  SpineCalculatorScreen,
+  BindingPanelScreen,
+  ImpositionVisualizerScreen,
+  CoverPanelScreen,
+} from './screens';
 import { useBookStore } from '../store/useBookStore';
 import { loadShippedCatalog } from './testCatalog';
 
@@ -50,7 +57,7 @@ describe('Honest and recoverable UI', () => {
       signaturePlan: null,
       signatureError: 'Corrige las dimensiones para recuperar la imposición por firmas.',
     });
-    const layout = render(<ImpositionVisualizer />);
+    const layout = render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByRole('alert').textContent).toContain('Corrige las dimensiones');
     expect(layout.container.textContent).not.toContain('Páginas / cara del pliego');
@@ -60,7 +67,7 @@ describe('Honest and recoverable UI', () => {
       spineResult: null,
       spineError: 'Corrige páginas, gramaje y calibre para recuperar las referencias.',
     });
-    const spine = render(<SpineCalculator />);
+    const spine = render(<SpineCalculatorScreen />);
 
     expect(screen.getByRole('alert').textContent).toContain('Corrige páginas');
     expect(spine.container.textContent).not.toContain('Peso estimado del papel interior');
@@ -73,7 +80,7 @@ describe('Honest and recoverable UI', () => {
       bleed_mm: Number.MAX_VALUE,
     });
 
-    const overflowedCanvas = render(<CanvasDesigner />);
+    const overflowedCanvas = render(<CanvasDesignerScreen />);
 
     expect(overflowedCanvas.container.querySelector('.page-preview')).toBeNull();
     expect(screen.getByText(/Introduce dimensiones finitas mayores que cero/)).toBeTruthy();
@@ -93,7 +100,7 @@ describe('Honest and recoverable UI', () => {
       bleed_mm: 0,
     });
 
-    const underflowedCanvas = render(<CanvasDesigner />);
+    const underflowedCanvas = render(<CanvasDesignerScreen />);
 
     expect(underflowedCanvas.container.querySelector('.page-preview')).toBeNull();
     expect(screen.getByText(/Introduce dimensiones finitas mayores que cero/)).toBeTruthy();
@@ -101,7 +108,7 @@ describe('Honest and recoverable UI', () => {
 
   it('fits the bleed-inclusive preview and preserves a nonzero display value', () => {
     useBookStore.setState({ pageWidth_mm: 140, pageHeight_mm: 210, bleed_mm: 100 });
-    const oversizedBleed = render(<CanvasDesigner />);
+    const oversizedBleed = render(<CanvasDesignerScreen />);
     const preview = oversizedBleed.container.querySelector('.page-preview') as HTMLDivElement;
     const safeZone = oversizedBleed.container.querySelector('.page-preview .safe-zone') as HTMLDivElement;
 
@@ -116,13 +123,13 @@ describe('Honest and recoverable UI', () => {
     oversizedBleed.unmount();
 
     useBookStore.setState({ pageWidth_mm: 0.04, pageHeight_mm: 0.04, bleed_mm: 0 });
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
 
     expect((screen.getByLabelText('Ancho (Cerrado)') as HTMLInputElement).value).toBe('0.04');
   });
 
   it('provides named groups, labels, and interactive states for modified controls', () => {
-    const canvas = render(<CanvasDesigner />);
+    const canvas = render(<CanvasDesignerScreen />);
     const formatGroup = screen.getByRole('group', { name: 'Formato' });
     const verticalButton = within(formatGroup).getByRole('button', { name: 'Vertical' });
 
@@ -143,7 +150,7 @@ describe('Honest and recoverable UI', () => {
   });
 
   it('keeps the sheet-size group named and its controls labelled across disclosure states', () => {
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByLabelText('Prensa')).toBeTruthy();
     expect(screen.getByLabelText('Esquema de plegado')).toBeTruthy();
@@ -224,7 +231,7 @@ describe('Honest and recoverable UI', () => {
 
   it('preserves an invalid custom-sheet draft selection and recovers after valid dimensions', () => {
     useBookStore.getState().recalculate();
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
     fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
@@ -260,7 +267,7 @@ describe('Honest and recoverable UI', () => {
       spineError: 'Corrige las dimensiones para recuperar las referencias de lomo y peso.',
     });
 
-    render(<SpineCalculator />);
+    render(<SpineCalculatorScreen />);
     const pagesInput = screen.getByRole('spinbutton', { name: 'NÚMERO DE PÁGINAS' });
 
     expect(pagesInput.getAttribute('aria-invalid')).toBe('false');
@@ -277,7 +284,7 @@ describe('Honest and recoverable UI', () => {
       spineError: null,
     });
 
-    const spine = render(<SpineCalculator />);
+    const spine = render(<SpineCalculatorScreen />);
     const text = spine.container.textContent ?? '';
 
     expect(text).toContain(Number.MAX_VALUE.toExponential());
@@ -288,7 +295,7 @@ describe('Honest and recoverable UI', () => {
 
   it('preserves invalid page-count text while calculations invalidate, then recovers', () => {
     useBookStore.getState().recalculate();
-    render(<SpineCalculator />);
+    render(<SpineCalculatorScreen />);
     const pagesInput = screen.getByRole('spinbutton', { name: 'NÚMERO DE PÁGINAS' });
 
     fireEvent.change(pagesInput, { target: { value: '' } });
@@ -342,14 +349,14 @@ describe('Honest and recoverable UI', () => {
   });
 
   it('shows the config source for a shipped sheet size and the custom-source note for a custom one', () => {
-    const impositionVisualizer = render(<ImpositionVisualizer />);
+    const impositionVisualizer = render(<ImpositionVisualizerScreen />);
     expect(screen.getByText('config/pliegos.json')).toBeTruthy();
     expect(impositionVisualizer.container.textContent).toContain('Valores de ejemplo; reemplazar por datos reales de la imprenta.');
     expect(screen.queryByText(/^Fuente: /)).toBeNull();
     impositionVisualizer.unmount();
 
     useBookStore.getState().addCustomSheetSize('Pliego personalizado', 500, 700);
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     expect(screen.getByText('pliego personalizado')).toBeTruthy();
     expect(screen.queryByText(/config\/pliegos\.json/)).toBeNull();
     expect(screen.queryByText(/^Fuente: /)).toBeNull();
@@ -358,7 +365,7 @@ describe('Honest and recoverable UI', () => {
 
 describe('Binding selector', () => {
   it('renders the four shipped methods and switching changes the displayed rules', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
     const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
@@ -375,7 +382,7 @@ describe('Binding selector', () => {
 
   it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
     useBookStore.getState().setTotalPages(33); // grapa requires a multiple of 4
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     const message = screen.getByRole('status');
     expect(message.textContent).toContain('32');
@@ -383,7 +390,7 @@ describe('Binding selector', () => {
   });
 
   it('renders the spine split into interior paper, binding allowance, and total', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
     expect(screen.getByText('Lomo del papel interior (mm)').previousSibling?.textContent).toBe('1.92');
@@ -392,7 +399,7 @@ describe('Binding selector', () => {
   });
 
   it('shows the creep block for grapa and hides it for a method that declares no creep', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('8 pliegos anidados');
     expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('0.96 mm');
@@ -403,7 +410,7 @@ describe('Binding selector', () => {
   });
 
   it('shows the config source note for the binding catalog', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
     expect(screen.getByText('config/encuadernaciones.json')).toBeTruthy();
     expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
     expect(screen.queryByText(/^Fuente: /)).toBeNull();
@@ -413,7 +420,7 @@ describe('Binding selector', () => {
 describe('UX-6: components read the effective catalog', () => {
   it('excludes a hidden press from the press dropdown', () => {
     useBookStore.getState().hidePress('prensa_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
     expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
@@ -421,7 +428,7 @@ describe('UX-6: components read the effective catalog', () => {
 
   it('shows a patched binding name in the dropdown instead of its factory name', () => {
     useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
     expect(select.value).toBe('grapa');
@@ -432,7 +439,7 @@ describe('UX-6: components read the effective catalog', () => {
 
 describe('Hide and restore factory entries (UX-6)', () => {
   it('hides the selected factory press with its own control, shows a restore line, and restores it', () => {
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
     expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
     expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
@@ -449,7 +456,7 @@ describe('Hide and restore factory entries (UX-6)', () => {
   });
 
   it('hides the selected factory sheet size with its own control, shows a restore line, and restores it', () => {
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     const select = screen.getByLabelText('Pliego seleccionado') as HTMLSelectElement;
     expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
     expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
@@ -466,7 +473,7 @@ describe('Hide and restore factory entries (UX-6)', () => {
   });
 
   it('hides the selected factory binding with its own control, shows a restore line, and restores it', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
     const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
     expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
     expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
@@ -483,7 +490,7 @@ describe('Hide and restore factory entries (UX-6)', () => {
   });
 
   it('hides the selected factory proportion with its own control, shows a restore line, and restores it', () => {
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
     const proportionGroup = screen.getByRole('group', { name: 'Proporción' });
     expect(within(proportionGroup).getByRole('button', { name: '2:3' })).toBeTruthy();
     expect(screen.queryByText(/proporción de fábrica oculta/)).toBeNull();
@@ -502,14 +509,14 @@ describe('Hide and restore factory entries (UX-6)', () => {
 
 describe('Catalog origin badge (UX-6)', () => {
   it('shows "de fábrica" for an untouched factory binding', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     expect(screen.getByText('de fábrica')).toBeTruthy();
   });
 
   it('shows "editado" for a patched factory binding', () => {
     useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     expect(screen.getByText('editado')).toBeTruthy();
   });
@@ -517,7 +524,7 @@ describe('Catalog origin badge (UX-6)', () => {
   it('shows "tuyo" for a custom binding', () => {
     const added = useBookStore.getState().addCustomBinding('Encuadernación de prueba', 4, 8, 64, 5, true, false);
     expect(added).toBe(true);
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     expect(screen.getByText('tuyo')).toBeTruthy();
   });
@@ -526,7 +533,7 @@ describe('Catalog origin badge (UX-6)', () => {
 describe('Edit a factory press or sheet size (UX-6)', () => {
   it('edits a field of a factory press from the interface, and the badge switches to "editado"', () => {
     useBookStore.getState().setPress('prensa_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
     expect((screen.getByLabelText('Ancho máximo de pliego') as HTMLInputElement).value).toBe('720');
@@ -542,7 +549,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
 
   it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
     useBookStore.getState().setPress('prensa_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
     fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '800' } });
@@ -562,7 +569,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
   it('restores a patched press to its factory values with the undo control', () => {
     useBookStore.getState().setPress('prensa_70x100');
     useBookStore.getState().patchPress('prensa_70x100', { maxSheetWidth_mm: 800 });
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     const pressGroup = screen.getByRole('group', { name: 'Prensa' });
 
     expect(within(pressGroup).getByText('editado')).toBeTruthy();
@@ -574,7 +581,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
 
   it('edits a field of a factory sheet size from the interface, and the badge switches to "editado"', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
     expect((screen.getByLabelText('Ancho') as HTMLInputElement).value).toBe('700');
@@ -590,7 +597,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
 
   it('persists two sheet size edits made in separate save actions, instead of the last one overwriting the first', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
     fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '750' } });
@@ -610,7 +617,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
   it('restores a patched sheet size to its factory values with the undo control', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     useBookStore.getState().patchSheetSize('pliego_70x100', { width_mm: 750 });
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     const sheetGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
 
     expect(within(sheetGroup).getByText('editado')).toBeTruthy();
@@ -622,7 +629,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
 
   it('cancelling the press edit form clears the store error and leaves the patch untouched', () => {
     useBookStore.getState().setPress('prensa_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
     fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '-5' } });
@@ -638,7 +645,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
 
 describe('Edit a factory binding or proportion (UX-6)', () => {
   it('edits a field of a factory binding from the interface, and the badge switches to "editado"', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
     expect((screen.getByLabelText('Aporte al lomo') as HTMLInputElement).value).toBe('0');
@@ -653,7 +660,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
   });
 
   it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '5' } });
@@ -672,7 +679,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
 
   it('restores a patched binding to its factory values with the undo control', () => {
     useBookStore.getState().patchBinding('grapa', { spineAllowance_mm: 5 });
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     expect(screen.getByText('editado')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Volver la encuadernación a fábrica' }));
@@ -682,7 +689,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
   });
 
   it('edits a field of a factory proportion from the interface, and the badge switches to "editado"', () => {
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
     expect((screen.getByLabelText('Proporción (ancho)') as HTMLInputElement).value).toBe('2');
@@ -697,7 +704,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
   });
 
   it('persists two proportion edits made in separate save actions, instead of the last one overwriting the first', () => {
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
     fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
@@ -716,7 +723,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
 
   it('restores a patched proportion to its factory values with the undo control', () => {
     useBookStore.getState().patchProportion('2:3', { ratio: [4, 3] });
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
 
     expect(screen.getByText('editado')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Volver la proporción a fábrica' }));
@@ -726,7 +733,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
   });
 
   it('cancelling the binding edit form clears the store error and leaves the patch untouched', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '-5' } });
@@ -743,7 +750,7 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
 describe('Signature imposition preview', () => {
   it('renders the page numbers of the selected side', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_16pp');
     expect(screen.getByText('16')).toBeTruthy();
@@ -752,7 +759,7 @@ describe('Signature imposition preview', () => {
 
   it("switches to the back's numbers with the side toggle", () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(screen.queryByText('9')).toBeNull();
     fireEvent.change(screen.getByLabelText('Cara mostrada'), { target: { value: 'back' } });
@@ -762,7 +769,7 @@ describe('Signature imposition preview', () => {
 
   it('changes the numbers when a different folding scheme is chosen', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
     const svg = () => document.querySelector('.imposition-svg') as HTMLElement;
 
     expect(within(svg()).queryByText('8')).toBeNull();
@@ -779,14 +786,14 @@ describe('Signature imposition preview', () => {
     useBookStore.getState().addCustomSheetSize('Diminuto', 100, 100);
     expect(useBookStore.getState().signaturePlan?.selected).toBeNull();
 
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByRole('status').textContent).toContain('Ningún esquema de plegado');
     expect(document.querySelector('.imposition-svg')).toBeNull();
   });
 
   it('shows the source notes for the press and folding-scheme catalogs', () => {
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByText(/config\/maquinas\.json/)).toBeTruthy();
     expect(screen.getByText(/config\/esquemas\.json/)).toBeTruthy();
@@ -794,7 +801,7 @@ describe('Signature imposition preview', () => {
 
   it('names the press-sheet stat apart from the folded, per-4-page sheet used for creep', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByText('Pliegos de prensa por ejemplar')).toBeTruthy();
   });
@@ -802,7 +809,7 @@ describe('Signature imposition preview', () => {
 
 describe('Cover panel', () => {
   it('only offers the two soft covers as selectable with the shipped default (saddle-stitch) binding, and switching changes the displayed measurements', () => {
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
@@ -821,7 +828,7 @@ describe('Cover panel', () => {
 
   it('offers all three covers as selectable with a flat-spine binding', () => {
     useBookStore.getState().setBinding('hotmelt');
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
@@ -834,7 +841,7 @@ describe('Cover panel', () => {
 
   it('offers the hard cover as selectable when a custom flat-spine binding is selected (regression)', () => {
     useBookStore.getState().addCustomBinding('Rústica de prueba', 2, 2, 2000, 2, false, false);
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
     expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
@@ -850,7 +857,7 @@ describe('Cover panel', () => {
   it('keeps an incompatible cover as a disabled option instead of removing it, when the binding changes underneath it', () => {
     useBookStore.getState().setBinding('hotmelt');
     useBookStore.getState().setCover('dura_estandar');
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
     act(() => {
@@ -867,7 +874,7 @@ describe('Cover panel', () => {
   });
 
   it('shows the five sections in order for a soft cover', () => {
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     const list = screen.getByLabelText('Secciones del pliego de tapa');
     const items = within(list).getAllByRole('listitem').map(item => item.textContent);
 
@@ -884,7 +891,7 @@ describe('Cover panel', () => {
   it('shows boards, spine board, and wrap for a hard cover paired with a flat-spine binding', () => {
     useBookStore.getState().setBinding('hotmelt');
     useBookStore.getState().setCover('dura_estandar');
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
 
     expect(useBookStore.getState().coverPlan?.ok).toBe(true);
     expect(screen.getByText('Ancho del cartón lateral (mm)')).toBeTruthy();
@@ -900,7 +907,7 @@ describe('Cover panel', () => {
 
   it('shows the engine message for a hard cover paired with the saddle-stitch binding', () => {
     useBookStore.getState().setCover('dura_estandar');
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
 
     expect(useBookStore.getState().coverPlan).toMatchObject({ ok: false, reason: 'binding-has-no-flat-spine' });
     expect(screen.getByText(/no admite una tapa dura/).textContent?.length).toBeGreaterThan(0);
@@ -908,7 +915,7 @@ describe('Cover panel', () => {
   });
 
   it('shows the config source note for the cover catalog', () => {
-    render(<CoverPanel />);
+    render(<CoverPanelScreen />);
     expect(screen.getByText(/config\/tapas\.json/)).toBeTruthy();
   });
 });
@@ -939,7 +946,7 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
 
   it('renders the custom-sheet remove button with the class whose ::before overlay grows its tap target', () => {
     useBookStore.getState().recalculate();
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
     fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '500' } });
@@ -954,7 +961,7 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
 
 describe('Custom press quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid press through the real flow, surfaces the store error for an invalid one, and removes the custom press', () => {
-    render(<ImpositionVisualizer />);
+    render(<ImpositionVisualizerScreen />);
 
     const toggle = screen.getByRole('button', { name: 'Añadir prensa personalizada' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -991,7 +998,7 @@ describe('Custom press quick-add (UX-4)', () => {
 
 describe('Custom binding quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid binding through the real flow, surfaces the store error for an invalid one, and removes the custom binding', () => {
-    render(<BindingPanel />);
+    render(<BindingPanelScreen />);
 
     const toggle = screen.getByRole('button', { name: 'Añadir encuadernación personalizada' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
@@ -1026,7 +1033,7 @@ describe('Custom binding quick-add (UX-4)', () => {
 
 describe('Custom proportion quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid proportion as a new segmented button that stays before Manual, surfaces the store error for an invalid one, and removes the custom proportion', () => {
-    render(<CanvasDesigner />);
+    render(<CanvasDesignerScreen />);
 
     const toggle = screen.getByRole('button', { name: 'Añadir proporción personalizada' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');

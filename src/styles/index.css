@@ -155,7 +155,9 @@ body::before {
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  /* Fixed rather than minimum: above the breakpoint the tool fills exactly one
+     screen and its columns scroll inside it, instead of the page scrolling. */
+  height: 100vh;
 }
 
 .header-section {
@@ -166,6 +168,15 @@ body::before {
 .main-section {
   background: var(--color-bg-secondary);
   flex: 1;
+  /* Without this a flex child refuses to shrink below its content, which
+     would push the columns past the viewport and scroll the page again. */
+  min-height: 0;
+}
+
+.main-section > main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .app-header {
@@ -192,20 +203,35 @@ body::before {
   text-transform: uppercase;
 }
 
+/* Three columns: what is being asked for, what shape it takes, what comes
+   out. The side columns are fixed so the drawing in the middle gets whatever
+   width is left. */
 .app-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 400px minmax(0, 1fr) 320px;
   gap: 0;
   align-items: stretch;
   max-width: 1440px;
+  width: 100%;
   margin: 0 auto;
+  flex: 1;
+  min-height: 0;
 }
 
-.app-cell {
-  /* A grid item's automatic minimum is min-content, not zero, so a cell
+.app-column {
+  /* A grid item's automatic minimum is min-content, not zero, so a column
      stretched past its own track and the page scrolled sideways at 390px. */
   min-width: 0;
   padding: var(--space-6);
+  overflow-y: auto;
+}
+
+.column-spec {
+  border-right: 1px solid var(--color-border);
+}
+
+.column-results {
+  border-left: 1px solid var(--color-border);
 }
 
 .config-status {
@@ -254,29 +280,29 @@ body::before {
   color: var(--color-text-secondary);
 }
 
-.cell-tl {
-  border-right: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.cell-tr {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.cell-bl {
-  border-right: 1px solid var(--color-border);
-}
-
-.cell-bottom {
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--color-border);
-}
-
 /* Single layout breakpoint: 1024px sits inside the 960-1200px window
    UX-REVIEW.md 2.2 allows, replacing the three values used here before. */
 @media (max-width: 1024px) {
+  /* One column, and the page scrolls again: locking the viewport height and
+     scrolling three stacked regions separately is the wrong shape on a phone. */
+  .page-wrapper {
+    height: auto;
+    min-height: 100vh;
+  }
+
   .app-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-column {
+    overflow-y: visible;
+  }
+
+  .column-spec,
+  .column-results {
+    border-right: none;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
   }
 
   .app-header {
@@ -297,6 +323,14 @@ body::before {
 
 .panel+.panel {
   margin-top: var(--space-8);
+}
+
+/* Stacked in one column, consecutive panels ran together: the six cells used
+   to be told apart by the seams of the grid they sat in, and that grid is
+   gone. A hairline does the same work in a column. */
+.column-spec .panel+.panel {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-8);
 }
 
 .panel-title {

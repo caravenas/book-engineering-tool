@@ -46,3 +46,40 @@ for (const { label, width, height } of VIEWPORTS) {
     expect(scrollWidth).toBeLessThanOrEqual(width);
   });
 }
+
+/**
+ * R-3's hypothesis, stated as a test: above the breakpoint the tool fits one
+ * screen. The page itself must not scroll, and the columns must, which is the
+ * difference between fitting and merely being cut off. Asserting only that the
+ * page does not scroll would also pass if the columns clipped their content
+ * away, so each column is checked for content taller than the space it has.
+ */
+test('at 1440px the page does not scroll, its columns do', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.locator('.app-grid')).toBeVisible();
+
+  const measured = await page.evaluate(() => {
+    const columns = Array.from(document.querySelectorAll<HTMLElement>('.app-column'));
+    return {
+      pageScrollHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      columns: columns.map(column => ({
+        name: column.getAttribute('aria-label') ?? '(sin nombre)',
+        clientHeight: column.clientHeight,
+        scrollHeight: column.scrollHeight,
+        overflowY: getComputedStyle(column).overflowY,
+      })),
+    };
+  });
+
+  expect(measured.pageScrollHeight).toBeLessThanOrEqual(measured.viewportHeight);
+  expect(measured.columns).toHaveLength(3);
+  for (const column of measured.columns) {
+    expect(column.overflowY, `${column.name} must scroll on its own`).toBe('auto');
+  }
+  // The spec column holds all six panels, so it is the one that certainly
+  // overflows; asserting it by name keeps the test honest if the others fit.
+  const spec = measured.columns.find(column => column.name === 'Ficha técnica');
+  expect(spec?.scrollHeight).toBeGreaterThan(spec?.clientHeight ?? 0);
+});

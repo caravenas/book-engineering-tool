@@ -143,7 +143,7 @@ function getHardCoverSvg(result: HardCoverResult, rawCover: Cover): HardCoverSvg
  * hard cover cases are mutually exclusive branches of the same plan, so they
  * live in one component instead of two.
  */
-export function CoverPreview() {
+function CoverSvg() {
   const { catalog, coverId, coverPlan } = useBookStore();
   const selectedCover = catalog?.covers.find(cover => cover.id === coverId) ?? null;
   const plan = getPlannedCover(coverPlan);
@@ -247,4 +247,27 @@ export function CoverPreview() {
   }
 
   return null;
+}
+
+/**
+ * The template drawing with the container and the empty state that belongs to
+ * it: when there is no drawable plan, the panel used to say so on the
+ * preview's behalf, which only worked while the two lived side by side.
+ */
+export function CoverPreview() {
+  const { coverPlan } = useBookStore();
+  const plan = getPlannedCover(coverPlan);
+
+  return (
+    <div className="cover-svg-container">
+      <CoverSvg />
+      {!plan && (
+        <p className="calculation-note" role="status">
+          {coverPlan && !coverPlan.ok
+            ? 'No hay plantilla disponible: revisa el mensaje anterior.'
+            : 'Corrige los valores indicados para recuperar la plantilla de la tapa.'}
+        </p>
+      )}
+    </div>
+  );
 }
