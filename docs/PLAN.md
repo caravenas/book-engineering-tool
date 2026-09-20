@@ -326,7 +326,20 @@ Objetivo: componer ficha, vista previa y resultados en tres columnas a partir de
 No objetivos: el Catálogo unificado, los tokens nuevos y la paleta.
 Esos vienen después, porque R-3 existe para probar la hipótesis antes de invertir en ellos.
 
-Aceptación, como specs de `e2e/`: a 1440 px la página no se desplaza en vertical y solo se desplazan las columnas; a 390 px sigue sin haber desplazamiento horizontal; ningún control del inventario desaparece, comprobado contra la tabla de `docs/UI-REDESIGN.md`.
+Aceptación, como specs de `e2e/`: a 1440 px la página no se desplaza en vertical y solo se desplazan las columnas; a 390 px sigue sin haber desplazamiento horizontal; ningún control del inventario desaparece.
+
+**La red cambia antes de empezar.**
+`e2e/panels.spec.ts` fija el alto de cada panel y qué etiquetas contiene cada uno.
+Le sirvió a R-2, que prometía no mover nada; R-3 hace lo contrario, así que esas dos afirmaciones dejan de valer por diseño y hay que retirarlas cuando lleguen a estorbar.
+Retirarlas no es debilitar la red si antes existe la que sí sobrevive, y esa es `e2e/inventory.spec.ts`: el conjunto de controles interactivos de la página y el conjunto de etiquetas de resultado, ambos sin importar en qué contenedor vivan.
+Esa es exactamente la propiedad que R-3 promete conservar, y hoy no la comprobaba nadie.
+
+### Por dónde se parte R-3
+
+- **R-3a**, la estructura: tres columnas a 1440, con los resultados agrupados en la suya.
+  Es lo que prueba la hipótesis de que la herramienta cabe en una pantalla, y se hace antes que nada porque si falla, lo demás sobra.
+- **R-3b**, el acordeón de cinco pasos en la columna de la ficha.
+- **R-3c**, el selector de vista y la mudanza del SVG del pliego, con su conmutador de cara mostrada, que es cuando se deshace el nudo aplazado en R-2.
 
 ### Rollback
 
