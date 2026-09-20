@@ -1,4 +1,4 @@
-import { useBookStore, getAllBindings, getAllPresses } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getAllPresses, parsePositiveSafeInteger } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
 import { CanvasDesigner } from './CanvasDesigner';
 import { SubstrateSelector } from './SubstrateSelector';
@@ -30,7 +30,6 @@ function useStepSummaries(): string[] {
     proportionId,
     substrateId,
     selectedGrammage,
-    totalPages,
     totalPagesInput,
     bindingId,
     customBindings,
@@ -44,6 +43,10 @@ function useStepSummaries(): string[] {
   } = useBookStore();
 
   const { displayW, displayH, unit } = getPageDisplayDimensions(pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem);
+  // Those come back empty for a value that isn't finite, which would leave the
+  // step reading " ×  mm" and looking like a rendering fault instead of a
+  // dimension waiting to be fixed.
+  const hasDimensions = displayW !== '' && displayH !== '';
   const substrate = catalog?.substrates.find(item => item.id === substrateId) ?? null;
   const binding = (catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings)
     .find(item => item.id === bindingId) ?? null;
@@ -53,11 +56,16 @@ function useStepSummaries(): string[] {
 
   // A summary reports the field as typed, not as last understood: showing the
   // last valid page count beside a field holding something else would say the
-  // step is settled when it is not.
-  const pages = totalPagesInput === String(totalPages) ? `${totalPages} págs` : 'páginas sin definir';
+  // step is settled when it is not. Judged by the same parser the field uses,
+  // because comparing the text to the number called "0" settled, which errors
+  // everywhere downstream, and called "032" undefined, which is just 32.
+  const typedPages = parsePositiveSafeInteger(totalPagesInput);
+  const pages = typedPages === null ? 'páginas sin definir' : `${typedPages} págs`;
 
   return [
-    `${displayW} × ${displayH} ${unit} · ${proportionId ?? 'manual'}`,
+    hasDimensions
+      ? `${displayW} × ${displayH} ${unit} · ${proportionId ?? 'manual'}`
+      : 'dimensiones sin definir',
     `${substrate?.name ?? 'sin papel'} · ${selectedGrammage} g/m²`,
     `${pages} · ${binding?.name ?? 'sin método'}`,
     press?.name ?? 'sin prensa',

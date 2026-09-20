@@ -31,11 +31,22 @@ async function openTheApp(page: Page): Promise<void> {
  * that name drops. Order is still not part of what's asserted, since R-3 is
  * free to reorder controls along with moving them.
  */
-function controlNameCounts(page: Page, root = 'body'): Promise<Record<string, number>> {
-  return page.evaluate(selector => {
+function controlNameCounts(
+  page: Page,
+  root = 'body',
+  options: { visibleOnly?: boolean; outsideSteps?: boolean } = {}
+): Promise<Record<string, number>> {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
-    const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'));
+    /*
+     * Only what is actually rendered. A closed <details> keeps its children in
+     * the DOM, so querySelectorAll alone would report controls nobody can
+     * reach and the guard would pass while the accordion hid half the tool.
+     */
+    const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'))
+      .filter(control => !visibleOnly || (control as HTMLElement).getClientRects().length > 0)
+      .filter(control => !outsideSteps || !control.closest('.spec-step-body'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -66,7 +77,7 @@ function controlNameCounts(page: Page, root = 'body'): Promise<Record<string, nu
       counts[name] = (counts[name] ?? 0) + 1;
       return counts;
     }, {});
-  }, root);
+  }, { selector: root, visibleOnly: options.visibleOnly ?? true, outsideSteps: options.outsideSteps ?? false });
 }
 
 /**
@@ -92,9 +103,10 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   }
 
   // Whatever lives outside the accordion: the notices, and anything the other
-  // two columns grow later.
-  add(await controlNameCounts(page, '.column-preview'));
-  add(await controlNameCounts(page, '.column-results'));
+  // two columns grow later. Counting named regions could quietly miss a
+  // control added somewhere else, so the walk is reconciled against the whole
+  // page below.
+  add(await controlNameCounts(page, 'main', { outsideSteps: true }));
   return totals;
 }
 
@@ -110,9 +122,10 @@ async function openStep(page: Page, title: string): Promise<void> {
   await ensureOpen(page.locator('details.spec-step', { has: page.getByRole('heading', { name: title, exact: true }) }));
 }
 
-/** Every `.stat-label` on the page, regardless of which panel or column contains it. */
-function allStatLabels(page: Page): Promise<string[]> {
-  return page.evaluate(() => Array.from(document.querySelectorAll('.stat-label')).map(el => el.textContent?.trim() ?? ''));
+/** Every `.stat-label` in the results column, regardless of which component put it there. */
+function resultLabels(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('.column-results .stat-label')).map(el => el.textContent?.trim() ?? ''));
 }
 
 /**
@@ -162,8 +175,15 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Vertical': 1,
 };
 
-const EXPECTED_STAT_LABELS = [
-  'Calibre declarado',
+/**
+ * The declared caliper is the one figure that is not a result of the page
+ * count: it describes the paper itself, so it lives beside the paper in step
+ * 02 rather than in the results column. It is checked apart from the rest for
+ * that reason, and because a step can be closed while the column cannot.
+ */
+const CALIPER_LABEL = 'Calibre declarado';
+
+const EXPECTED_RESULT_LABELS = [
   'Lomo estimado (mm)',
   'Peso estimado del papel interior',
   'Hojas de papel (interior)',
@@ -181,7 +201,7 @@ const EXPECTED_STAT_LABELS = [
   'Alto del pliego de tapa (mm)',
   'Peso del papel de tapa',
 ] as const;
-const EXPECTED_STAT_LABEL_COUNT = 17;
+const EXPECTED_RESULT_LABEL_COUNT = 16;
 
 test.describe('page-wide inventory of controls and results, at 1440x900', () => {
   test.beforeEach(async ({ page }) => {
@@ -194,10 +214,31 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     expect(counts).toEqual(EXPECTED_CONTROL_NAME_COUNTS);
   });
 
+  /**
+   * The walk above visits the steps and then the rest of the page, so a
+   * control put somewhere it does not look would go uncounted and the
+   * comparison above would still match. Closed steps keep their children in
+   * the DOM, so a plain sweep of the document sees everything: the two totals
+   * have to agree.
+   */
+  test('the walk over the steps reaches every control the document holds', async ({ page }) => {
+    const walked = await reachableControlNameCounts(page);
+    const everything = await controlNameCounts(page, 'main', { visibleOnly: false });
+    // The walk ends with the last step open, so the sweep it is compared
+    // against must not care which one that is.
+
+    expect(walked).toEqual(everything);
+  });
+
   test('every result label is still present, wherever R-3 puts it', async ({ page }) => {
-    const labels = await allStatLabels(page);
-    expect(labels.length).toBe(EXPECTED_STAT_LABEL_COUNT);
-    expect(new Set(labels)).toEqual(new Set(EXPECTED_STAT_LABELS));
+    const labels = await resultLabels(page);
+    expect(labels.length).toBe(EXPECTED_RESULT_LABEL_COUNT);
+    expect(new Set(labels)).toEqual(new Set(EXPECTED_RESULT_LABELS));
+  });
+
+  test('the declared caliper is shown with the paper it describes', async ({ page }) => {
+    await openStep(page, 'Papel interior');
+    await expect(page.getByText(CALIPER_LABEL, { exact: true })).toBeVisible();
   });
 
   /**
@@ -214,7 +255,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
 
     await expect(pagesInput).toHaveValue('32');
     await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
-    expect((await allStatLabels(page)).length).toBe(EXPECTED_STAT_LABEL_COUNT);
+    expect((await resultLabels(page)).length).toBe(EXPECTED_RESULT_LABEL_COUNT);
 
     // `fill('')` drives React's onChange, unlike assigning `.value` directly.
     await pagesInput.fill('');
@@ -223,15 +264,15 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     // its own: asserting only that some error appeared would pass while three
     // of them failed silently.
     await expect(page.locator('.calculation-error')).toHaveCount(4);
-    // The substrate's declared caliper is the one result that does not depend
-    // on the page count, so it is the only label that survives an invalid one.
-    expect(await allStatLabels(page)).toEqual(['Calibre declarado']);
+    // Every figure in the column comes from the page count, so an invalid one
+    // empties it completely.
+    expect(await resultLabels(page)).toEqual([]);
 
     await pagesInput.fill('32');
     await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
     // By identity and not only by count: one label duplicated while another
     // vanished would keep the count right and the page wrong.
-    expect(new Set(await allStatLabels(page))).toEqual(new Set(EXPECTED_STAT_LABELS));
-    expect((await allStatLabels(page)).length).toBe(EXPECTED_STAT_LABEL_COUNT);
+    expect(new Set(await resultLabels(page))).toEqual(new Set(EXPECTED_RESULT_LABELS));
+    expect((await resultLabels(page)).length).toBe(EXPECTED_RESULT_LABEL_COUNT);
   });
 });
