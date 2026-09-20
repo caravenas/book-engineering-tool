@@ -42,8 +42,15 @@ export function PagePreview() {
   const previewW = hasValidOuterGeometry ? pageWidth_mm * scale : 0;
   const previewH = hasValidOuterGeometry ? pageHeight_mm * scale : 0;
   const bleedScale = hasValidOuterGeometry ? bleed_mm * scale : 0;
-  const previewWidthWithBleed = hasValidOuterGeometry ? outerPageWidth * scale : 0;
-  const previewHeightWithBleed = hasValidOuterGeometry ? outerPageHeight * scale : 0;
+  /*
+   * Clamped, because scaling to fit lands exactly on the bound and binary
+   * arithmetic overshoots it: 420.00000000000006 is not <= 420, and the
+   * check below would then reject a perfectly good page. One in every
+   * twenty-eight sizes did that, a 100 × 150 mm paperback among them. The
+   * overshoot is 6e-14 of a pixel, so clamping changes nothing that is drawn.
+   */
+  const previewWidthWithBleed = hasValidOuterGeometry ? Math.min(outerPageWidth * scale, maxPreviewW) : 0;
+  const previewHeightWithBleed = hasValidOuterGeometry ? Math.min(outerPageHeight * scale, maxPreviewH) : 0;
   const safeZoneRight = previewWidthWithBleed - (bleedScale + previewW);
   const safeZoneBottom = previewHeightWithBleed - (bleedScale + previewH);
   const hasValidPreviewGeometry = hasValidOuterGeometry

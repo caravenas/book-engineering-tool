@@ -7,10 +7,24 @@ import { roundTo } from '../engine/units';
  * panel that draws it today won't be able to pass it anything.
  */
 export function ImpositionResults() {
-  const { signaturePlan } = useBookStore();
+  const { signaturePlan, signatureError } = useBookStore();
   const selected = signaturePlan?.selected ?? null;
 
-  if (!selected) return null;
+  /*
+   * No selection and no error is a real state: when no folding scheme fits the
+   * sheet, the store reports a plan with nothing chosen and nothing to say
+   * about it. The full explanation lives with the sheet drawing, which is a
+   * view the reader may not be looking at, so the column that just emptied
+   * says why rather than going blank.
+   */
+  if (!selected) {
+    return signatureError ? null : (
+      <p className="calculation-note" role="status">
+        Sin imposición: ningún esquema de plegado cabe con el pliego y la prensa elegidos.
+        La vista Pliego lo explica.
+      </p>
+    );
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', marginTop: 'var(--space-6)' }}>

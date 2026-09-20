@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PagePreview } from './PagePreview';
-import { SpinePreview, SpineThicknessPreview } from './SpinePreview';
+import { SpineView } from './SpinePreview';
 import { SheetPreview } from './SheetPreview';
 import { CoverPreview } from './CoverPreview';
 
@@ -44,12 +44,7 @@ export function PreviewColumn() {
       </div>
 
       {view === 'page' && <PagePreview />}
-      {view === 'spine' && (
-        <>
-          <SpinePreview />
-          <SpineThicknessPreview />
-        </>
-      )}
+      {view === 'spine' && <SpineView />}
       {view === 'sheet' && <SheetPreview />}
       {view === 'cover' && <CoverPreview />}
     </>

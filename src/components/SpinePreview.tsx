@@ -70,3 +70,27 @@ export function SpineThicknessPreview() {
     </div>
   );
 }
+
+/**
+ * The spine as its own view, with the empty state that belongs to it. Both
+ * drawings return null when there is no usable figure, which left the column
+ * blank with nothing to explain it: every other view says why it is empty.
+ */
+export function SpineView() {
+  const { safeResult } = useSpineGeometry();
+
+  if (!safeResult) {
+    return (
+      <p className="calculation-note" role="status">
+        Corrige los valores indicados para recuperar el dibujo del lomo.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <SpinePreview />
+      <SpineThicknessPreview />
+    </>
+  );
+}

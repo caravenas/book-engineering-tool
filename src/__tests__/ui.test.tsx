@@ -109,6 +109,19 @@ describe('Honest and recoverable UI', () => {
     expect(screen.getByText(/Introduce dimensiones finitas mayores que cero/)).toBeTruthy();
   });
 
+  it('draws a page whose scaled size lands exactly on the bound', () => {
+    // 100 x 150 mm with 3 mm of bleed scales to exactly the height of its box,
+    // and binary arithmetic overshoots that by 6e-14, which used to fail the
+    // fit check and replace the drawing with a message about invalid
+    // dimensions. One size in twenty-eight did this.
+    useBookStore.setState({ pageWidth_mm: 100, pageHeight_mm: 150, bleed_mm: 3 });
+    const { container } = render(<CanvasDesignerScreen />);
+
+    const preview = container.querySelector('.page-preview') as HTMLDivElement | null;
+    expect(preview, 'the drawing must survive its own scaling').not.toBeNull();
+    expect(parseFloat(preview!.style.height)).toBeLessThanOrEqual(420);
+  });
+
   it('fits the bleed-inclusive preview and preserves a nonzero display value', () => {
     useBookStore.setState({ pageWidth_mm: 140, pageHeight_mm: 210, bleed_mm: 100 });
     const oversizedBleed = render(<CanvasDesignerScreen />);
@@ -791,7 +804,9 @@ describe('Signature imposition preview', () => {
 
     render(<ImpositionVisualizerScreen />);
 
-    expect(screen.getByRole('status').textContent).toContain('Ningún esquema de plegado');
+    const statuses = screen.getAllByRole('status').map(status => status.textContent ?? '');
+    expect(statuses.some(text => text.includes('Ningún esquema de plegado disponible cabe en el pliego'))).toBe(true);
+    expect(statuses.some(text => text.includes('Sin imposición'))).toBe(true);
     expect(document.querySelector('.imposition-svg')).toBeNull();
   });
 
