@@ -369,6 +369,29 @@ Esa es exactamente la propiedad que R-3 promete conservar, y hoy no la comprobab
   El nudo se deshizo como estaba previsto: el conmutador de cara viajó con el dibujo, así que no hizo falta ni prop ni store.
   El lomo tiene vista propia, que la propuesta no contemplaba: dibuja algo que los otros tres no, y perder un dibujo mientras se dice que solo se mueven cosas no es un cambio que este incremento pueda hacer.
 
+## Catálogo unificado — R-4
+
+Ejecuta la sección «Catálogo unificado» de `docs/UI-REDESIGN.md`.
+Hoy añadir, editar y ocultar están sembrados por los pasos como enlaces de 11 px, y cada catálogo los ofrece de forma distinta.
+
+El store ya tiene toda la superficie que hace falta: `addCustom*`, `removeCustom*`, `patch*`, `unpatch*`, `hide*` y `show*` para proporciones, pliegos, prensas y encuadernaciones, y alta y baja para gramajes.
+**R-4 es interfaz pura**: no toca el modelo de datos ni los motores.
+
+Se parte en cortes verticales y no por capas, para que no haya una ventana en la que la misma función esté en dos sitios.
+
+- **R-4a**: el panel, su navegación por los ocho catálogos agrupados en Formato, Papel y Producción, con candado en los tres que solo se leen, y **Prensas** completo dentro.
+  Los controles de prensa desaparecen del paso 04 en el mismo incremento.
+- **R-4b**: Pliegos, Proporciones y Encuadernaciones entran igual, y salen de sus pasos.
+- **R-4c**: Gramajes anidados bajo Papeles, la sección de ocultas para restaurar, y el indicador de persistencia en la cabecera del panel.
+
+Dos decisiones ya tomadas, de `docs/UI-REDESIGN.md`:
+una entrada de fábrica ofrece «Volver a fábrica» y «Ocultar», y una entrada tuya ofrece «Eliminar» en su lugar, porque no tiene fábrica a la que volver;
+y los gramajes no son un catálogo hermano sino una lista dentro de un papel, porque cuelgan de él y no tienen identidad propia.
+
+El panel se construye sobre `<dialog>` y `showModal()`, por la misma razón que el acordeón sobre `<details>`: la plataforma ya trae el foco atrapado, el cierre con Escape y el fondo inerte, y escribir eso a mano es la parte que se hace mal.
+
+Exportar e importar siguen sin sitio, y siguen anotados: cuando UX-8 se retome, su lugar es la cabecera de este panel.
+
 ### Puntos abiertos tras R-3
 
 - Los resultados de tapa dura, nueve etiquetas, no los comprueba ningún test: el guardián audita el estado por defecto, que es tapa blanda.
