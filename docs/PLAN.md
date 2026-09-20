@@ -268,9 +268,23 @@ Lección de las dos entregas, para R-3: extraer un componente tienta a copiar la
 Ocurrió tres veces, con tres formateadores, con el parser del número de páginas y con `safeResult`, y ninguna la habría detectado un test.
 Los encargos de R-3, que mueven seis paneles, tienen que decirlo por adelantado.
 
+### R-2 cerrado
+
+**Cerrado el 2026-09-19.**
+Los cuatro bloques de resultados y las tres vistas previas extraíbles viven en componentes propios, y ninguno recibe props.
+Queda fuera, a propósito y con motivo escrito más arriba, el SVG del pliego de `ImpositionVisualizer`.
+
+Lo que se movió a funciones puras compartidas, en vez de duplicarse:
+`parsePositiveSafeInteger`, `getSafeSpineResult`, `getSelectedBindingInfo` y `getPlannedCover` en `src/store/useBookStore.ts`, porque derivan estado de dominio a partir de las formas del store;
+`formatRoundedValue`, `formatMm`, `formatWeight`, `formatArea`, `toDisplayValue` y `getPageDisplayDimensions` en `src/engine/units.ts`, porque reciben números y devuelven números sin mirar el store.
+Esa es la frontera, y conviene respetarla en R-3.
+
+Verificado en navegador que las vistas previas se dibujan de verdad, cosa que el guardián no puede comprobar porque un SVG vacío no cambia el alto de su contenedor:
+la vista de página mide 95 × 140 con la etiqueta «140 × 210 mm + 3 mm sangrado», la barra del lomo mide 6 × 100 con sus dos tapas, y los dos SVG traen 18 y 8 formas.
+
 ### Lo que falta para cerrar R-2
 
-- Las vistas previas, pero solo tres de las cuatro.
+- ~~Las vistas previas~~, cerradas: tres de las cuatro.
   El dibujo de página de `CanvasDesigner`, el del lomo en `SpineCalculator` y los SVG de tapa en `CoverPanel` derivan todo del store y salen como salieron los resultados.
 
   **El SVG del pliego de `ImpositionVisualizer` se aplaza a R-3, con motivo.**
