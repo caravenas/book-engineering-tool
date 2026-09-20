@@ -369,6 +369,18 @@ Esa es exactamente la propiedad que R-3 promete conservar, y hoy no la comprobab
   El nudo se deshizo como estaba previsto: el conmutador de cara viajó con el dibujo, así que no hizo falta ni prop ni store.
   El lomo tiene vista propia, que la propuesta no contemplaba: dibuja algo que los otros tres no, y perder un dibujo mientras se dice que solo se mueven cosas no es un cambio que este incremento pueda hacer.
 
+### Puntos abiertos tras R-3
+
+- Los resultados de tapa dura, nueve etiquetas, no los comprueba ningún test: el guardián audita el estado por defecto, que es tapa blanda.
+- Los formularios condicionales de alta y edición, unos veinticinco campos, quedan fuera del inventario: el recorrido no los abre.
+  Nunca estuvieron dentro, pero conviene saberlo antes de fiarse del número 36.
+- Las tarjetas de resultado no comparten estilo: unas llevan borde y otras no.
+  Vivían en paneles distintos y ahora están una debajo de otra.
+- Dos preguntas de accesibilidad sin respuesta verificada: si un `<h2>` dentro de un `<summary>` se anuncia bien, y si `aria-pressed` es lo correcto para un selector de una sola opción frente a un grupo de radio con flechas.
+  Ambas exigen probar con un lector de pantalla real, que es lo único que las contesta.
+- La etiqueta «NÚMERO DE PÁGINAS» sigue en mayúsculas en el JSX y no por CSS, así que el nombre accesible va en mayúsculas.
+  Los títulos de los pasos sí lo hacen bien, con `text-transform`.
+
 ### Cómo evolucionó la red, que es lo que hizo posible R-3
 
 Cada incremento retiró la parte del guardián que él mismo invalidaba, pero solo después de que existiera la que sobrevive.
