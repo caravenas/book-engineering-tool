@@ -34,9 +34,9 @@ async function openTheApp(page: Page): Promise<void> {
 function controlNameCounts(
   page: Page,
   root = 'body',
-  options: { visibleOnly?: boolean; outsideSteps?: boolean; outsidePreview?: boolean; outsideSwitch?: boolean } = {}
+  options: { visibleOnly?: boolean; outsideSteps?: boolean; outsidePreview?: boolean; outsideSwitch?: boolean; outsideCatalog?: boolean } = {}
 ): Promise<Record<string, number>> {
-  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch }) => {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch, outsideCatalog }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
     /*
@@ -50,7 +50,8 @@ function controlNameCounts(
       .filter(control => !outsidePreview || !control.closest('.column-preview'))
       // The switch itself is counted once, with the rest of the page, rather
       // than once per view it is walked through.
-      .filter(control => !outsideSwitch || !control.closest('.preview-switch'));
+      .filter(control => !outsideSwitch || !control.closest('.preview-switch'))
+      .filter(control => !outsideCatalog || !control.closest('.catalog-dialog'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -87,6 +88,7 @@ function controlNameCounts(
     outsideSteps: options.outsideSteps ?? false,
     outsidePreview: options.outsidePreview ?? false,
     outsideSwitch: options.outsideSwitch ?? false,
+    outsideCatalog: options.outsideCatalog ?? false,
   });
 }
 
@@ -125,10 +127,27 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   // The switch is counted once rather than once per view it walks through.
   add(await controlNameCounts(page, '.preview-switch'));
 
+  /*
+   * The catalog is a modal, so nothing inside it is reachable until it opens,
+   * and it shows one catalog at a time for the same reason the steps do. Its
+   * navigation is counted once; each catalog's own controls are counted as the
+   * walk arrives at them.
+   */
+  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+  add(await controlNameCounts(page, '.catalog-header'));
+  add(await controlNameCounts(page, '.catalog-nav'));
+  const catalogs = page.locator('.catalog-nav-item');
+  const catalogCount = await catalogs.count();
+  for (let index = 0; index < catalogCount; index += 1) {
+    await catalogs.nth(index).click();
+    add(await controlNameCounts(page, '.catalog-content'));
+  }
+  await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
+
   // Whatever lives outside both: the notices, and anything the layout grows
   // later. Counting named regions could quietly miss a control added somewhere
   // else, so the walk is reconciled against the page below.
-  add(await controlNameCounts(page, 'main', { outsideSteps: true, outsidePreview: true }));
+  add(await controlNameCounts(page, 'body', { outsideSteps: true, outsidePreview: true, outsideCatalog: true }));
   return totals;
 }
 
@@ -159,12 +178,36 @@ function resultLabels(page: Page): Promise<string[]> {
  * not just a total that happens to still add up.
  */
 const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
-  // The four views of the preview column, added by R-3c. Every other entry
-  // below is a control the app already had before the layout moved.
+  // The four views of the preview column, added by R-3c.
   'Página': 1,
   'Lomo': 1,
   'Pliego': 1,
   'Tapa': 1,
+
+  // The catalog, added by R-4a: the way in, the way out, one entry per
+  // catalog, and the press form that moved in from the imposition step.
+  'Catálogo': 1,
+  'Cerrar catálogo': 1,
+  'Opciones de prensa': 1,
+  'Proporciones, 5 entradas': 1,
+  'Papeles, 7 entradas, solo lectura': 1,
+  'Encuadernaciones, 4 entradas': 1,
+  'Prensas, 2 entradas': 1,
+  'Pliegos, 6 entradas': 1,
+  'Esquemas de plegado, 2 entradas, solo lectura': 1,
+  'Tapas, 3 entradas, solo lectura': 1,
+  '+ Nueva prensa': 1,
+  'Nombre': 1,
+  'Pliego máximo · ancho': 1,
+  'Pliego máximo · alto': 1,
+  'Pinza': 1,
+  'Lateral': 1,
+  'Cola': 1,
+  'Calle': 1,
+  'Ocultar': 1,
+  'Guardar cambios': 1,
+
+  // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,
   '150 g/m²': 1,
   '1:1': 1,
@@ -179,13 +222,11 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Añadir encuadernación personalizada': 1,
   'Añadir gramaje personalizado': 1,
   'Añadir pliego personalizado': 1,
-  'Añadir prensa personalizada': 1,
   'Añadir proporción personalizada': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
   'Editar encuadernación de fábrica': 1,
   'Editar pliego de fábrica': 1,
-  'Editar prensa de fábrica': 1,
   'Editar proporción de fábrica': 1,
   'Encuadernación seleccionada': 1,
   'Esquema de plegado': 1,
@@ -193,7 +234,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Número de páginas': 1,
   'Ocultar encuadernación de fábrica': 1,
   'Ocultar pliego de fábrica': 1,
-  'Ocultar prensa de fábrica': 1,
   'Ocultar proporción de fábrica': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
@@ -251,7 +291,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
    */
   test('the walk reaches every control the page is holding', async ({ page }) => {
     const walked = await reachableControlNameCounts(page);
-    const onScreen = await controlNameCounts(page, 'main', { visibleOnly: false });
+    const onScreen = await controlNameCounts(page, 'body', { visibleOnly: false });
 
     const missed = Object.entries(onScreen)
       .filter(([name, count]) => (walked[name] ?? 0) < count)

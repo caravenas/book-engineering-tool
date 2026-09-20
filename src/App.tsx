@@ -6,6 +6,7 @@ import type { ConfigError } from './config/validateCatalog';
 import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
 import { SpecSteps } from './components/SpecSteps';
 import { PreviewColumn } from './components/PreviewColumn';
+import { CatalogPanelProvider, useCatalogPanel } from './components/CatalogPanel';
 import { SpineResults } from './components/SpineResults';
 import { BindingSpineResults } from './components/BindingSpineResults';
 import { ImpositionResults } from './components/ImpositionResults';
@@ -37,6 +38,16 @@ const ORPHAN_CATALOG_NAME: Record<OrphanedUserLayerEntryKind, string> = {
 /** Whether an orphaned entry is a patch (edited a factory entry) or a hide (hid a factory entry). */
 function describeOrphanKind(kind: OrphanedUserLayerEntryKind): string {
   return kind.startsWith('hidden') ? 'un ocultamiento' : 'un parche';
+}
+
+/** Opens the catalog from the header, where it belongs to no single step. */
+function CatalogButton() {
+  const { open } = useCatalogPanel();
+  return (
+    <button type="button" className="catalog-open" onClick={() => open('presses')}>
+      Catálogo
+    </button>
+  );
 }
 
 export default function App() {
@@ -100,11 +111,13 @@ export default function App() {
   }, [initialize]);
 
   return (
+    <CatalogPanelProvider>
     <div className="page-wrapper">
       <div className="header-section">
         <header className="app-header" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
           <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '2.5rem', width: 'auto' }} />
           <h1 className="app-logo">PliegoStack</h1>
+          <CatalogButton />
         </header>
       </div>
 
@@ -226,5 +239,6 @@ export default function App() {
         </main>
       </div>
     </div>
+    </CatalogPanelProvider>
   );
 }

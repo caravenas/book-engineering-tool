@@ -18,7 +18,7 @@ export function getCatalogOrigin(
   return 'factory';
 }
 
-const ORIGIN_LABEL: Record<CatalogOrigin, string> = {
+export const ORIGIN_LABEL: Record<CatalogOrigin, string> = {
   own: 'tuyo',
   edited: 'editado',
   factory: 'de fábrica',

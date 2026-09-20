@@ -1079,3 +1079,287 @@ select.form-input {
     overflow-y: visible;
   }
 }
+
+/* ─── Catalog panel ─────────────────────────────────────────────────── */
+
+.catalog-open {
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-text-primary);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.catalog-dialog {
+  width: min(820px, 100vw);
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  /* Anchored to the right edge: a panel rather than a box in the middle, so
+     the sheet it was opened from stays where it was. */
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.catalog-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.catalog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.catalog-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.catalog-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.catalog-body {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  height: calc(100% - 77px);
+}
+
+.catalog-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-3);
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+}
+
+.catalog-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalog-nav-item[aria-current="page"] {
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
+}
+
+.catalog-nav-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.catalog-nav-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  opacity: 0.7;
+}
+
+.catalog-nav-note {
+  margin: var(--space-4) 0 0;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.catalog-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+}
+
+.catalog-content-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.catalog-content-description {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.catalog-file {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.catalog-list {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.catalog-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.catalog-list-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.catalog-list-detail,
+.catalog-list-origin {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.catalog-list-origin {
+  width: 88px;
+  text-align: right;
+}
+
+.catalog-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-bg-secondary);
+}
+
+.catalog-form-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.catalog-form-title {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.catalog-field {
+  display: block;
+}
+
+.catalog-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.catalog-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.catalog-actions-gap {
+  flex: 1;
+}
+
+.catalog-primary,
+.catalog-secondary,
+.catalog-danger {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md, 8px);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.catalog-primary {
+  border: 0;
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
+  font-weight: 500;
+}
+
+.catalog-secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.catalog-danger {
+  border: 0;
+  background: transparent;
+  color: var(--color-danger-foreground);
+}
+
+@media (max-width: 1024px) {
+  .catalog-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .catalog-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .catalog-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The step keeps the choice and hands the catalog everything else. */
+.step-options {
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-primary);
+  font-size: var(--text-sm);
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}

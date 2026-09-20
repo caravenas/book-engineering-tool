@@ -143,11 +143,14 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
       'Añadir proporción personalizada',
       'Añadir gramaje personalizado',
       'Añadir pliego personalizado',
-      'Añadir prensa personalizada',
       'Añadir encuadernación personalizada',
     ]) {
       expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(false);
     }
+
+    // Adding a press moved into the catalog, so that is where it is checked.
+    fireEvent.click(screen.getByRole('button', { name: 'Catálogo' }));
+    expect((screen.getByRole('button', { name: '+ Nueva prensa' }) as HTMLButtonElement).disabled).toBe(false);
 
     addCustomProportion('Solo esta sesión');
 

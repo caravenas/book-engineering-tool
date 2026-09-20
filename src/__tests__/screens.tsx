@@ -11,6 +11,7 @@ import { SheetPreview } from '../components/SheetPreview';
 import { CoverPanel } from '../components/CoverPanel';
 import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
+import { CatalogPanelProvider } from '../components/CatalogPanel';
 
 /**
  * A panel's controls, its drawing and its results are three components that
@@ -18,7 +19,10 @@ import { CoverResults } from '../components/CoverResults';
  * then asserts on the resulting figure needs all of them mounted, so these
  * wrappers put back together what the layout takes apart. They exist only to
  * spare every test site from repeating the composition, and they mount exactly
- * what App mounts: nothing here decides what a panel shows.
+ * what App mounts: nothing here decides what a panel shows. The imposition
+ * screen carries the catalog provider because its options button reaches the
+ * catalog through it; the others do not, since mounting the dialog they never
+ * open would put its origin labels in front of tests asking about their own.
  *
  * They can drift from App without failing: drop a component from App and these
  * tests keep passing, because they mount it themselves. That is deliberate,
@@ -59,11 +63,11 @@ export function BindingPanelScreen() {
 
 export function ImpositionVisualizerScreen() {
   return (
-    <>
+    <CatalogPanelProvider>
       <ImpositionVisualizer />
       <SheetPreview />
       <ImpositionResults />
-    </>
+    </CatalogPanelProvider>
   );
 }
 

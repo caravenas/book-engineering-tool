@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
+import { useCatalogPanel } from './CatalogPanel';
 import { isPositiveFinite } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
-import type { Press, SheetSize } from '../types';
+import type { SheetSize } from '../types';
 
 export function ImpositionVisualizer() {
+  const { open: openCatalog } = useCatalogPanel();
   const {
     catalog,
     sheetSizeId,
@@ -17,7 +19,6 @@ export function ImpositionVisualizer() {
     customPresses,
     pressPatches,
     hiddenPressIds,
-    customPressError,
     userLayerStorageAvailable,
     foldingSchemeId,
     signatureError,
@@ -30,13 +31,6 @@ export function ImpositionVisualizer() {
     unpatchSheetSize,
     clearCustomSheetSizeError,
     setPress,
-    addCustomPress,
-    removeCustomPress,
-    hidePress,
-    showPress,
-    patchPress,
-    unpatchPress,
-    clearCustomPressError,
     setFoldingScheme,
   } = useBookStore();
 
@@ -46,28 +40,12 @@ export function ImpositionVisualizer() {
   const [customH, setCustomH] = useState('');
   const [customSheetError, setCustomSheetError] = useState<string | null>(null);
 
-  const [showPressForm, setShowPressForm] = useState(false);
-  const [pressName, setPressName] = useState('');
-  const [pressMaxWidth, setPressMaxWidth] = useState('');
-  const [pressMaxHeight, setPressMaxHeight] = useState('');
-  const [pressGripperMargin, setPressGripperMargin] = useState('');
-  const [pressSideMargin, setPressSideMargin] = useState('');
-  const [pressTailMargin, setPressTailMargin] = useState('');
-  const [pressGutter, setPressGutter] = useState('');
 
   const [showSheetEditForm, setShowSheetEditForm] = useState(false);
   const [editSheetName, setEditSheetName] = useState('');
   const [editSheetWidth, setEditSheetWidth] = useState('');
   const [editSheetHeight, setEditSheetHeight] = useState('');
 
-  const [showPressEditForm, setShowPressEditForm] = useState(false);
-  const [editPressName, setEditPressName] = useState('');
-  const [editPressMaxWidth, setEditPressMaxWidth] = useState('');
-  const [editPressMaxHeight, setEditPressMaxHeight] = useState('');
-  const [editPressGripperMargin, setEditPressGripperMargin] = useState('');
-  const [editPressSideMargin, setEditPressSideMargin] = useState('');
-  const [editPressTailMargin, setEditPressTailMargin] = useState('');
-  const [editPressGutter, setEditPressGutter] = useState('');
 
   const customWidthIsValid = isPositiveFinite(Number(customW));
   const customHeightIsValid = isPositiveFinite(Number(customH));
@@ -76,8 +54,6 @@ export function ImpositionVisualizer() {
   const isSelectedSheetCustom = customSheetSizes.some(sheet => sheet.id === sheetSizeId);
   const sheetOrigin = getCatalogOrigin(sheetSizeId, customSheetSizes.map(sheet => sheet.id), sheetSizePatches.map(patch => patch.id));
   const allPresses = catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses;
-  const currentPress = allPresses.find(press => press.id === pressId);
-  const isSelectedPressCustom = customPresses.some(press => press.id === pressId);
   const pressOrigin = getCatalogOrigin(pressId, customPresses.map(press => press.id), pressPatches.map(patch => patch.id));
 
   const handleAddCustom = () => {
@@ -101,33 +77,7 @@ export function ImpositionVisualizer() {
     setCustomSheetError(null);
   };
 
-  const handleTogglePressForm = () => {
-    setShowPressForm(!showPressForm);
-    clearCustomPressError();
-  };
 
-  const handleAddPress = () => {
-    const added = addCustomPress(
-      pressName,
-      Number(pressMaxWidth),
-      Number(pressMaxHeight),
-      Number(pressGripperMargin),
-      Number(pressSideMargin),
-      Number(pressTailMargin),
-      Number(pressGutter)
-    );
-
-    if (added) {
-      setShowPressForm(false);
-      setPressName('');
-      setPressMaxWidth('');
-      setPressMaxHeight('');
-      setPressGripperMargin('');
-      setPressSideMargin('');
-      setPressTailMargin('');
-      setPressGutter('');
-    }
-  };
 
   const handleOpenSheetEdit = () => {
     if (currentSheet) {
@@ -170,58 +120,8 @@ export function ImpositionVisualizer() {
     }
   };
 
-  const handleOpenPressEdit = () => {
-    if (currentPress) {
-      setEditPressName(currentPress.name);
-      setEditPressMaxWidth(String(currentPress.maxSheetWidth_mm));
-      setEditPressMaxHeight(String(currentPress.maxSheetHeight_mm));
-      setEditPressGripperMargin(String(currentPress.gripperMargin_mm));
-      setEditPressSideMargin(String(currentPress.sideMargin_mm));
-      setEditPressTailMargin(String(currentPress.tailMargin_mm));
-      setEditPressGutter(String(currentPress.gutter_mm));
-    }
-    clearCustomPressError();
-    setShowPressEditForm(true);
-  };
 
-  const handleCancelPressEdit = () => {
-    setShowPressEditForm(false);
-    clearCustomPressError();
-  };
 
-  const handleSavePressEdit = () => {
-    if (!catalog) return;
-    const factoryPress = catalog.presses.find(press => press.id === pressId);
-    if (!factoryPress) return;
-
-    // The diff is computed against the factory entry, not the previous patch,
-    // because patchPress replaces the whole patch rather than merging it.
-    const changes: Partial<Omit<Press, 'id'>> = {};
-    const trimmedName = editPressName.trim();
-    if (trimmedName !== factoryPress.name) changes.name = trimmedName;
-    const maxWidth = Number(editPressMaxWidth);
-    if (maxWidth !== factoryPress.maxSheetWidth_mm) changes.maxSheetWidth_mm = maxWidth;
-    const maxHeight = Number(editPressMaxHeight);
-    if (maxHeight !== factoryPress.maxSheetHeight_mm) changes.maxSheetHeight_mm = maxHeight;
-    const gripperMargin = Number(editPressGripperMargin);
-    if (gripperMargin !== factoryPress.gripperMargin_mm) changes.gripperMargin_mm = gripperMargin;
-    const sideMargin = Number(editPressSideMargin);
-    if (sideMargin !== factoryPress.sideMargin_mm) changes.sideMargin_mm = sideMargin;
-    const tailMargin = Number(editPressTailMargin);
-    if (tailMargin !== factoryPress.tailMargin_mm) changes.tailMargin_mm = tailMargin;
-    const gutter = Number(editPressGutter);
-    if (gutter !== factoryPress.gutter_mm) changes.gutter_mm = gutter;
-
-    if (Object.keys(changes).length === 0) {
-      unpatchPress(pressId);
-      setShowPressEditForm(false);
-      return;
-    }
-
-    if (patchPress(pressId, changes)) {
-      setShowPressEditForm(false);
-    }
-  };
 
   return (
     <div className="panel" id="imposition-visualizer">
@@ -231,407 +131,38 @@ export function ImpositionVisualizer() {
       </p>
 
       <div className="input-row">
-        <div
-          className="form-group"
-          role="group"
-          aria-labelledby="press-group-label"
-        >
+        <div className="form-group" role="group" aria-labelledby="press-group-label">
           <div className="form-label-row">
             <span id="press-group-label" className="form-label">Prensa</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {!isSelectedPressCustom && !showPressForm && (
-                <button
-                  type="button"
-                  onClick={showPressEditForm ? handleCancelPressEdit : handleOpenPressEdit}
-                  aria-expanded={showPressEditForm}
-                  aria-controls="edit-press-form"
-                  aria-label={showPressEditForm ? 'Cancelar edición de prensa' : 'Editar prensa de fábrica'}
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
-                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  }}
-                >
-                  {showPressEditForm ? 'Cancelar' : 'Editar'}
-                </button>
-              )}
-              {pressOrigin === 'edited' && !showPressForm && !showPressEditForm && (
-                <button
-                  type="button"
-                  onClick={() => unpatchPress(pressId)}
-                  aria-label="Volver la prensa a fábrica"
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
-                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  }}
-                >
-                  Volver a fábrica
-                </button>
-              )}
-              {!showPressEditForm && (
-                <button
-                  type="button"
-                  onClick={handleTogglePressForm}
-                  aria-expanded={showPressForm}
-                  aria-controls="custom-press-form"
-                  aria-label={showPressForm ? 'Cancelar prensa personalizada' : 'Añadir prensa personalizada'}
-                  style={{
-                    background: 'none', border: 'none', color: 'var(--color-amber-600)',
-                    cursor: 'pointer', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  }}
-                >
-                  {showPressForm ? 'Cancelar' : '+ Person.'}
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              className="step-options"
+              aria-label="Opciones de prensa"
+              onClick={() => openCatalog('presses')}
+            >
+              ···
+            </button>
           </div>
-
-          {showPressEditForm ? (
-            <div id="edit-press-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
-              <div style={{ marginBottom: 'var(--space-3)' }}>
-                <label className="form-label" htmlFor="input-edit-press-name">Nombre</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={editPressName}
-                  onChange={event => setEditPressName(event.target.value)}
-                  id="input-edit-press-name"
-                />
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-max-width">Ancho máximo de pliego</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressMaxWidth}
-                      onChange={event => setEditPressMaxWidth(event.target.value)}
-                      min="1"
-                      id="input-edit-press-max-width"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-max-height">Alto máximo de pliego</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressMaxHeight}
-                      onChange={event => setEditPressMaxHeight(event.target.value)}
-                      min="1"
-                      id="input-edit-press-max-height"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-gripper-margin">Margen de pinza</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressGripperMargin}
-                      onChange={event => setEditPressGripperMargin(event.target.value)}
-                      min="0"
-                      id="input-edit-press-gripper-margin"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-tail-margin">Margen de cola</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressTailMargin}
-                      onChange={event => setEditPressTailMargin(event.target.value)}
-                      min="0"
-                      id="input-edit-press-tail-margin"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-side-margin">Margen lateral</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressSideMargin}
-                      onChange={event => setEditPressSideMargin(event.target.value)}
-                      min="0"
-                      id="input-edit-press-side-margin"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-edit-press-gutter">Calle</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editPressGutter}
-                      onChange={event => setEditPressGutter(event.target.value)}
-                      min="0"
-                      id="input-edit-press-gutter"
-                      aria-describedby={customPressError ? 'edit-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              {customPressError && (
-                <p className="calculation-error" id="edit-press-error" role="alert">
-                  {customPressError}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={handleSavePressEdit}
-                style={{
-                  width: '100%',
-                  padding: 'var(--space-2)',
-                  background: 'var(--color-text-primary)',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Guardar cambios de la prensa
-              </button>
-            </div>
-          ) : showPressForm ? (
-            <div id="custom-press-form" style={{ background: 'transparent', border: 'none', marginBottom: 'var(--space-3)' }}>
-              <div style={{ marginBottom: 'var(--space-3)' }}>
-                <label className="form-label" htmlFor="input-custom-press-name">Nombre</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={pressName}
-                  onChange={event => setPressName(event.target.value)}
-                  id="input-custom-press-name"
-                />
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-max-width">Ancho máximo de pliego</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressMaxWidth}
-                      onChange={event => setPressMaxWidth(event.target.value)}
-                      min="1"
-                      id="input-custom-press-max-width"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-max-height">Alto máximo de pliego</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressMaxHeight}
-                      onChange={event => setPressMaxHeight(event.target.value)}
-                      min="1"
-                      id="input-custom-press-max-height"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-gripper-margin">Margen de pinza</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressGripperMargin}
-                      onChange={event => setPressGripperMargin(event.target.value)}
-                      min="0"
-                      id="input-custom-press-gripper-margin"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-tail-margin">Margen de cola</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressTailMargin}
-                      onChange={event => setPressTailMargin(event.target.value)}
-                      min="0"
-                      id="input-custom-press-tail-margin"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              <div className="input-row" style={{ marginBottom: 'var(--space-3)' }}>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-side-margin">Margen lateral</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressSideMargin}
-                      onChange={event => setPressSideMargin(event.target.value)}
-                      min="0"
-                      id="input-custom-press-side-margin"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" htmlFor="input-custom-press-gutter">Calle</label>
-                  <div className="input-with-unit">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={pressGutter}
-                      onChange={event => setPressGutter(event.target.value)}
-                      min="0"
-                      id="input-custom-press-gutter"
-                      aria-describedby={customPressError ? 'custom-press-error' : undefined}
-                    />
-                    <span className="input-unit">mm</span>
-                  </div>
-                </div>
-              </div>
-              {customPressError && (
-                <p className="calculation-error" id="custom-press-error" role="alert">
-                  {customPressError}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={handleAddPress}
-                style={{
-                  width: '100%',
-                  padding: 'var(--space-2)',
-                  background: 'var(--color-text-primary)',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Crear prensa
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <label className="visually-hidden" htmlFor="select-press">Prensa seleccionada</label>
-              <select
-                className="form-input"
-                value={pressId}
-                onChange={event => setPress(event.target.value)}
-                id="select-press"
-                style={{ flex: 1 }}
-              >
-                {allPresses.map(press => (
-                  <option key={press.id} value={press.id}>{press.name}</option>
-                ))}
-              </select>
-              {isSelectedPressCustom ? (
-                <button
-                  type="button"
-                  className="remove-sheet-button"
-                  onClick={() => removeCustomPress(pressId)}
-                  title="Eliminar prensa personalizada"
-                  aria-label="Eliminar prensa personalizada"
-                  style={{
-                    background: 'rgba(244, 63, 94, 0.15)',
-                    color: 'var(--color-danger-foreground)',
-                    border: '1px solid rgba(244, 63, 94, 0.3)',
-                    borderRadius: 'var(--radius-md)',
-                    width: '42px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                  }}
-                >
-                  ×
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="remove-sheet-button"
-                  onClick={() => hidePress(pressId)}
-                  title="Ocultar prensa de fábrica"
-                  aria-label="Ocultar prensa de fábrica"
-                  style={{
-                    background: 'var(--color-bg-secondary)',
-                    color: 'var(--color-text-secondary)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    width: '42px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '18px',
-                  }}
-                >
-                  –
-                </button>
-              )}
-            </div>
-          )}
-          {isSelectedPressCustom ? (
-            <ConfigSourceNote text={userLayerStorageAvailable ? 'prensa personalizada' : 'prensa personalizada, guardada solo para esta sesión'} />
-          ) : catalog && (
-            <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
-          )}
+          <label className="visually-hidden" htmlFor="select-press">Prensa seleccionada</label>
+          <select
+            className="form-input"
+            value={pressId}
+            onChange={event => setPress(event.target.value)}
+            id="select-press"
+          >
+            {allPresses.map(press => (
+              <option key={press.id} value={press.id}>{press.name}</option>
+            ))}
+          </select>
           <CatalogOriginNote origin={pressOrigin} />
-          {hiddenPressIds.length > 0 && (
-            <p className="config-source-note">
-              {hiddenPressIds.length} {hiddenPressIds.length === 1 ? 'prensa de fábrica oculta' : 'prensas de fábrica ocultas'}.{' '}
-              <button
-                type="button"
-                onClick={() => hiddenPressIds.forEach(id => showPress(id))}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  color: 'var(--color-amber-600)',
-                  cursor: 'pointer',
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                }}
-              >
-                Mostrar prensas ocultas
-              </button>
-            </p>
+          {pressOrigin === 'own' ? (
+            <ConfigSourceNote
+              text={userLayerStorageAvailable
+                ? 'prensa personalizada'
+                : 'prensa personalizada, guardada solo para esta sesión'}
+            />
+          ) : (
+            catalog && <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
           )}
         </div>
 

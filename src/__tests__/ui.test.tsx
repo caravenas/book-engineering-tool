@@ -2,6 +2,12 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, describe, expect, it } from 'vitest';
 import { SubstrateSelector } from '../components/SubstrateSelector';
 import { SpecSteps } from '../components/SpecSteps';
+import { CatalogPanelProvider } from '../components/CatalogPanel';
+
+/** Editing a press lives in the catalog since R-4a; the step only opens it. */
+function openPressCatalog() {
+  fireEvent.click(screen.getByRole('button', { name: 'Opciones de prensa' }));
+}
 import {
   CanvasDesignerScreen,
   SpineCalculatorScreen,
@@ -24,7 +30,7 @@ describe('Spec steps (R-3b)', () => {
   // Six panels became five steps, and the titles were renamed with them:
   // pages and binding are one decision, so they are one step.
   it('names the five steps in order', () => {
-    const { container } = render(<SpecSteps />);
+    const { container } = render(<CatalogPanelProvider><SpecSteps /></CatalogPanelProvider>);
 
     const titles = Array.from(container.querySelectorAll('.panel-title'))
       .map(title => title.textContent?.trim());
@@ -39,7 +45,7 @@ describe('Spec steps (R-3b)', () => {
   });
 
   it('shows what each closed step currently says, so the sheet reads without opening it', () => {
-    const { container } = render(<SpecSteps />);
+    const { container } = render(<CatalogPanelProvider><SpecSteps /></CatalogPanelProvider>);
 
     const values = Array.from(container.querySelectorAll('.spec-step-value'))
       .map(value => value.textContent?.trim());
@@ -460,7 +466,8 @@ describe('Hide and restore factory entries (UX-6)', () => {
     expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
     expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ocultar prensa de fábrica' }));
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
     expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
     expect(screen.getByText(/1 prensa de fábrica oculta/)).toBeTruthy();
@@ -551,31 +558,31 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     useBookStore.getState().setPress('prensa_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
-    expect((screen.getByLabelText('Ancho máximo de pliego') as HTMLInputElement).value).toBe('720');
+    openPressCatalog();
+    expect((screen.getByLabelText('Pliego máximo · ancho') as HTMLInputElement).value).toBe('720');
 
-    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '800' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().pressPatches).toEqual([
       { id: 'prensa_70x100', changes: { maxSheetWidth_mm: 800 } },
     ]);
-    expect(screen.getByText('editado')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('editado')).toBeTruthy();
   });
 
   it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
     useBookStore.getState().setPress('prensa_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
-    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '800' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+    openPressCatalog();
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '800' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     // Re-open the form: it must pre-load with the effective (already patched) values.
-    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
-    expect((screen.getByLabelText('Ancho máximo de pliego') as HTMLInputElement).value).toBe('800');
-    fireEvent.change(screen.getByLabelText('Margen de cola'), { target: { value: '20' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+    openPressCatalog();
+    expect((screen.getByLabelText('Pliego máximo · ancho') as HTMLInputElement).value).toBe('800');
+    fireEvent.change(screen.getByLabelText('Cola'), { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().pressPatches).toEqual([
       { id: 'prensa_70x100', changes: { maxSheetWidth_mm: 800, tailMargin_mm: 20 } },
@@ -589,7 +596,8 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     const pressGroup = screen.getByRole('group', { name: 'Prensa' });
 
     expect(within(pressGroup).getByText('editado')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Volver la prensa a fábrica' }));
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().pressPatches).toEqual([]);
     expect(within(pressGroup).getByText('de fábrica')).toBeTruthy();
@@ -647,12 +655,12 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     useBookStore.getState().setPress('prensa_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar prensa de fábrica' }));
-    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '-5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la prensa' }));
+    openPressCatalog();
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     expect(screen.getByRole('alert').textContent).toContain('Los cambios dejarían la prensa con datos inválidos.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar edición de prensa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(screen.queryByRole('alert')).toBeNull();
     expect(useBookStore.getState().pressPatches).toEqual([]);
@@ -813,8 +821,9 @@ describe('Signature imposition preview', () => {
   it('shows the source notes for the press and folding-scheme catalogs', () => {
     render(<ImpositionVisualizerScreen />);
 
-    expect(screen.getByText(/config\/maquinas\.json/)).toBeTruthy();
-    expect(screen.getByText(/config\/esquemas\.json/)).toBeTruthy();
+    const step = screen.getByRole('group', { name: 'Prensa' });
+    expect(within(step).getByText(/config\/maquinas\.json/)).toBeTruthy();
+    expect(screen.getAllByText(/config\/esquemas\.json/).length).toBeGreaterThan(0);
   });
 
   it('names the press-sheet stat apart from the folded, per-4-page sheet used for creep', () => {
@@ -981,24 +990,25 @@ describe('Custom press quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid press through the real flow, surfaces the store error for an invalid one, and removes the custom press', () => {
     render(<ImpositionVisualizerScreen />);
 
-    const toggle = screen.getByRole('button', { name: 'Añadir prensa personalizada' });
+    openPressCatalog();
+    const toggle = screen.getByRole('button', { name: '+ Nueva prensa' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(document.getElementById('custom-press-form')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa de prueba' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear prensa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
     expect(screen.getByRole('alert').textContent).toContain('Introduce las medidas de la prensa');
     expect(useBookStore.getState().customPresses).toHaveLength(0);
 
-    fireEvent.change(screen.getByLabelText('Ancho máximo de pliego'), { target: { value: '500' } });
-    fireEvent.change(screen.getByLabelText('Alto máximo de pliego'), { target: { value: '700' } });
-    fireEvent.change(screen.getByLabelText('Margen de pinza'), { target: { value: '10' } });
-    fireEvent.change(screen.getByLabelText('Margen de cola'), { target: { value: '5' } });
-    fireEvent.change(screen.getByLabelText('Margen lateral'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '500' } });
+    fireEvent.change(screen.getByLabelText('Pliego máximo · alto'), { target: { value: '700' } });
+    fireEvent.change(screen.getByLabelText('Pinza'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText('Cola'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Lateral'), { target: { value: '5' } });
     fireEvent.change(screen.getByLabelText('Calle'), { target: { value: '4' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear prensa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
 
     const newPressId = useBookStore.getState().pressId;
     expect(newPressId).toMatch(/^custom_press_/);
@@ -1008,7 +1018,7 @@ describe('Custom press quick-add (UX-4)', () => {
     expect(select.value).toBe(newPressId);
     expect(screen.getByText('prensa personalizada')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar prensa personalizada' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customPresses).toHaveLength(0);
     expect(useBookStore.getState().pressId).not.toBe(newPressId);
   });
