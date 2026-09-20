@@ -115,8 +115,8 @@ describe('Honest and recoverable UI', () => {
     const preview = oversizedBleed.container.querySelector('.page-preview') as HTMLDivElement;
     const safeZone = oversizedBleed.container.querySelector('.page-preview .safe-zone') as HTMLDivElement;
 
-    expect(parseFloat(preview.style.width)).toBeLessThanOrEqual(120);
-    expect(parseFloat(preview.style.height)).toBeLessThanOrEqual(140);
+    expect(parseFloat(preview.style.width)).toBeLessThanOrEqual(360);
+    expect(parseFloat(preview.style.height)).toBeLessThanOrEqual(420);
     expect(parseFloat(safeZone.style.left)).toBeGreaterThan(0);
     expect(parseFloat(safeZone.style.top)).toBeGreaterThan(0);
     expect(parseFloat(safeZone.style.left) + parseFloat(safeZone.style.width))

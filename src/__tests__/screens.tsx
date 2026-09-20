@@ -7,6 +7,7 @@ import { BindingPanel } from '../components/BindingPanel';
 import { BindingSpineResults } from '../components/BindingSpineResults';
 import { ImpositionVisualizer } from '../components/ImpositionVisualizer';
 import { ImpositionResults } from '../components/ImpositionResults';
+import { SheetPreview } from '../components/SheetPreview';
 import { CoverPanel } from '../components/CoverPanel';
 import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
@@ -60,6 +61,7 @@ export function ImpositionVisualizerScreen() {
   return (
     <>
       <ImpositionVisualizer />
+      <SheetPreview />
       <ImpositionResults />
     </>
   );

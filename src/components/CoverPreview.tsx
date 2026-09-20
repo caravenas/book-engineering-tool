@@ -1,5 +1,5 @@
 import { useBookStore, getPlannedCover } from '../store/useBookStore';
-import { formatMm } from '../engine/units';
+import { formatMm, isPositiveFinite } from '../engine/units';
 import type { Cover, HardCoverResult, SoftCoverResult } from '../types';
 
 const SVG_PADDING = 30;
@@ -9,10 +9,6 @@ const LABEL_SPACE = 40;
 // Below this scaled width, a section/board label would overlap its
 // neighbours or spill outside the shape, so it is omitted instead of drawn.
 const MIN_LABEL_WIDTH_PX = 26;
-
-function isPositiveFinite(value: number): boolean {
-  return Number.isFinite(value) && value > 0;
-}
 
 interface SoftCoverSection {
   key: string;

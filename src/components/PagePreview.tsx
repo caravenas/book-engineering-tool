@@ -16,8 +16,10 @@ export function PagePreview() {
     && pageHeight_mm > 0
     && Number.isFinite(bleed_mm)
     && bleed_mm >= 0;
-  const maxPreviewH = 140;
-  const maxPreviewW = 120;
+  // Sized for a corner of a panel it no longer sits in: with a view of its own
+  // it gets the column, within the bounds the sheet and cover drawings use.
+  const maxPreviewH = 420;
+  const maxPreviewW = 360;
   const bleedSpan = bleed_mm * 2;
   const outerPageWidth = pageWidth_mm + bleedSpan;
   const outerPageHeight = pageHeight_mm + bleedSpan;
@@ -33,7 +35,9 @@ export function PagePreview() {
       && outerPageHeight > pageHeight_mm
     ));
   const scale = hasValidOuterGeometry
-    ? Math.min(maxPreviewW / outerPageWidth, maxPreviewH / outerPageHeight, 1)
+    // No clamp at 1: that kept the drawing at a millimetre per pixel, so a
+    // small page stayed small however much room the view gave it.
+    ? Math.min(maxPreviewW / outerPageWidth, maxPreviewH / outerPageHeight)
     : 0;
   const previewW = hasValidOuterGeometry ? pageWidth_mm * scale : 0;
   const previewH = hasValidOuterGeometry ? pageHeight_mm * scale : 0;

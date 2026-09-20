@@ -34,9 +34,9 @@ async function openTheApp(page: Page): Promise<void> {
 function controlNameCounts(
   page: Page,
   root = 'body',
-  options: { visibleOnly?: boolean; outsideSteps?: boolean } = {}
+  options: { visibleOnly?: boolean; outsideSteps?: boolean; outsidePreview?: boolean; outsideSwitch?: boolean } = {}
 ): Promise<Record<string, number>> {
-  return page.evaluate(({ selector, visibleOnly, outsideSteps }) => {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
     /*
@@ -46,7 +46,11 @@ function controlNameCounts(
      */
     const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'))
       .filter(control => !visibleOnly || (control as HTMLElement).getClientRects().length > 0)
-      .filter(control => !outsideSteps || !control.closest('.spec-step-body'));
+      .filter(control => !outsideSteps || !control.closest('.spec-step-body'))
+      .filter(control => !outsidePreview || !control.closest('.column-preview'))
+      // The switch itself is counted once, with the rest of the page, rather
+      // than once per view it is walked through.
+      .filter(control => !outsideSwitch || !control.closest('.preview-switch'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -77,7 +81,13 @@ function controlNameCounts(
       counts[name] = (counts[name] ?? 0) + 1;
       return counts;
     }, {});
-  }, { selector: root, visibleOnly: options.visibleOnly ?? true, outsideSteps: options.outsideSteps ?? false });
+  }, {
+    selector: root,
+    visibleOnly: options.visibleOnly ?? true,
+    outsideSteps: options.outsideSteps ?? false,
+    outsidePreview: options.outsidePreview ?? false,
+    outsideSwitch: options.outsideSwitch ?? false,
+  });
 }
 
 /**
@@ -102,11 +112,23 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
     add(await controlNameCounts(page, `details.spec-step:nth-of-type(${index + 1}) .spec-step-body`));
   }
 
-  // Whatever lives outside the accordion: the notices, and anything the other
-  // two columns grow later. Counting named regions could quietly miss a
-  // control added somewhere else, so the walk is reconciled against the whole
-  // page below.
-  add(await controlNameCounts(page, 'main', { outsideSteps: true }));
+  // The preview column shows one drawing at a time, so its controls have to be
+  // walked the same way: the shown-side switch only exists while the sheet is
+  // the drawing on screen.
+  const views = page.locator('.preview-switch-option');
+  const viewCount = await views.count();
+  for (let index = 0; index < viewCount; index += 1) {
+    await views.nth(index).click();
+    add(await controlNameCounts(page, '.column-preview', { outsideSwitch: true }));
+  }
+
+  // The switch is counted once rather than once per view it walks through.
+  add(await controlNameCounts(page, '.preview-switch'));
+
+  // Whatever lives outside both: the notices, and anything the layout grows
+  // later. Counting named regions could quietly miss a control added somewhere
+  // else, so the walk is reconciled against the page below.
+  add(await controlNameCounts(page, 'main', { outsideSteps: true, outsidePreview: true }));
   return totals;
 }
 
@@ -137,6 +159,12 @@ function resultLabels(page: Page): Promise<string[]> {
  * not just a total that happens to still add up.
  */
 const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
+  // The four views of the preview column, added by R-3c. Every other entry
+  // below is a control the app already had before the layout moved.
+  'Página': 1,
+  'Lomo': 1,
+  'Pliego': 1,
+  'Tapa': 1,
   '115 g/m²': 1,
   '150 g/m²': 1,
   '1:1': 1,
@@ -215,19 +243,20 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
   });
 
   /**
-   * The walk above visits the steps and then the rest of the page, so a
-   * control put somewhere it does not look would go uncounted and the
-   * comparison above would still match. Closed steps keep their children in
-   * the DOM, so a plain sweep of the document sees everything: the two totals
-   * have to agree.
+   * The walk visits named regions, so a control put somewhere it does not look
+   * would go uncounted and the comparison above would still match. A sweep of
+   * the document cannot be required to match it exactly, because an unselected
+   * view is unmounted rather than hidden and so is genuinely absent. What must
+   * hold is that the sweep finds nothing the walk missed.
    */
-  test('the walk over the steps reaches every control the document holds', async ({ page }) => {
+  test('the walk reaches every control the page is holding', async ({ page }) => {
     const walked = await reachableControlNameCounts(page);
-    const everything = await controlNameCounts(page, 'main', { visibleOnly: false });
-    // The walk ends with the last step open, so the sweep it is compared
-    // against must not care which one that is.
+    const onScreen = await controlNameCounts(page, 'main', { visibleOnly: false });
 
-    expect(walked).toEqual(everything);
+    const missed = Object.entries(onScreen)
+      .filter(([name, count]) => (walked[name] ?? 0) < count)
+      .map(([name]) => name);
+    expect(missed).toEqual([]);
   });
 
   test('every result label is still present, wherever R-3 puts it', async ({ page }) => {

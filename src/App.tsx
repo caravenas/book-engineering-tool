@@ -5,9 +5,7 @@ import { readUserLayer } from './config/userLayer';
 import type { ConfigError } from './config/validateCatalog';
 import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
 import { SpecSteps } from './components/SpecSteps';
-import { PagePreview } from './components/PagePreview';
-import { SpinePreview, SpineThicknessPreview } from './components/SpinePreview';
-import { CoverPreview } from './components/CoverPreview';
+import { PreviewColumn } from './components/PreviewColumn';
 import { SpineResults } from './components/SpineResults';
 import { BindingSpineResults } from './components/BindingSpineResults';
 import { ImpositionResults } from './components/ImpositionResults';
@@ -215,10 +213,7 @@ export default function App() {
                 <SpecSteps />
               </section>
               <section className="app-column column-preview" aria-label="Vista previa">
-                <PagePreview />
-                <SpinePreview />
-                <SpineThicknessPreview />
-                <CoverPreview />
+                <PreviewColumn />
               </section>
               <section className="app-column column-results" aria-label="Resultados">
                 <SpineResults />

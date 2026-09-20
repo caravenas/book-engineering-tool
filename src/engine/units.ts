@@ -35,6 +35,21 @@ export function roundTo(value: number, decimals: number): number {
 }
 
 /**
+ * Whether a measurement can be drawn or divided at all. Written twice already
+ * in two components before it was needed a third time, so it lives once here:
+ * every geometry in this app has to reject an infinity or a NaN before it
+ * reaches a viewBox, where it turns into an invisible drawing.
+ */
+export function isPositiveFinite(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+/** The same, for a measurement a zero is legitimate for, such as a bleed. */
+export function isNonNegativeFinite(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
+/**
  * Format a measurement value for display, with the appropriate unit suffix.
  */
 export function formatMeasurement(
