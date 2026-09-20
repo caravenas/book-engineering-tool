@@ -216,26 +216,26 @@ export default function App() {
 
           {loadState.status === 'ready' && (
             <div className="app-grid">
-              <div className="app-column column-spec" aria-label="Ficha técnica">
+              <section className="app-column column-spec" aria-label="Ficha técnica">
                 <CanvasDesigner />
                 <SubstrateSelector />
                 <SpineCalculator />
                 <BindingPanel />
                 <ImpositionVisualizer />
                 <CoverPanel />
-              </div>
-              <div className="app-column column-preview" aria-label="Vista previa">
+              </section>
+              <section className="app-column column-preview" aria-label="Vista previa">
                 <PagePreview />
                 <SpinePreview />
                 <SpineThicknessPreview />
                 <CoverPreview />
-              </div>
-              <div className="app-column column-results" aria-label="Resultados">
+              </section>
+              <section className="app-column column-results" aria-label="Resultados">
                 <SpineResults />
                 <BindingSpineResults />
                 <ImpositionResults />
                 <CoverResults />
-              </div>
+              </section>
             </div>
           )}
         </main>

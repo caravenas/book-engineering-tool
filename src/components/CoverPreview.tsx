@@ -264,7 +264,7 @@ export function CoverPreview() {
       {!plan && (
         <p className="calculation-note" role="status">
           {coverPlan && !coverPlan.ok
-            ? 'No hay plantilla disponible: revisa el mensaje anterior.'
+            ? 'No hay plantilla disponible: el panel de Tapa explica por qué.'
             : 'Corrige los valores indicados para recuperar la plantilla de la tapa.'}
         </p>
       )}

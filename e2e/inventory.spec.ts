@@ -175,13 +175,19 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     // `fill('')` drives React's onChange, unlike assigning `.value` directly.
     await pagesInput.fill('');
     await expect(pagesInput).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.locator('.calculation-error').first()).toBeVisible();
+    // Each of the four calculations that depend on the page count says so on
+    // its own: asserting only that some error appeared would pass while three
+    // of them failed silently.
+    await expect(page.locator('.calculation-error')).toHaveCount(4);
     // The substrate's declared caliper is the one result that does not depend
     // on the page count, so it is the only label that survives an invalid one.
     expect(await allStatLabels(page)).toEqual(['Calibre declarado']);
 
     await pagesInput.fill('32');
     await expect(pagesInput).toHaveAttribute('aria-invalid', 'false');
+    // By identity and not only by count: one label duplicated while another
+    // vanished would keep the count right and the page wrong.
+    expect(new Set(await allStatLabels(page))).toEqual(new Set(EXPECTED_STAT_LABELS));
     expect((await allStatLabels(page)).length).toBe(EXPECTED_STAT_LABEL_COUNT);
   });
 });

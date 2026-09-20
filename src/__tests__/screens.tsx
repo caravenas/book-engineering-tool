@@ -18,6 +18,13 @@ import { CoverResults } from '../components/CoverResults';
  * wrappers put back together what the layout takes apart. They exist only to
  * spare every test site from repeating the composition, and they mount exactly
  * what App mounts: nothing here decides what a panel shows.
+ *
+ * They can drift from App without failing: drop a component from App and these
+ * tests keep passing, because they mount it themselves. That is deliberate,
+ * because proving App mounts everything is not their job. It belongs to
+ * e2e/inventory.spec.ts, which counts every control and every result on the
+ * real page and so fails the moment App stops rendering one. If that browser
+ * guard is ever removed, this file becomes a way to be wrong quietly.
  */
 
 export function CanvasDesignerScreen() {

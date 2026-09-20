@@ -156,8 +156,11 @@ body::before {
   display: flex;
   flex-direction: column;
   /* Fixed rather than minimum: above the breakpoint the tool fills exactly one
-     screen and its columns scroll inside it, instead of the page scrolling. */
+     screen and its columns scroll inside it, instead of the page scrolling.
+     dvh over vh so a mobile browser's retracting toolbars don't leave the page
+     overflowing by the height of a bar it just hid. */
   height: 100vh;
+  height: 100dvh;
 }
 
 .header-section {
@@ -288,6 +291,7 @@ body::before {
   .page-wrapper {
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .app-grid {
@@ -298,10 +302,14 @@ body::before {
     overflow-y: visible;
   }
 
-  .column-spec,
-  .column-results {
+  /* Stacked, the seams between columns run across instead of down. The first
+     one takes none: the header already draws a rule right above it. */
+  .app-column {
     border-right: none;
     border-left: none;
+  }
+
+  .app-column+.app-column {
     border-top: 1px solid var(--color-border);
   }
 
@@ -330,6 +338,9 @@ body::before {
    gone. A hairline does the same work in a column. */
 .column-spec .panel+.panel {
   border-top: 1px solid var(--color-border);
+  /* The margin above already separates them; this only moves it below the
+     rule, so the gap stays one space instead of becoming two. */
+  margin-top: 0;
   padding-top: var(--space-8);
 }
 
@@ -473,15 +484,7 @@ select.form-input {
 /* ─── Input Row (side by side) ──────────────────────────────────────── */
 
 .canvas-dimension-grid,
-.spine-calculator-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-}
 
-.spine-calculator-grid {
-  margin-top: var(--space-4);
-}
 
 .input-row {
   display: grid;
@@ -954,7 +957,6 @@ select.form-input {
   }
 
   .canvas-dimension-grid,
-  .spine-calculator-grid,
   .spine-stat-grid,
   .input-row {
     grid-template-columns: 1fr;
@@ -966,5 +968,32 @@ select.form-input {
 
   .spine-cover {
     width: 45px;
+  }
+}
+
+/* A printer cannot scroll a column, so everything below the fold would be
+   dropped. On paper the page grows instead. */
+@media print {
+  .page-wrapper {
+    height: auto;
+  }
+
+  .app-column {
+    overflow: visible;
+  }
+}
+
+/* Below this the three columns are too short to be worth scrolling
+   separately, so the page scrolls as a whole again. It catches a laptop at
+   heavy browser zoom as much as a genuinely short window. */
+@media (min-width: 1025px) and (max-height: 640px) {
+  .page-wrapper {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .app-column {
+    overflow-y: visible;
   }
 }
