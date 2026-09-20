@@ -83,3 +83,26 @@ test('at 1440px the page does not scroll, its columns do', async ({ page }) => {
   const spec = measured.columns.find(column => column.name === 'Ficha técnica');
   expect(spec?.scrollHeight).toBeGreaterThan(spec?.clientHeight ?? 0);
 });
+
+/**
+ * The escape hatch for a window too short to divide into three scrolling
+ * columns, which a laptop at heavy browser zoom reaches as easily as a small
+ * screen. There the page scrolls as a whole again, because columns a few
+ * hundred pixels tall are worse than a long page: this asserts the content is
+ * reachable, not merely that it fits.
+ */
+test('on a short window the page scrolls as a whole instead of the columns', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 600 });
+  await page.goto('/');
+  await expect(page.locator('.app-grid')).toBeVisible();
+
+  const measured = await page.evaluate(() => ({
+    pageScrollHeight: document.documentElement.scrollHeight,
+    viewportHeight: window.innerHeight,
+    columnOverflow: Array.from(document.querySelectorAll<HTMLElement>('.app-column'))
+      .map(column => getComputedStyle(column).overflowY),
+  }));
+
+  expect(measured.pageScrollHeight).toBeGreaterThan(measured.viewportHeight);
+  expect(measured.columnOverflow).toEqual(['visible', 'visible', 'visible']);
+});

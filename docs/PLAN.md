@@ -282,6 +282,15 @@ Esa es la frontera, y conviene respetarla en R-3.
 Verificado en navegador que las vistas previas se dibujan de verdad, cosa que el guardián no puede comprobar porque un SVG vacío no cambia el alto de su contenedor:
 la vista de página mide 95 × 140 con la etiqueta «140 × 210 mm + 3 mm sangrado», la barra del lomo mide 6 × 100 con sus dos tapas, y los dos SVG traen 18 y 8 formas.
 
+### Puntos abiertos que dejó la revisión de R-3a
+
+- La cabecera ocupa 161 px de los 900 del viewport, casi un quinto de la pantalla que estamos intentando aprovechar, entre un logo de 7 rem y un título de 6 rem.
+  Reducirla es restyle y no tocaba en R-3a, pero es el mayor desperdicio de la única pantalla.
+- Los resultados de tapa dura, nueve etiquetas, no los comprueba ningún test: `e2e/inventory.spec.ts` solo audita el estado por defecto, que es tapa blanda.
+  Es un agujero anterior a R-3a, pero ahora que los resultados viven juntos en una columna se nota más.
+- Las tarjetas de resultado no comparten estilo: las del lomo y la encuadernación llevan borde, las de imposición no.
+  Vivían en paneles distintos y nadie las veía juntas; ahora están una debajo de otra.
+
 ### Lo que falta para cerrar R-2
 
 - ~~Las vistas previas~~, cerradas: tres de las cuatro.
@@ -338,6 +347,15 @@ Esa es exactamente la propiedad que R-3 promete conservar, y hoy no la comprobab
 
 - **R-3a**, la estructura: tres columnas a 1440, con los resultados agrupados en la suya.
   Es lo que prueba la hipótesis de que la herramienta cabe en una pantalla, y se hace antes que nada porque si falla, lo demás sobra.
+
+  **Cerrado el 2026-09-20** en `d5b16f2`, `96310de` y `010582f`.
+  La hipótesis se sostiene: a 1440 la página mide exactamente el alto del viewport y las tres columnas se desplazan por dentro, 400 / 720 / 320.
+  Lo implementó el capitán, por decisión de Chris, después de que tres delegaciones fracasaran sin producir un commit; la revisión independiente se hizo igual, y encontró cosas.
+
+  La que más importaba: el estado vacío de la plantilla de tapa seguía diciendo «revisa el mensaje anterior», y ese mensaje había quedado en otra columna.
+  Es el riesgo propio de mover cosas de sitio, y ningún test lo habría visto: un texto que sigue siendo correcto como frase y ha dejado de serlo como instrucción.
+
+  Dos hallazgos más que valen para lo que queda: un `aria-label` sobre un `div` no anuncia nada, porque sin rol no hay región que nombrar; y bloquear el alto del viewport tira contenido en silencio al imprimir y en ventanas bajas, así que hay escapes para ambos, con su test.
 - **R-3b**, el acordeón de cinco pasos en la columna de la ficha.
 - **R-3c**, el selector de vista y la mudanza del SVG del pliego, con su conmutador de cara mostrada, que es cuando se deshace el nudo aplazado en R-2.
 
