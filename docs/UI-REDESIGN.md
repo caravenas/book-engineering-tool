@@ -112,6 +112,13 @@ Reservar el cian para los rellenos de los diagramas y llevar el texto a `#0A6285
 Hoy esto no es un defecto vivo: `.stat-value.amber`, `.stat-value.emerald` y `.stat-value.sky` pintarían con esos colores, pero los diecinueve sitios que usan `stat-value` sobrescriben el color en línea con `--color-text-primary`.
 Son reglas muertas, y el rediseño es la ocasión de borrarlas.
 
+## Un detalle de accesibilidad que conviene arreglar de paso
+
+La etiqueta del campo de páginas está escrita en mayúsculas en el propio JSX, «NÚMERO DE PÁGINAS», no con `text-transform` en CSS.
+Eso no es solo estilo: el nombre accesible que anuncia un lector de pantalla va en mayúsculas, y algunos lo deletrean letra a letra.
+La propuesta ya lo resuelve sin proponérselo, porque sus etiquetas usan una clase con `text-transform: uppercase`, que deja el texto real en minúsculas.
+Conviene hacerlo explícito al construir, y revisar si hay más etiquetas así.
+
 ## Decisiones abiertas
 
 1. ~~Si «Cara mostrada» debe seguir en la ficha, porque hoy forma parte del estado del store, o puede pasar a ser un estado de la vista.~~
