@@ -24,6 +24,11 @@ const FIELDS = [
 
 type FieldKey = (typeof FIELDS)[number]['key'];
 
+/** Blank is not zero: the store rejects a NaN and says so in its own words. */
+function toNumber(value: string): number {
+  return value.trim() === '' ? Number.NaN : Number(value);
+}
+
 function emptyDraft(): Record<FieldKey | 'name', string> {
   return { name: '', maxSheetWidth_mm: '', maxSheetHeight_mm: '', gripperMargin_mm: '', sideMargin_mm: '', tailMargin_mm: '', gutter_mm: '' };
 }
@@ -78,6 +83,14 @@ export function PressForm() {
    * the moment a second one was saved.
    */
   const factory = catalog.presses.find(item => item.id === pressId) ?? null;
+
+  /*
+   * A press of your own has no factory entry to differ from, and the store has
+   * no action that edits one: it can be added and removed, nothing else. So
+   * its fields are shown as they are and there is nothing to save, rather than
+   * a save button that quietly does nothing.
+   */
+  const editable = adding || origin !== 'own';
   const setField = (key: FieldKey | 'name', value: string) => {
     if (adding) setDraft({ ...draft, [key]: value });
     else setEdit({ ...shown, [key]: value });
@@ -88,12 +101,12 @@ export function PressForm() {
     if (adding) {
       const saved = addCustomPress(
         draft.name,
-        Number(draft.maxSheetWidth_mm),
-        Number(draft.maxSheetHeight_mm),
-        Number(draft.gripperMargin_mm),
-        Number(draft.sideMargin_mm),
-        Number(draft.tailMargin_mm),
-        Number(draft.gutter_mm)
+        toNumber(draft.maxSheetWidth_mm),
+        toNumber(draft.maxSheetHeight_mm),
+        toNumber(draft.gripperMargin_mm),
+        toNumber(draft.sideMargin_mm),
+        toNumber(draft.tailMargin_mm),
+        toNumber(draft.gutter_mm)
       );
       if (saved) {
         setAdding(false);
@@ -107,11 +120,15 @@ export function PressForm() {
      * the shipped catalog would stop reaching an entry nobody really edited.
      */
     const changes: Record<string, string | number> = {};
-    if (factory && shown.name !== factory.name) changes.name = shown.name;
+    if (factory && shown.name.trim() !== factory.name) changes.name = shown.name.trim();
     for (const { key } of FIELDS) {
-      if (factory && shown[key] !== String(factory[key])) changes[key] = Number(shown[key]);
+      if (factory && shown[key] !== String(factory[key])) changes[key] = toNumber(shown[key]);
     }
     if (Object.keys(changes).length === 0) {
+      // Every field is back at its factory value, so there is no longer a
+      // difference to record: the patch goes rather than lingering as one
+      // that changes nothing and bounces the form back to its old values.
+      if (origin === 'edited') unpatchPress(pressId);
       setEdit(null);
       return;
     }
@@ -167,6 +184,7 @@ export function PressForm() {
         <input
           className="form-input"
           value={shown.name}
+          readOnly={!editable}
           onChange={event => setField('name', event.target.value)}
         />
       </label>
@@ -180,6 +198,7 @@ export function PressForm() {
               type="number"
               min={0}
               value={shown[key]}
+              readOnly={!editable}
               onChange={event => setField(key, event.target.value)}
             />
           </label>
@@ -187,6 +206,12 @@ export function PressForm() {
       </div>
 
       {customPressError && <p className="calculation-error" role="alert">{customPressError}</p>}
+
+      {!editable && (
+        <p className="calculation-note">
+          Una prensa tuya no se edita: elimínala y vuelve a añadirla con las medidas nuevas.
+        </p>
+      )}
 
       <div className="catalog-actions">
         {!adding && origin === 'edited' && (
@@ -214,9 +239,11 @@ export function PressForm() {
             Cancelar
           </button>
         )}
-        <button type="submit" className="catalog-primary">
-          {adding ? 'Añadir prensa' : 'Guardar cambios'}
-        </button>
+        {editable && (
+          <button type="submit" className="catalog-primary">
+            {adding ? 'Añadir prensa' : 'Guardar cambios'}
+          </button>
+        )}
       </div>
     </form>
     </>

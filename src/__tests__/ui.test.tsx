@@ -986,6 +986,58 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
   });
 });
 
+describe('Editing a press in the catalog (R-4a)', () => {
+  it('does not offer to save a press of your own, which the store cannot patch', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva prensa' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa mía' } });
+    for (const [label, value] of [
+      ['Pliego máximo · ancho', '500'], ['Pliego máximo · alto', '700'],
+      ['Pinza', '10'], ['Cola', '5'], ['Lateral', '5'], ['Calle', '4'],
+    ]) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
+    expect(useBookStore.getState().customPresses).toHaveLength(1);
+
+    // There is no action that edits a custom press, so a save button here
+    // would be a button that quietly does nothing.
+    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull();
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).readOnly).toBe(true);
+    expect(screen.getByRole('button', { name: 'Eliminar' })).toBeTruthy();
+  });
+
+  it('drops the patch when every field is put back to its factory value', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    useBookStore.getState().patchPress('prensa_70x100', { maxSheetWidth_mm: 800 });
+    render(<ImpositionVisualizerScreen />);
+
+    openPressCatalog();
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '720' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    // A patch that records no difference is not a patch: leaving it behind
+    // would keep the entry marked as edited and bounce the field back to 800.
+    expect(useBookStore.getState().pressPatches).toEqual([]);
+    expect((screen.getByLabelText('Pliego máximo · ancho') as HTMLInputElement).value).toBe('720');
+  });
+
+  it('does not carry a half-typed draft onto the press that replaces a hidden one', () => {
+    useBookStore.getState().setPress('prensa_70x100');
+    render(<ImpositionVisualizerScreen />);
+
+    openPressCatalog();
+    fireEvent.change(screen.getByLabelText('Pliego máximo · ancho'), { target: { value: '999' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
+
+    // The selection moved to the only press left; the draft belonged to the
+    // one that just went away.
+    expect(useBookStore.getState().pressId).toBe('prensa_sra3');
+    expect((screen.getByLabelText('Pliego máximo · ancho') as HTMLInputElement).value).toBe('330');
+  });
+});
+
 describe('Custom press quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid press through the real flow, surfaces the store error for an invalid one, and removes the custom press', () => {
     render(<ImpositionVisualizerScreen />);

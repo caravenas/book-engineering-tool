@@ -138,6 +138,7 @@ export function ImpositionVisualizer() {
               type="button"
               className="step-options"
               aria-label="Opciones de prensa"
+              aria-haspopup="dialog"
               onClick={() => openCatalog('presses')}
             >
               ···

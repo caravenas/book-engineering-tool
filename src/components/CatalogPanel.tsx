@@ -207,7 +207,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [selected, setSelected] = useState<CatalogId>('presses');
   const catalogs = useCatalogs();
-  const { bindingId, catalog, customBindings, bindingPatches, hiddenBindingIds } = useBookStore();
+  const { bindingId, pressId, catalog, customBindings, bindingPatches, hiddenBindingIds } = useBookStore();
   const { hasFlatSpine } = catalog
     ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingId)
     : { hasFlatSpine: true };
@@ -235,9 +235,17 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
     else element.open = false;
   }, []);
 
-  // A panel left open by an unmounting tree would keep the rest of the page
-  // inert with nothing to close it.
-  useEffect(() => close, [close]);
+  /*
+   * A panel left open by an unmounting tree would keep the rest of the page
+   * inert with nothing to close it. The element is captured while it still
+   * exists: by the time the cleanup runs, React has already emptied the ref.
+   */
+  useEffect(() => {
+    const element = dialog.current;
+    return () => {
+      if (element && typeof element.close === 'function' && element.open) element.close();
+    };
+  }, []);
 
   const current = catalogs.find(item => item.id === selected) ?? null;
 
@@ -308,7 +316,10 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   ))}
                 </ul>
 
-                {current.id === 'presses' && <PressForm />}
+                {/* Keyed on the press: hiding or deleting one moves the
+                    selection, and a draft typed for the old one must not
+                    land on its replacement. */}
+                {current.id === 'presses' && <PressForm key={pressId} />}
 
                 {current.readOnly && (
                   <p className="calculation-note">
