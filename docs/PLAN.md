@@ -419,6 +419,8 @@ El test de tamaños sigue midiendo solo el catálogo y los botones que lo abren,
 
 ### Lo que el rediseño deja sin construir
 
+Los cuatro primeros los cierra R-6; el quinto sigue siendo una decisión de Chris.
+
 - La barra de resultados fija a 390 px, con lomo, pliegos y peso.
 - La sección desplegable «Cómo se calcula» para las fórmulas, que hoy se muestran siempre en el paso del lomo.
 - Un único distintivo «Datos de ejemplo» en la cabecera en vez de la nota de origen repetida en cada paso.
@@ -477,6 +479,41 @@ La lección, para quien siga: retirar una aserción obsoleta no es debilitar la 
 ### Rollback
 
 - Revertir el único commit del incremento que falle; los tres son independientes en ese orden.
+
+## Lo que faltaba del rediseño — R-6
+
+Cierra los cuatro puntos que `docs/UI-REDESIGN.md` dejaba sin construir tras R-5.
+
+**Cerrado el 2026-09-21** en `2585009`, `5bb788d` y `af759d5`.
+
+- Las fórmulas del lomo y el párrafo de corrimiento pasan a un `<details>` «Cómo se calcula» al pie de la columna de resultados, que es lo que explican.
+  El corrimiento gana además la cifra que pide la propuesta: «Corrimiento máx.» se lee como número junto al resto, y el párrafo queda detrás del desplegable.
+  Un método que no anida no tiene corrimiento, así que no aparece ninguno de los dos en vez de informar un cero que parecería medido.
+- El distintivo de origen sube junto a la etiqueta del campo, donde deja de leerse como pie del valor.
+  Aparece en los cinco catálogos que se pueden cambiar, gramajes incluidos, y en ninguno que no: decir «de fábrica» junto a un campo que nunca podría decir otra cosa es ruido.
+  La línea «X personalizada» que lo acompañaba decía lo mismo que «tuyo» y se fue; sobrevive la coletilla que añade algo, «guardada solo para esta sesión», y solo cuando el almacenamiento no está disponible.
+- Las cinco copias de la nota de procedencia se reducen a un distintivo «Datos de ejemplo» en la cabecera, y a la línea que cada catálogo imprime de su propio archivo, leída del catálogo y no escrita en el panel.
+- La barra de resultados fija a 390 px, con lomo, pliegos y peso interior, pegada arriba mientras el resto se desplaza bajo ella.
+
+### Lo que R-6 no construyó, y por qué
+
+- **La nota al pie de la ficha**, que la propuesta pide junto al distintivo de la cabecera.
+  Medida: ocupa 140 px y la ficha solo tiene 29 px de holgura a 1440×900, así que cambiaría la propiedad que R-3 estableció y que `e2e/layout.spec.ts` comprueba —que la ficha entera se lee sin abrir nada ni desplazarse— por una línea de texto de relleno.
+  En su lugar, la advertencia de los esquemas de plegado se quedó en su paso: no es relleno sino un aviso de producción, y dentro de un paso no cuesta nada mientras esté cerrado.
+- **El distintivo «Datos de ejemplo» es una afirmación escrita a mano, no derivada de los datos.**
+  La línea de cada catálogo y el aviso de los esquemas sí salen del `source` del JSON, pero el distintivo no: si una imprenta reemplaza `public/config/` por sus datos reales, el distintivo miente hasta que alguien lo borre.
+  Cerrarlo bien exige un campo declarado en la configuración, que es una decisión de Chris y no una que tome este incremento.
+- **La barra repite en móvil tres cifras que también están en la columna de abajo.**
+  La propuesta dice «y, debajo, el resto de los resultados», lo que sugiere quitarlas de la lista; ocultar filas concretas por CSS es frágil y la repetición no confunde, así que se dejaron.
+- **El orden en móvil sigue siendo ficha → vista previa → resultados**, y el canvas dibuja la vista previa encima de la ficha.
+  No estaba en la lista de lo no construido, pero sigue abierto.
+- La cabecera pasa a dos filas a 390 px por culpa del distintivo.
+  Se acepta: se desplaza fuera de la vista, y la barra que queda debajo no.
+
+### Lo que R-6 arregló de paso
+
+- La herramienta imprimía una misma magnitud de dos maneras: el peso de la tapa decía `18.53 g` junto a un peso interior que decía `70.6 g`, porque cada uno tenía su propio formateador.
+  Ahora hay uno solo, a un decimal; el segundo decimal afirma una precisión que no tiene una herramienta que llama a cada cifra una referencia preliminar.
 
 ## Decisiones pendientes
 
