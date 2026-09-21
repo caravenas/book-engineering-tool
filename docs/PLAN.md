@@ -402,6 +402,30 @@ Se parte en cortes verticales y no por capas, para que no haya una ventana en la
   El descriptor lo dice omitiendo `patch`, `unpatch` y `hide`, y el formulario muestra solo lo que ese catálogo puede hacer.
   La sección de ocultas se resolvió por catálogo, en la propia cabecera de cada formulario, en vez de como una sección aparte.
 
+## Estilo — R-5
+
+Ejecuta la sección «Estilo» de `docs/UI-REDESIGN.md`.
+Todo R-3 y R-4 fue estructura; esto es lo que hace que la app se parezca a la propuesta además de comportarse como ella.
+
+**Cerrado el 2026-09-21** en `f753973`, `9a619cd` y `55eaf82`.
+
+- Las diecinueve tarjetas con borde pasan a dieciséis filas de nombre y cifra separadas por filetes, dibujadas por un solo componente y marcadas como lista de definición, que es lo que son.
+- Un único control segmentado, usado en formato, proporción, vista y gramajes, en vez de tres implementaciones de la misma idea.
+- El acento queda con dos nombres que dicen lo que hacen: el cian rellena dibujos, y lo que se lee o se ve como contorno usa la versión en tinta.
+  El anillo de foco era lo último en cian, a 2.59:1; ahora está a 6.43:1.
+
+Quedó fuera por decisión de Chris el 2026-09-21: los 40 px en todos los controles.
+El test de tamaños sigue midiendo solo el catálogo y los botones que lo abren, y lo dice.
+
+### Lo que el rediseño deja sin construir
+
+- La barra de resultados fija a 390 px, con lomo, pliegos y peso.
+- La sección desplegable «Cómo se calcula» para las fórmulas, que hoy se muestran siempre en el paso del lomo.
+- Un único distintivo «Datos de ejemplo» en la cabecera en vez de la nota de origen repetida en cada paso.
+- El distintivo de origen junto a la etiqueta del campo, en vez de bajo el control.
+- **Una discrepancia entre el texto de la propuesta y su canvas**: el texto dice que el segmento activo es igual «en formato, proporción, vista y cara mostrada», lo que implica que la cara mostrada sea segmentada; el canvas la dibuja como un desplegable.
+  Se dejó como desplegable, que es lo que está dibujado, y la decisión es de Chris.
+
 ### Lo que el catálogo dejó abierto
 
 - Una entrada propia no se edita, solo se elimina y se vuelve a añadir; exige una acción de store que no existe.
