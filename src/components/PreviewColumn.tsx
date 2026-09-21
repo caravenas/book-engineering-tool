@@ -28,7 +28,7 @@ export function PreviewColumn() {
   const [view, setView] = useState<ViewId>('page');
 
   return (
-    <>
+    <div className="preview-stack">
       <div className="segment-group preview-switch" role="group" aria-label="Vista">
         {VIEWS.map(({ id, label }) => (
           <button
@@ -47,6 +47,6 @@ export function PreviewColumn() {
       {view === 'spine' && <SpineView />}
       {view === 'sheet' && <SheetPreview />}
       {view === 'cover' && <CoverPreview />}
-    </>
+    </div>
   );
 }

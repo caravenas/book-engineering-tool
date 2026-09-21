@@ -172,3 +172,38 @@ test('at 1440px there is no results bar, because the results never left', async 
     return element.getBoundingClientRect().height;
   })).toBe(0);
 });
+
+/**
+ * The tool spans the screen rather than sitting in a fixed block centred on
+ * it: capped at 1440px, a wide monitor drew the seams of the side columns in
+ * mid-air with empty page either side. Measured on a screen wider than the
+ * old cap, because at or below it the two layouts are indistinguishable.
+ */
+test('on a wide screen the side columns reach both edges', async ({ page }) => {
+  await page.setViewportSize({ width: 2560, height: 1400 });
+  await openTheApp(page);
+
+  const measured = await page.evaluate(() => {
+    const box = (selector: string) => {
+      const rect = document.querySelector(selector)!.getBoundingClientRect();
+      return { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
+    };
+    return { spec: box('.column-spec'), results: box('.column-results'), stack: box('.preview-stack'), viewport: window.innerWidth };
+  });
+
+  expect(measured.spec.left).toBe(0);
+  expect(measured.results.right).toBe(measured.viewport);
+  // The side columns keep the widths they have at 1440: every pixel the wider
+  // screen adds belongs to the middle.
+  expect(measured.spec.width).toBe(400);
+  expect(measured.results.width).toBe(320);
+
+  /*
+   * And the middle spends them on margin, not on stretching. Uncapped, the
+   * sheet's drawing sat in an SVG box 1790px wide and the four-way switch
+   * spread across the same 1790px, reading as a toolbar rather than a choice.
+   */
+  expect(measured.stack.width).toBe(720);
+  const slack = measured.stack.left - (measured.spec.width);
+  expect(slack).toBe(measured.viewport - measured.results.width - measured.stack.right);
+});

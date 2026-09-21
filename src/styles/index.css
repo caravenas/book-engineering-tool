@@ -174,8 +174,6 @@ body::before {
      and the way into the catalog wraps, and only when 390px forces it. */
   flex-wrap: wrap;
   row-gap: var(--space-2);
-  max-width: 1440px;
-  margin: 0 auto;
   /* A tool that claims to fit one screen cannot spend a fifth of it on its
      own name. At 7rem of logo and 6rem of title the header took 161px of the
      900 a laptop has, and the spec sheet no longer fit under it. */
@@ -195,15 +193,19 @@ body::before {
 
 /* Three columns: what is being asked for, what shape it takes, what comes
    out. The side columns are fixed so the drawing in the middle gets whatever
-   width is left. */
+   width is left.
+
+   The whole thing spans the viewport rather than sitting in a 1440px block:
+   capped, a wide screen showed the tool as a slab floating between two empty
+   margins, with the seams of the side columns standing in mid-air instead of
+   framing the screen. The side columns keep their widths, so every pixel a
+   wider screen adds goes to the middle. */
 .app-grid {
   display: grid;
   grid-template-columns: 400px minmax(0, 1fr) 320px;
   gap: 0;
   align-items: stretch;
-  max-width: 1440px;
   width: 100%;
-  margin: 0 auto;
   flex: 1;
   min-height: 0;
 }
@@ -224,17 +226,15 @@ body::before {
   border-left: 1px solid var(--color-border);
 }
 
+/* The notices span what the grid spans, so their text starts where the spec
+   column's text does. */
 .config-status {
-  max-width: 1440px;
-  margin: 0 auto;
   padding: var(--space-6);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
 
 .config-error {
-  max-width: 1440px;
-  margin: 0 auto;
   padding: var(--space-6);
   color: var(--color-danger-foreground);
 }
@@ -384,6 +384,20 @@ body::before {
 
 /* The same segmented control the format and proportion rows use; only its
    place on the page differs. */
+/*
+ * The drawings are bounded by their own heights, so past a point a wider
+ * column buys nothing: at 2560px the sheet's SVG box measured 1790px wide to
+ * draw 284px of sheet inside it, and the switch above it spread four segments
+ * across the same 1790px and read as a toolbar rather than a choice of four.
+ * The stack stops at the width the drawings were composed at — 1440 less the
+ * two side columns — and centres itself, so a wider screen adds margin around
+ * the drawing instead of inside it.
+ */
+.preview-stack {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 .preview-switch {
   margin-bottom: var(--space-6);
 }

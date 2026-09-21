@@ -426,7 +426,7 @@ Los cuatro primeros los cierra R-6; el quinto sigue siendo una decisión de Chri
 - Un único distintivo «Datos de ejemplo» en la cabecera en vez de la nota de origen repetida en cada paso.
 - El distintivo de origen junto a la etiqueta del campo, en vez de bajo el control.
 - **Una discrepancia entre el texto de la propuesta y su canvas**: el texto dice que el segmento activo es igual «en formato, proporción, vista y cara mostrada», lo que implica que la cara mostrada sea segmentada; el canvas la dibuja como un desplegable.
-  Se dejó como desplegable, que es lo que está dibujado, y la decisión es de Chris.
+  **Resuelta el 2026-09-21 por Chris: se queda como desplegable, por ahora.**
 
 ### Lo que el catálogo dejó abierto
 
@@ -514,6 +514,28 @@ Cierra los cuatro puntos que `docs/UI-REDESIGN.md` dejaba sin construir tras R-5
 
 - La herramienta imprimía una misma magnitud de dos maneras: el peso de la tapa decía `18.53 g` junto a un peso interior que decía `70.6 g`, porque cada uno tenía su propio formateador.
   Ahora hay uno solo, a un decimal; el segundo decimal afirma una precisión que no tiene una herramienta que llama a cada cifra una referencia preliminar.
+
+## El ancho de la pantalla — R-7
+
+Petición de Chris el 2026-09-21: que la herramienta ocupe todo el ancho en escritorio, con las columnas laterales pegadas a los bordes de la pantalla.
+Con el tope de 1440 px, una pantalla ancha dibujaba la herramienta como una losa flotando entre dos márgenes vacíos, con los filetes de las columnas laterales en el aire en vez de enmarcando la pantalla.
+
+**Cerrado el 2026-09-21.**
+
+- Se quita el tope de 1440 px de la rejilla, la cabecera y los dos avisos.
+  Las columnas laterales conservan sus anchos, así que cada píxel que añade una pantalla más ancha es del centro.
+- El centro se acota a 720 px y se centra.
+  Sin acotarlo, a 2560 px la caja del SVG del pliego medía 1790 px de ancho para dibujar 284 px de pliego dentro, y el conmutador de cuatro vistas se repartía esos mismos 1790 px y se leía como una barra de herramientas y no como una elección entre cuatro.
+  720 px es el ancho con el que se compusieron los dibujos: 1440 menos las dos columnas laterales.
+- Una prueba de navegador a 2560 px fija la propiedad, porque a 1440 o menos las dos maquetaciones son indistinguibles.
+  Probada devolviendo el tope y viendo la columna izquierda empezar en 560 px en vez de en 0.
+
+### Lo que R-7 deja abierto
+
+- **Los dibujos no crecen con la pantalla.**
+  La página y el lomo están acotados en píxeles; el pliego y la tapa son SVG al 100 % del ancho pero limitados por su altura máxima, así que a partir de cierto ancho dejan de crecer.
+  Una pantalla ancha compra margen alrededor del dibujo, no un dibujo más grande.
+  Que el dibujo use el alto disponible es otro incremento, y toca los cuatro dibujos por separado.
 
 ## Decisiones pendientes
 
