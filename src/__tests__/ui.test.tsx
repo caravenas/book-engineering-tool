@@ -4,9 +4,13 @@ import { SubstrateSelector } from '../components/SubstrateSelector';
 import { SpecSteps } from '../components/SpecSteps';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
 
-/** Editing a press lives in the catalog since R-4a; the step only opens it. */
+/** Editing a catalog lives in the catalog panel; a step only opens it. */
+function openCatalogFor(what: 'prensa' | 'pliego' | 'encuadernación' | 'proporción') {
+  fireEvent.click(screen.getByRole('button', { name: `Opciones de ${what}` }));
+}
+
 function openPressCatalog() {
-  fireEvent.click(screen.getByRole('button', { name: 'Opciones de prensa' }));
+  openCatalogFor('prensa');
 }
 import {
   CanvasDesignerScreen,
@@ -171,39 +175,28 @@ describe('Honest and recoverable UI', () => {
     expect(screen.getByLabelText('Calibre personalizado')).toBeTruthy();
   });
 
-  it('keeps the sheet-size group named and its controls labelled across disclosure states', () => {
+  it('keeps every selector in the imposition step named, and names the way out to the catalog', () => {
     render(<ImpositionVisualizerScreen />);
 
     expect(screen.getByLabelText('Prensa')).toBeTruthy();
     expect(screen.getByLabelText('Esquema de plegado')).toBeTruthy();
     expect(screen.getByLabelText('Cara mostrada')).toBeTruthy();
-    const collapsedGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
-    const sheetSelect = within(collapsedGroup).getByLabelText('Pliego seleccionado');
-    const sheetSelectLabel = within(collapsedGroup).getByText('Pliego seleccionado', {
-      selector: 'label',
-    });
+
+    // The step used to swap its selector for an inline form; adding and
+    // editing live in the catalog since R-4b, so the selector stays put and
+    // the group gains one control that says where the rest went.
+    const group = screen.getByRole('group', { name: 'Tamaño del pliego' });
+    const sheetSelect = within(group).getByLabelText('Pliego seleccionado');
+    const sheetSelectLabel = within(group).getByText('Pliego seleccionado', { selector: 'label' });
     expect(sheetSelect.id).toBe('select-sheet-size');
     expect(sheetSelectLabel.getAttribute('for')).toBe('select-sheet-size');
+
+    const options = within(group).getByRole('button', { name: 'Opciones de pliego' });
+    expect(options.getAttribute('aria-haspopup')).toBe('dialog');
+
+    fireEvent.click(options);
     expect(document.getElementById('select-sheet-size')).toBe(sheetSelect);
-
-    const customSheetToggle = within(collapsedGroup).getByRole('button', {
-      name: 'Añadir pliego personalizado',
-    });
-    expect(customSheetToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(customSheetToggle.getAttribute('aria-controls')).toBe('custom-sheet-form');
-
-    fireEvent.click(customSheetToggle);
-
-    const expandedGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
-    expect(expandedGroup).toBe(collapsedGroup);
-    expect(customSheetToggle.getAttribute('aria-expanded')).toBe('true');
-    expect(customSheetToggle.getAttribute('aria-label')).toBe('Cancelar pliego personalizado');
-    expect(document.getElementById('custom-sheet-form')).toBeTruthy();
-    expect(document.getElementById('select-sheet-size')).toBeNull();
-    expect(within(expandedGroup).queryByText('Pliego seleccionado', { selector: 'label' })).toBeNull();
-    expect(within(expandedGroup).getByLabelText('Nombre (opcional)')).toBeTruthy();
-    expect(within(expandedGroup).getByLabelText('Ancho')).toBeTruthy();
-    expect(within(expandedGroup).getByLabelText('Alto')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '+ Nuevo pliego' })).toBeTruthy();
   });
 
   it('announces the custom grammage disclosure state and controlled form', () => {
@@ -255,16 +248,17 @@ describe('Honest and recoverable UI', () => {
     useBookStore.getState().recalculate();
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
+    openCatalogFor('pliego');
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego' }));
 
     expect(screen.getByRole('alert').textContent).toContain('Introduce ancho y alto');
     const widthInput = screen.getByLabelText('Ancho');
     const heightInput = screen.getByLabelText('Alto');
     expect(widthInput.getAttribute('aria-invalid')).toBe('true');
-    expect(widthInput.getAttribute('aria-describedby')).toBe('custom-sheet-error');
+    expect(widthInput.getAttribute('aria-describedby')).toBe('catalog-entry-error');
     expect(heightInput.getAttribute('aria-invalid')).toBe('true');
-    expect(heightInput.getAttribute('aria-describedby')).toBe('custom-sheet-error');
+    expect(heightInput.getAttribute('aria-describedby')).toBe('catalog-entry-error');
     expect(useBookStore.getState().sheetSizeId).toBe('pliego_70x100');
 
     fireEvent.change(widthInput, { target: { value: '500' } });
@@ -276,7 +270,7 @@ describe('Honest and recoverable UI', () => {
     expect(widthInput.getAttribute('aria-invalid')).toBe('false');
     expect(heightInput.getAttribute('aria-invalid')).toBe('false');
     expect(screen.getByRole('alert').textContent).toContain('Introduce ancho y alto');
-    fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego' }));
 
     expect(useBookStore.getState().sheetSizeId).toMatch(/^custom_sheet_/);
     expect(screen.queryByRole('alert')).toBeNull();
@@ -484,7 +478,8 @@ describe('Hide and restore factory entries (UX-6)', () => {
     expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
     expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ocultar pliego de fábrica' }));
+    openCatalogFor('pliego');
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
     expect(Array.from(select.options).map(option => option.value)).not.toContain('pliego_70x100');
     expect(screen.getByText(/1 pliego de fábrica oculto/)).toBeTruthy();
@@ -501,7 +496,8 @@ describe('Hide and restore factory entries (UX-6)', () => {
     expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
     expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ocultar encuadernación de fábrica' }));
+    openCatalogFor('encuadernación');
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
     expect(Array.from(select.options).map(option => option.value)).not.toContain('grapa');
     expect(screen.getByText(/1 encuadernación de fábrica oculta/)).toBeTruthy();
@@ -518,7 +514,8 @@ describe('Hide and restore factory entries (UX-6)', () => {
     expect(within(proportionGroup).getByRole('button', { name: '2:3' })).toBeTruthy();
     expect(screen.queryByText(/proporción de fábrica oculta/)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ocultar proporción de fábrica' }));
+    openCatalogFor('proporción');
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
     expect(within(proportionGroup).queryByRole('button', { name: '2:3' })).toBeNull();
     expect(screen.getByText(/1 proporción de fábrica oculta/)).toBeTruthy();
@@ -534,14 +531,14 @@ describe('Catalog origin badge (UX-6)', () => {
   it('shows "de fábrica" for an untouched factory binding', () => {
     render(<BindingPanelScreen />);
 
-    expect(screen.getByText('de fábrica')).toBeTruthy();
+    expect(screen.getAllByText('de fábrica').length).toBeGreaterThan(0);
   });
 
   it('shows "editado" for a patched factory binding', () => {
     useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
     render(<BindingPanelScreen />);
 
-    expect(screen.getByText('editado')).toBeTruthy();
+    expect(screen.getAllByText('editado').length).toBeGreaterThan(0);
   });
 
   it('shows "tuyo" for a custom binding', () => {
@@ -607,31 +604,31 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    openCatalogFor('pliego');
     expect((screen.getByLabelText('Ancho') as HTMLInputElement).value).toBe('700');
 
     fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '750' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().sheetSizePatches).toEqual([
       { id: 'pliego_70x100', changes: { width_mm: 750 } },
     ]);
-    expect(screen.getByText('editado')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Tamaño del pliego' })).getByText('editado')).toBeTruthy();
   });
 
   it('persists two sheet size edits made in separate save actions, instead of the last one overwriting the first', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    openCatalogFor('pliego');
     fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '750' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     // Re-open the form: it must pre-load with the effective (already patched) values.
-    fireEvent.click(screen.getByRole('button', { name: 'Editar pliego de fábrica' }));
+    openCatalogFor('pliego');
     expect((screen.getByLabelText('Ancho') as HTMLInputElement).value).toBe('750');
     fireEvent.change(screen.getByLabelText('Alto'), { target: { value: '1050' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios del pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().sheetSizePatches).toEqual([
       { id: 'pliego_70x100', changes: { width_mm: 750, height_mm: 1050 } },
@@ -645,7 +642,8 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     const sheetGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
 
     expect(within(sheetGroup).getByText('editado')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Volver el pliego a fábrica' }));
+    openCatalogFor('pliego');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().sheetSizePatches).toEqual([]);
     expect(within(sheetGroup).getByText('de fábrica')).toBeTruthy();
@@ -671,30 +669,30 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
   it('edits a field of a factory binding from the interface, and the badge switches to "editado"', () => {
     render(<BindingPanelScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    openCatalogFor('encuadernación');
     expect((screen.getByLabelText('Aporte al lomo') as HTMLInputElement).value).toBe('0');
 
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().bindingPatches).toEqual([
       { id: 'grapa', changes: { spineAllowance_mm: 5 } },
     ]);
-    expect(screen.getByText('editado')).toBeTruthy();
+    expect(screen.getAllByText('editado').length).toBeGreaterThan(0);
   });
 
   it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
     render(<BindingPanelScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    openCatalogFor('encuadernación');
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     // Re-open the form: it must pre-load with the effective (already patched) values.
-    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    openCatalogFor('encuadernación');
     expect((screen.getByLabelText('Aporte al lomo') as HTMLInputElement).value).toBe('5');
     fireEvent.change(screen.getByLabelText('Mínimo de páginas'), { target: { value: '12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().bindingPatches).toEqual([
       { id: 'grapa', changes: { spineAllowance_mm: 5, minPages: 12 } },
@@ -705,40 +703,41 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
     useBookStore.getState().patchBinding('grapa', { spineAllowance_mm: 5 });
     render(<BindingPanelScreen />);
 
-    expect(screen.getByText('editado')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Volver la encuadernación a fábrica' }));
+    expect(screen.getAllByText('editado').length).toBeGreaterThan(0);
+    openCatalogFor('encuadernación');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().bindingPatches).toEqual([]);
-    expect(screen.getByText('de fábrica')).toBeTruthy();
+    expect(screen.getAllByText('de fábrica').length).toBeGreaterThan(0);
   });
 
   it('edits a field of a factory proportion from the interface, and the badge switches to "editado"', () => {
     render(<CanvasDesignerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
-    expect((screen.getByLabelText('Proporción (ancho)') as HTMLInputElement).value).toBe('2');
+    openCatalogFor('proporción');
+    expect((screen.getByLabelText('Ancho de la razón') as HTMLInputElement).value).toBe('2');
 
-    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().proportionPatches).toEqual([
       { label: '2:3', changes: { ratio: [4, 3] } },
     ]);
-    expect(screen.getByText('editado')).toBeTruthy();
+    expect(screen.getAllByText('editado').length).toBeGreaterThan(0);
   });
 
   it('persists two proportion edits made in separate save actions, instead of the last one overwriting the first', () => {
     render(<CanvasDesignerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
-    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+    openCatalogFor('proporción');
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     // Re-open the form: it must pre-load with the effective (already patched) values.
-    fireEvent.click(screen.getByRole('button', { name: 'Editar proporción de fábrica' }));
-    expect((screen.getByLabelText('Proporción (ancho)') as HTMLInputElement).value).toBe('4');
+    openCatalogFor('proporción');
+    expect((screen.getByLabelText('Ancho de la razón') as HTMLInputElement).value).toBe('4');
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Proporción personalizada' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la proporción' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     expect(useBookStore.getState().proportionPatches).toEqual([
       { label: '2:3', changes: { ratio: [4, 3], description: 'Proporción personalizada' } },
@@ -749,22 +748,23 @@ describe('Edit a factory binding or proportion (UX-6)', () => {
     useBookStore.getState().patchProportion('2:3', { ratio: [4, 3] });
     render(<CanvasDesignerScreen />);
 
-    expect(screen.getByText('editado')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Volver la proporción a fábrica' }));
+    expect(screen.getAllByText('editado').length).toBeGreaterThan(0);
+    openCatalogFor('proporción');
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().proportionPatches).toEqual([]);
-    expect(screen.getByText('de fábrica')).toBeTruthy();
+    expect(screen.getAllByText('de fábrica').length).toBeGreaterThan(0);
   });
 
   it('cancelling the binding edit form clears the store error and leaves the patch untouched', () => {
     render(<BindingPanelScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar encuadernación de fábrica' }));
+    openCatalogFor('encuadernación');
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '-5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios de la encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     expect(screen.getByRole('alert').textContent).toContain('Los cambios dejarían la encuadernación con datos inválidos.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar edición de encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(screen.queryByRole('alert')).toBeNull();
     expect(useBookStore.getState().bindingPatches).toEqual([]);
@@ -971,18 +971,26 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
     expect(removeButton.className).toContain('remove-grammage-button');
   });
 
-  it('renders the custom-sheet remove button with the class whose ::before overlay grows its tap target', () => {
+  it('removes a sheet of your own from the catalog, where the control is a full-sized button', () => {
     useBookStore.getState().recalculate();
     render(<ImpositionVisualizerScreen />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego personalizado' }));
+    openCatalogFor('pliego');
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo pliego' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Pliego mío' } });
     fireEvent.change(screen.getByLabelText('Ancho'), { target: { value: '500' } });
     fireEvent.change(screen.getByLabelText('Alto'), { target: { value: '700' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear pliego' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir pliego' }));
+    expect(useBookStore.getState().customSheetSizes).toHaveLength(1);
 
-    const removeButton = screen.getByRole('button', { name: 'Eliminar pliego personalizado' });
+    // The 27px button with a ::before overlay grown to a usable tap target is
+    // gone: in the catalog it is an ordinary button, sized like the rest.
+    // e2e/inventory.spec.ts measures that the rest are big enough.
+    const removeButton = screen.getByRole('button', { name: 'Eliminar' });
+    expect(removeButton.className).toContain('catalog-danger');
 
-    expect(removeButton.className).toContain('remove-sheet-button');
+    fireEvent.click(removeButton);
+    expect(useBookStore.getState().customSheetSizes).toHaveLength(0);
   });
 });
 
@@ -1047,7 +1055,7 @@ describe('Custom press quick-add (UX-4)', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(document.getElementById('custom-press-form')).toBeTruthy();
+    expect(document.getElementById('custom-entry-form')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa de prueba' } });
     fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
@@ -1065,7 +1073,7 @@ describe('Custom press quick-add (UX-4)', () => {
     const newPressId = useBookStore.getState().pressId;
     expect(newPressId).toMatch(/^custom_press_/);
     expect(useBookStore.getState().customPresses).toHaveLength(1);
-    expect(document.getElementById('custom-press-form')).toBeNull();
+    expect(document.getElementById('custom-entry-form')).toBeNull();
     const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
     expect(select.value).toBe(newPressId);
     expect(screen.getByText('prensa personalizada')).toBeTruthy();
@@ -1080,14 +1088,15 @@ describe('Custom binding quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid binding through the real flow, surfaces the store error for an invalid one, and removes the custom binding', () => {
     render(<BindingPanelScreen />);
 
-    const toggle = screen.getByRole('button', { name: 'Añadir encuadernación personalizada' });
+    openCatalogFor('encuadernación');
+    const toggle = screen.getByRole('button', { name: '+ Nueva encuadernación' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(document.getElementById('custom-binding-form')).toBeTruthy();
+    expect(document.getElementById('custom-entry-form')).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Encuadernación de prueba' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir encuadernación' }));
     expect(screen.getByRole('alert').textContent).toContain('múltiplo de páginas');
     expect(useBookStore.getState().customBindings).toHaveLength(0);
 
@@ -1095,17 +1104,17 @@ describe('Custom binding quick-add (UX-4)', () => {
     fireEvent.change(screen.getByLabelText('Mínimo de páginas'), { target: { value: '8' } });
     fireEvent.change(screen.getByLabelText('Máximo de páginas'), { target: { value: '64' } });
     fireEvent.change(screen.getByLabelText('Aporte al lomo'), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear encuadernación' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir encuadernación' }));
 
     const newBindingId = useBookStore.getState().bindingId;
     expect(newBindingId).toMatch(/^custom_binding_/);
     expect(useBookStore.getState().customBindings).toHaveLength(1);
-    expect(document.getElementById('custom-binding-form')).toBeNull();
+    expect(document.getElementById('custom-entry-form')).toBeNull();
     const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
     expect(select.value).toBe(newBindingId);
     expect(screen.getByText('encuadernación personalizada')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar encuadernación personalizada' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customBindings).toHaveLength(0);
     expect(useBookStore.getState().bindingId).not.toBe(newBindingId);
   });
@@ -1115,25 +1124,26 @@ describe('Custom proportion quick-add (UX-4)', () => {
   it('opens the form with the + button, adds a valid proportion as a new segmented button that stays before Manual, surfaces the store error for an invalid one, and removes the custom proportion', () => {
     render(<CanvasDesignerScreen />);
 
-    const toggle = screen.getByRole('button', { name: 'Añadir proporción personalizada' });
+    openCatalogFor('proporción');
+    const toggle = screen.getByRole('button', { name: '+ Nueva proporción' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(document.getElementById('custom-proportion-form')).toBeTruthy();
+    expect(document.getElementById('custom-entry-form')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Crear proporción' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
     expect(screen.getByRole('alert').textContent).toContain('etiqueta');
     expect(useBookStore.getState().customProportions).toHaveLength(0);
 
     fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '4:5' } });
-    fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '4' } });
-    fireEvent.change(screen.getByLabelText('Proporción (alto)'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '5' } });
     fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Proporción de prueba' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Crear proporción' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
 
     expect(useBookStore.getState().customProportions).toHaveLength(1);
     expect(useBookStore.getState().proportionId).toBe('4:5');
-    expect(document.getElementById('custom-proportion-form')).toBeNull();
+    expect(document.getElementById('custom-entry-form')).toBeNull();
 
     const proportionGroup = screen.getByRole('group', { name: 'Proporción' });
     const groupButtons = within(proportionGroup).getAllByRole('button');
@@ -1142,7 +1152,7 @@ describe('Custom proportion quick-add (UX-4)', () => {
     expect(newButton.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('proporción personalizada')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar proporción personalizada' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customProportions).toHaveLength(0);
     expect(useBookStore.getState().proportionId).not.toBe('4:5');
   });

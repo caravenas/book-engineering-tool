@@ -64,15 +64,18 @@ async function importFreshApp(): Promise<ComponentType> {
   return module.default;
 }
 
-const ADD_PROPORTION_BUTTON = 'Añadir proporción personalizada';
+const ADD_PROPORTION_BUTTON = '+ Nueva proporción';
 
+/** Adding a proportion lives in the catalog since R-4b; the step opens it. */
 function addCustomProportion(label: string): void {
+  fireEvent.click(screen.getByRole('button', { name: 'Opciones de proporción' }));
   fireEvent.click(screen.getByRole('button', { name: ADD_PROPORTION_BUTTON }));
   fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: label } });
-  fireEvent.change(screen.getByLabelText('Proporción (ancho)'), { target: { value: '3' } });
-  fireEvent.change(screen.getByLabelText('Proporción (alto)'), { target: { value: '2' } });
+  fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '3' } });
+  fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '2' } });
   fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Formato de prueba.' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Crear proporción' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
 }
 
 afterEach(() => {
@@ -138,19 +141,21 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
     expect(notice.textContent).toContain('No se pudo guardar la configuración personalizada');
     expect(notice.textContent).toContain('se perderán al recargar');
 
-    // The five quick-add actions all stay usable.
-    for (const name of [
-      'Añadir proporción personalizada',
-      'Añadir gramaje personalizado',
-      'Añadir pliego personalizado',
-      'Añadir encuadernación personalizada',
-    ]) {
-      expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(false);
-    }
+    // Every quick-add stays usable. Grammages are still added in their step;
+    // the other four moved into the catalog, so that is where they are checked.
+    expect((screen.getByRole('button', { name: 'Añadir gramaje personalizado' }) as HTMLButtonElement).disabled).toBe(false);
 
-    // Adding a press moved into the catalog, so that is where it is checked.
     fireEvent.click(screen.getByRole('button', { name: 'Catálogo' }));
-    expect((screen.getByRole('button', { name: '+ Nueva prensa' }) as HTMLButtonElement).disabled).toBe(false);
+    for (const [catalogName, addName] of [
+      ['Prensas, 2 entradas', '+ Nueva prensa'],
+      ['Pliegos, 6 entradas', '+ Nuevo pliego'],
+      ['Encuadernaciones, 4 entradas', '+ Nueva encuadernación'],
+      ['Proporciones, 5 entradas', '+ Nueva proporción'],
+    ]) {
+      fireEvent.click(screen.getByRole('button', { name: catalogName }));
+      expect((screen.getByRole('button', { name: addName }) as HTMLButtonElement).disabled).toBe(false);
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
 
     addCustomProportion('Solo esta sesión');
 

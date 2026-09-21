@@ -8,7 +8,8 @@ import {
   getSelectedBindingInfo,
 } from '../store/useBookStore';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
-import { PressForm } from './PressForm';
+import { CatalogEntryForm } from './CatalogEntryForm';
+import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor } from './catalogEditors';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
@@ -206,8 +207,13 @@ function LockIcon() {
 export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [selected, setSelected] = useState<CatalogId>('presses');
+  const [isOpen, setIsOpen] = useState(false);
   const catalogs = useCatalogs();
-  const { bindingId, pressId, catalog, customBindings, bindingPatches, hiddenBindingIds } = useBookStore();
+  const pressEditor = usePressEditor();
+  const sheetSizeEditor = useSheetSizeEditor();
+  const bindingEditor = useBindingEditor();
+  const proportionEditor = useProportionEditor();
+  const { bindingId, pressId, sheetSizeId, proportionId, catalog, customBindings, bindingPatches, hiddenBindingIds } = useBookStore();
   const { hasFlatSpine } = catalog
     ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingId)
     : { hasFlatSpine: true };
@@ -224,6 +230,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
      */
     if (typeof element.showModal === 'function') element.showModal();
     else element.open = true;
+    setIsOpen(true);
   }, []);
 
   const api = useMemo(() => ({ open }), [open]);
@@ -233,6 +240,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
     if (!element) return;
     if (typeof element.close === 'function') element.close();
     else element.open = false;
+    setIsOpen(false);
   }, []);
 
   /*
@@ -266,6 +274,13 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
           </button>
         </div>
 
+        {/*
+          * Only while open: a closed dialog still renders its children, so the
+          * seven catalogs would be computed on every keystroke elsewhere in
+          * the app, and their entries would sit in the accessibility tree
+          * where nobody asked for them.
+          */}
+        {isOpen && (
         <div className="catalog-body">
           <nav className="catalog-nav" aria-label="Catálogos">
             {GROUPS.map(group => (
@@ -316,19 +331,17 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   ))}
                 </ul>
 
-                {/* Keyed on the press: hiding or deleting one moves the
+                {/* Keyed on the entry: hiding or deleting one moves the
                     selection, and a draft typed for the old one must not
                     land on its replacement. */}
-                {current.id === 'presses' && <PressForm key={pressId} />}
+                {current.id === 'presses' && <CatalogEntryForm key={pressId} editor={pressEditor} />}
+                {current.id === 'sheetSizes' && <CatalogEntryForm key={sheetSizeId} editor={sheetSizeEditor} />}
+                {current.id === 'bindings' && <CatalogEntryForm key={bindingId} editor={bindingEditor} />}
+                {current.id === 'proportions' && <CatalogEntryForm key={proportionId ?? 'manual'} editor={proportionEditor} />}
 
                 {current.readOnly && (
                   <p className="calculation-note">
                     Este catálogo solo se lee. Para cambiarlo, edita <span className="catalog-file">{current.file}</span> y recarga.
-                  </p>
-                )}
-                {!current.readOnly && current.id !== 'presses' && (
-                  <p className="calculation-note">
-                    Este catálogo todavía se edita desde su paso en la ficha.
                   </p>
                 )}
                 {current.id === 'bindings' && !hasFlatSpine && (
@@ -340,6 +353,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
+        )}
       </dialog>
     </CatalogPanelContext.Provider>
   );

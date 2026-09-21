@@ -19,10 +19,9 @@ import { CatalogPanelProvider } from '../components/CatalogPanel';
  * then asserts on the resulting figure needs all of them mounted, so these
  * wrappers put back together what the layout takes apart. They exist only to
  * spare every test site from repeating the composition, and they mount exactly
- * what App mounts: nothing here decides what a panel shows. The imposition
- * screen carries the catalog provider because its options button reaches the
- * catalog through it; the others do not, since mounting the dialog they never
- * open would put its origin labels in front of tests asking about their own.
+ * what App mounts, the catalog provider included: every step reaches the
+ * catalog through it since R-4b. The dialog renders nothing while closed, so
+ * carrying it costs a test nothing and puts no stray text in front of it.
  *
  * They can drift from App without failing: drop a component from App and these
  * tests keep passing, because they mount it themselves. That is deliberate,
@@ -34,30 +33,30 @@ import { CatalogPanelProvider } from '../components/CatalogPanel';
 
 export function CanvasDesignerScreen() {
   return (
-    <>
+    <CatalogPanelProvider>
       <CanvasDesigner />
       <PagePreview />
-    </>
+    </CatalogPanelProvider>
   );
 }
 
 export function SpineCalculatorScreen() {
   return (
-    <>
+    <CatalogPanelProvider>
       <SpineCalculator />
       <SpinePreview />
       <SpineThicknessPreview />
       <SpineResults />
-    </>
+    </CatalogPanelProvider>
   );
 }
 
 export function BindingPanelScreen() {
   return (
-    <>
+    <CatalogPanelProvider>
       <BindingPanel />
       <BindingSpineResults />
-    </>
+    </CatalogPanelProvider>
   );
 }
 
@@ -73,10 +72,10 @@ export function ImpositionVisualizerScreen() {
 
 export function CoverPanelScreen() {
   return (
-    <>
+    <CatalogPanelProvider>
       <CoverPanel />
       <CoverPreview />
       <CoverResults />
-    </>
+    </CatalogPanelProvider>
   );
 }

@@ -1288,6 +1288,37 @@ select.form-input {
   display: block;
 }
 
+/* The shared input style leaves a 35px box, under the 40px this panel's
+   buttons already keep. A field is as much of a pointer target as a button. */
+.catalog-field .form-input {
+  min-height: 40px;
+}
+
+/* A yes-or-no reads as one line, not as a label above a box: stacked like the
+   numbers, its caption wrapped onto two lines and left the box adrift. */
+.catalog-field-boolean {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+}
+
+.catalog-field-boolean .form-label {
+  order: 2;
+  margin-bottom: 0;
+}
+
+.catalog-field-boolean input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* A name or a description gets the row to itself. */
+.catalog-field-text {
+  grid-column: 1 / -1;
+}
+
 .catalog-field-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -196,16 +196,37 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Pliegos, 6 entradas': 1,
   'Esquemas de plegado, 2 entradas, solo lectura': 1,
   'Tapas, 3 entradas, solo lectura': 1,
+  'Opciones de pliego': 1,
+  'Opciones de encuadernación': 1,
+  'Opciones de proporción': 1,
+
+  // One form serves the four editable catalogs, so the controls it always
+  // carries appear once per catalog, and each catalog adds its own fields.
+  'Nombre': 3,
+  'Ocultar': 4,
+  'Guardar cambios': 4,
   '+ Nueva prensa': 1,
-  'Nombre': 1,
+  '+ Nuevo pliego': 1,
+  '+ Nueva encuadernación': 1,
+  '+ Nueva proporción': 1,
   'Pliego máximo · ancho': 1,
   'Pliego máximo · alto': 1,
   'Pinza': 1,
   'Lateral': 1,
   'Cola': 1,
   'Calle': 1,
-  'Ocultar': 1,
-  'Guardar cambios': 1,
+  'Ancho': 1,
+  'Alto': 1,
+  'Múltiplo de páginas': 1,
+  'Mínimo de páginas': 1,
+  'Máximo de páginas': 1,
+  'Aporte al lomo': 1,
+  'Anida los pliegos': 1,
+  'Exige múltiplo de firma': 1,
+  'Etiqueta': 1,
+  'Ancho de la razón': 1,
+  'Alto de la razón': 1,
+  'Descripción': 1,
 
   // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,
@@ -219,21 +240,13 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Alto (Cerrado)': 1,
   'Ancho (Cerrado)': 1,
   'Apaisado': 1,
-  'Añadir encuadernación personalizada': 1,
   'Añadir gramaje personalizado': 1,
-  'Añadir pliego personalizado': 1,
-  'Añadir proporción personalizada': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
-  'Editar encuadernación de fábrica': 1,
-  'Editar pliego de fábrica': 1,
-  'Editar proporción de fábrica': 1,
   'Encuadernación seleccionada': 1,
   'Esquema de plegado': 1,
   'Manual': 1,
   'Número de páginas': 1,
-  'Ocultar encuadernación de fábrica': 1,
-  'Ocultar pliego de fábrica': 1,
   'Ocultar proporción de fábrica': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
@@ -384,4 +397,33 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     expect(new Set(await resultLabels(page))).toEqual(new Set(EXPECTED_RESULT_LABELS));
     expect((await resultLabels(page)).length).toBe(EXPECTED_RESULT_LABEL_COUNT);
   });
+});
+
+/**
+ * Deleting a custom entry used to be a 27px button with a ::before overlay
+ * grown to a usable size, which a unit test pinned by class name because
+ * jsdom cannot measure anything. In the catalog it is an ordinary button, so
+ * the guarantee is now a size, and a size is what this measures. 40px is the
+ * floor this app sets for a pointer target on a desktop layout.
+ */
+test('every control in the catalog is big enough to hit', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.locator('.app-grid')).toBeVisible();
+  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+
+  const catalogs = page.locator('.catalog-nav-item');
+  const count = await catalogs.count();
+  const tooSmall: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    await catalogs.nth(index).click();
+    tooSmall.push(...await page.evaluate(() => Array
+      .from(document.querySelectorAll<HTMLElement>('.catalog-dialog button, .catalog-dialog input, .catalog-dialog select'))
+      .filter(control => control.getClientRects().length > 0)
+      .filter(control => !(control instanceof HTMLInputElement && control.type === 'checkbox'))
+      .filter(control => control.getBoundingClientRect().height < 40)
+      .map(control => `${control.textContent?.trim() || control.getAttribute('aria-label') || control.id} is ${Math.round(control.getBoundingClientRect().height)}px`)));
+  }
+
+  expect(tooSmall).toEqual([]);
 });

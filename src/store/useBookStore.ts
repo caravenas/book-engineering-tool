@@ -1003,6 +1003,10 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
 
     if (!Number.isFinite(width_mm) || width_mm <= 0
       || !Number.isFinite(height_mm) || height_mm <= 0) {
+      // Said here rather than by whoever calls it: refusing in silence left
+      // the form that moved into the catalog with nothing to show, and every
+      // other catalog reports its own refusals this way.
+      set({ customSheetSizeError: 'Introduce ancho y alto como números finitos mayores que cero para crear el pliego.' });
       return false;
     }
 
