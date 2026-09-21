@@ -596,6 +596,54 @@ Así que renombrar una prensa de fábrica hasta chocar con otra sí se permite, 
 Lo mismo en pliegos, encuadernaciones y proporciones.
 R-8 lo comprueba en las acciones nuevas; corregir las de parche es un arreglo aparte, porque cambia el comportamiento de algo que ya está en uso.
 
+## Derivar el esquema del plegado — R-12
+
+Decisión de Chris el 2026-09-21: en vez de un formulario donde teclear las 16 casillas, la app deriva el esquema de los dobleces, que es el dato que un taller sí tiene.
+
+**Motor cerrado el 2026-09-21.** `src/engine/folding.ts`, función pura, sin importar configuración.
+
+- `foldingSchemeFromFolds(folds)` recibe la secuencia de dobleces — eje y qué mitad se levanta, nombrado por lo que hace la mano: «llevo la derecha sobre la izquierda» — y devuelve el esquema.
+- `readByFolding(scheme, folds, outward)` hace el camino contrario: toma un pliego ya impreso y dice en qué orden salen las páginas al plegarlo.
+- El modelo es el papel: un doblez coge media pila, **la vuelve del revés** sobre la otra mitad, y esa mitad queda encima con su orden invertido.
+  Doblar sobre una línea horizontal además pone el contenido boca abajo, que es de donde salen los giros de 180° de un esquema.
+- Qué cara del pliego queda hacia fuera es parte del plan, no una propiedad del reticulado, y el motor la devuelve.
+
+### Lo que encontró el motor: los dos esquemas entregados están mal
+
+Esto es lo importante de R-12, y no el motor.
+
+Ninguna secuencia de dobleces reproduce `esquema_8pp` ni `esquema_16pp`.
+Sí los reproduce, los dos y exactamente, un modelo en el que **el doblez horizontal gira el contenido pero no da la vuelta al papel**, que es algo que ningún doblez hace.
+Quien los construyó aplicó ese modelo de forma consistente en los dos.
+
+La consecuencia, calculada plegando el pliego impreso:
+
+- `esquema_8pp` se lee **1 2 4 3 6 5 7 8**.
+- `esquema_16pp` se lee **1 2 4 3 5 6 8 7 10 9 11 12 14 13 15 16**.
+
+Cada hoja que pasa por un número impar de dobleces horizontales tiene sus dos páginas en las caras cambiadas.
+Todo lo demás está bien: las hojas caen en las celdas correctas, en el orden correcto y con los giros correctos, así que ni la cobertura ni el invariante de la hoja lo ven.
+Es exactamente el tipo de error que la nota de `esquemas.json` anticipaba: «deben confirmarse contra un pliego doblado real».
+
+**No se ha tocado `public/config/esquemas.json`.**
+Corregirlo es decisión de Chris y conviene confirmarlo antes doblando un papel, porque lo que hay aquí es un modelo contra otro modelo.
+Los dos esquemas corregidos son los que devuelve `foldingSchemeFromFolds` para `HB VR` y `HB HB VR`.
+
+### Sobre la fuerza de las pruebas
+
+La prueba de ida y vuelta — derivar un esquema y volver a plegarlo — no prueba el modelo: pliega con el mismo modelo con el que impuso, así que un error del modelo sobrevive intacto.
+Se comprobó rompiendo el motor a propósito, con el mismo error que tienen los esquemas entregados: esa prueba sigue en verde.
+
+Lo que sí fija el modelo son los dos folios, donde la respuesta se sabe desde fuera:
+el pliego doblado una vez lleva las dos cubiertas, 4 y 1, en la cara exterior, y eso vale tanto si se dobla en vertical como en horizontal.
+Con el motor roto, el folio horizontal pone las páginas 1 y 3 en la misma cara y la prueba cae.
+
+### Lo que falta de R-12
+
+- Dar de alta un esquema desde el Catálogo eligiendo los dobleces.
+  El motor ya está; falta la capa de usuario para esquemas, que hoy no existe, y la pantalla.
+- La maqueta imprimible, que sigue siendo lo único que zanja la convención contra la realidad.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.
@@ -630,5 +678,8 @@ R-8 lo comprueba en las acciones nuevas; corregir las de parche es un arreglo ap
   Persistir preferencias fue un no objetivo explícito del incremento 1; cambiarlo es otra decisión.
 - ~~2026-09-17: el área táctil del botón de eliminar gramaje personalizado invadía a su vecino.~~
   Sin objeto desde R-4b: ese botón ya no está en el paso, y eliminar un gramaje se hace desde el Catálogo como cualquier otra entrada.
-- Los esquemas de plegado entregados son ejemplos construidos a mano: su emparejamiento de páginas está verificado, pero su convención de plegado debe confirmarse contra un pliego doblado real.
+- **2026-09-21: los esquemas de plegado entregados no superan la derivación por dobleces**, y el modelo que los reproduce no corresponde a ningún plegado físico.
+  `esquema_8pp` se lee 1 2 4 3 6 5 7 8 al plegarlo y `esquema_16pp` 1 2 4 3 5 6 8 7 10 9 11 12 14 13 15 16.
+  Está fijado en `src/__tests__/folding.test.ts`, que falla el día que el archivo se corrija.
+  Corregirlos es decisión de Chris, y conviene doblar un papel antes: ver R-12.
 - El motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego, lo que desaprovecha pliegos grandes con páginas pequeñas; es candidato a un incremento posterior.
