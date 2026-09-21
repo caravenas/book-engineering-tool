@@ -15,35 +15,21 @@
   --color-bg-input-focus: #FFFFFF;
 
   --color-border: #E1E4E8;
-  --color-border-active: #12A9D8;
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #475569;
   --color-text-muted: #5B6B82;
-  --color-text-accent: #12A9D8;
 
-  /* ── Accent Colors ── */
-  /* Reusing amber classes as the primary accent variables for compatibility */
-  --color-amber-400: #12A9D8;
-  --color-amber-500: #0E83AF;
-  --color-amber-600: #0A6285;
-  --color-amber-glow: transparent;
+  /* ── Accent ── */
+  /*
+   * The cyan fills the drawings and nothing else: on paper it reaches 2.59:1,
+   * which fails the 4.5:1 text needs and the 3:1 a focus ring needs. Anything
+   * that has to be read or seen as an outline uses the ink version, at 6.43:1.
+   */
+  --color-accent: #12A9D8;
+  --color-accent-ink: #0A6285;
 
-  --color-emerald-400: #34d399;
-  --color-emerald-500: #10b981;
-  --color-emerald-glow: transparent;
-
-  --color-rose-400: #fb7185;
-  --color-rose-500: #f43f5e;
   --color-danger-foreground: #be123c;
-  --color-rose-glow: transparent;
-
-  --color-sky-400: #38bdf8;
-  --color-sky-500: #0ea5e9;
-  --color-sky-glow: transparent;
-
-  --color-yellow-400: #facc15;
-  --color-orange-400: #fb923c;
 
   /* ── Typography ── */
   --font-body: 'Inter', -apple-system, system-ui, sans-serif;
@@ -81,7 +67,6 @@
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.05);
-  --shadow-glow-amber: none;
 
   /* ── Transitions ── */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -201,13 +186,6 @@ body::before {
   margin: 0;
 }
 
-.app-tagline {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
 /* Three columns: what is being asked for, what shape it takes, what comes
    out. The side columns are fixed so the drawing in the middle gets whatever
@@ -475,7 +453,7 @@ body::before {
    it off on mouse clicks. */
 .form-input:focus-visible,
 button:focus-visible {
-  outline: 2px solid var(--color-border-active);
+  outline: 2px solid var(--color-accent-ink);
   outline-offset: 2px;
 }
 
@@ -685,58 +663,15 @@ select.form-input {
 
 /* ─── Waste Indicator ───────────────────────────────────────────────── */
 
-.waste-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  margin-top: var(--space-4);
-}
 
-.waste-indicator.low,
-.waste-indicator.medium,
-.waste-indicator.high {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
 
-.waste-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
 
-.waste-indicator.low .waste-dot {
-  background: var(--color-emerald-400);
-}
 
-.waste-indicator.medium .waste-dot {
-  background: var(--color-yellow-400);
-}
 
-.waste-indicator.high .waste-dot {
-  background: var(--color-rose-400);
-}
 
-.waste-text {
-  font-size: var(--text-sm);
-  font-weight: 500;
-}
 
-.waste-indicator.low .waste-text {
-  color: var(--color-emerald-400);
-}
 
-.waste-indicator.medium .waste-text {
-  color: var(--color-yellow-400);
-}
 
-.waste-indicator.high .waste-text {
-  color: var(--color-rose-400);
-}
 
 /* ─── SVG Imposition Visualizer ─────────────────────────────────────── */
 
@@ -765,7 +700,7 @@ select.form-input {
 }
 
 .imposition-svg .page-rect {
-  fill: #12A9D8;
+  fill: var(--color-accent);
   stroke: #8A1C30;
   stroke-width: 1.5;
   stroke-dasharray: 4, 4;
@@ -780,9 +715,6 @@ select.form-input {
   opacity: 0.8;
 }
 
-.imposition-svg .waste-area {
-  fill: transparent;
-}
 
 .imposition-svg .dimension-text {
   fill: #0F172A;
@@ -836,7 +768,7 @@ select.form-input {
 }
 
 .cover-svg .cover-section-rect {
-  fill: #12A9D8;
+  fill: var(--color-accent);
   stroke: #8A1C30;
   stroke-width: 1.5;
 }
@@ -859,7 +791,7 @@ select.form-input {
 
 .page-preview {
   /* border: 1.5px dashed var(--color-border); */
-  background: #12A9D8;
+  background: var(--color-accent);
   position: relative;
   transition: all var(--transition-slow);
 }
