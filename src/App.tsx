@@ -115,9 +115,16 @@ export default function App() {
     <CatalogPanelProvider>
     <div className="page-wrapper">
       <div className="header-section">
-        <header className="app-header" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        <header className="app-header">
           <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '2.5rem', width: 'auto' }} />
           <h1 className="app-logo">PliegoStack</h1>
+          {/*
+            * Said once, where it applies to everything below, instead of
+            * five times under five dropdowns. Which file says what, and in
+            * its own words, is at the foot of the spec sheet and inside each
+            * catalog.
+            */}
+          {loadState.status === 'ready' && <span className="header-badge">Datos de ejemplo</span>}
           <CatalogButton />
         </header>
       </div>

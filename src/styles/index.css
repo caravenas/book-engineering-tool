@@ -168,6 +168,12 @@ body::before {
 }
 
 .app-header {
+  display: flex;
+  align-items: center;
+  /* The name and its badge read as one thing, so only the row between them
+     and the way into the catalog wraps, and only when 390px forces it. */
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
   max-width: 1440px;
   margin: 0 auto;
   /* A tool that claims to fit one screen cannot spend a fifth of it on its
@@ -262,6 +268,19 @@ body::before {
   display: block;
   font-family: var(--font-mono);
   color: var(--color-text-secondary);
+}
+
+
+/* One claim about the whole catalog, beside the name of the tool it applies
+   to. What each file says, in its own words, is at the foot of the sheet. */
+.header-badge {
+  margin-left: var(--space-3);
+  padding: 2px var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 /* Single layout breakpoint: 1024px sits inside the 960-1200px window
@@ -473,8 +492,28 @@ select.form-input {
 .form-label-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
   margin-bottom: var(--space-2);
+}
+
+/* The label and whatever qualifies it read together at the start of the row;
+   the way into the catalog stays at its end however much precedes it. */
+.form-label-row .step-options {
+  margin-left: auto;
+}
+
+/* Where the selected entry comes from, beside the label of the field it
+   describes rather than under the control, where it read as a caption to the
+   value. Sentence case, so it is not mistaken for a second label. */
+.origin-badge {
+  flex-shrink: 0;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .form-label-row .form-label {
@@ -1200,6 +1239,13 @@ select.form-input {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+}
+
+.catalog-source {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
 }
 
 .catalog-file {

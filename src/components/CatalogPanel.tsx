@@ -52,6 +52,12 @@ interface CatalogDescriptor {
   title: string;
   description: string;
   file: string;
+  /**
+   * What that file declares about where its numbers come from, or null for a
+   * file that declares nothing. Read from the catalog rather than written
+   * here, so replacing the shipped data replaces this line with it.
+   */
+  source: string | null;
   /** A catalog with no user layer behind it: it can be read and nothing else. */
   readOnly: boolean;
   entries: CatalogEntry[];
@@ -91,6 +97,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Proporciones',
         description: 'La relación entre ancho y alto de la página.',
         file: 'config/formatos.json',
+        source: null,
         readOnly: false,
         entries: proportions.map(item => ({
           key: item.label,
@@ -109,6 +116,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Papeles',
         description: 'Los papeles del interior, con los gramajes que cada uno ofrece.',
         file: 'config/sustratos.json',
+        source: catalog.substratesSource,
         readOnly: true,
         entries: catalog.substrates.map(item => ({
           key: item.id,
@@ -123,6 +131,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Encuadernaciones',
         description: 'El método, con las páginas que admite y lo que aporta al lomo.',
         file: 'config/encuadernaciones.json',
+        source: catalog.bindingsSource,
         readOnly: false,
         entries: bindings.map(item => ({
           key: item.id,
@@ -137,6 +146,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Prensas',
         description: 'Definen el pliego máximo y los márgenes que la imposición descuenta.',
         file: 'config/maquinas.json',
+        source: catalog.pressesSource,
         readOnly: false,
         entries: presses.map(item => ({
           key: item.id,
@@ -151,6 +161,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Pliegos',
         description: 'El papel tal como llega a la prensa, antes de cortar.',
         file: 'config/pliegos.json',
+        source: catalog.sheetSizesSource,
         readOnly: false,
         entries: sheetSizes.map(item => ({
           key: item.id,
@@ -165,6 +176,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Esquemas de plegado',
         description: 'Cómo se dobla un pliego y en qué orden quedan sus páginas.',
         file: 'config/esquemas.json',
+        source: catalog.foldingSchemesSource,
         readOnly: true,
         entries: catalog.foldingSchemes.map(item => ({
           key: item.id,
@@ -179,6 +191,7 @@ function useCatalogs(): CatalogDescriptor[] {
         title: 'Tapas',
         description: 'El tipo de tapa, con sus solapas, cejas y dobleces.',
         file: 'config/tapas.json',
+        source: catalog.coversSource,
         readOnly: true,
         entries: catalog.covers.map(item => ({
           key: item.id,
@@ -340,7 +353,8 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
               <>
                 <h3 className="catalog-content-title">{current.title}</h3>
                 <p className="catalog-content-description">{current.description}</p>
-                <p className="catalog-file">{current.file} · valores de ejemplo</p>
+                <p className="catalog-file">{current.file}</p>
+                {current.source && <p className="catalog-source">{current.source}</p>}
 
                 <ul className="catalog-list">
                   {current.entries.map(entry => (

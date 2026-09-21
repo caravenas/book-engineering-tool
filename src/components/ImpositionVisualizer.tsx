@@ -1,7 +1,6 @@
 import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
 import { useCatalogPanel } from './CatalogPanel';
-import { ConfigSourceNote } from './ConfigSourceNote';
-import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { getCatalogOrigin, OriginBadge } from './CatalogOrigin';
 
 export function ImpositionVisualizer() {
   const { open: openCatalog } = useCatalogPanel();
@@ -44,6 +43,7 @@ export function ImpositionVisualizer() {
         <div className="form-group" role="group" aria-labelledby="press-group-label">
           <div className="form-label-row">
             <span id="press-group-label" className="form-label">Prensa</span>
+            <OriginBadge origin={pressOrigin} />
             <button
               type="button"
               className="step-options"
@@ -65,15 +65,8 @@ export function ImpositionVisualizer() {
               <option key={press.id} value={press.id}>{press.name}</option>
             ))}
           </select>
-          <CatalogOriginNote origin={pressOrigin} />
-          {pressOrigin === 'own' ? (
-            <ConfigSourceNote
-              text={userLayerStorageAvailable
-                ? 'prensa personalizada'
-                : 'prensa personalizada, guardada solo para esta sesión'}
-            />
-          ) : (
-            catalog && <ConfigSourceNote file="config/maquinas.json" text={catalog.pressesSource} />
+          {pressOrigin === 'own' && !userLayerStorageAvailable && (
+            <p className="config-source-note">prensa personalizada, guardada solo para esta sesión</p>
           )}
         </div>
 
@@ -90,14 +83,21 @@ export function ImpositionVisualizer() {
               <option key={scheme.id} value={scheme.id}>{scheme.name}</option>
             ))}
           </select>
-          {catalog && (
-            <ConfigSourceNote file="config/esquemas.json" text={catalog.foldingSchemesSource} />
-          )}
+          {/*
+            * The only one of the seven source notes that is not boilerplate:
+            * the other six say the values are examples, which the header now
+            * says once, and this one warns that a scheme has to be checked
+            * against a folded sheet before anything is printed from it. It
+            * stays with the control it warns about, and costs nothing while
+            * the step is closed.
+            */}
+          {catalog && <p className="config-source-note">{catalog.foldingSchemesSource}</p>}
         </div>
 
         <div className="form-group" role="group" aria-labelledby="sheet-size-group-label">
           <div className="form-label-row">
             <span id="sheet-size-group-label" className="form-label">Tamaño del pliego</span>
+            <OriginBadge origin={sheetOrigin} />
             <button
               type="button"
               className="step-options"
@@ -119,11 +119,8 @@ export function ImpositionVisualizer() {
               <option key={sheet.id} value={sheet.id}>{sheet.name}</option>
             ))}
           </select>
-          <CatalogOriginNote origin={sheetOrigin} />
-          {isSelectedSheetCustom ? (
-            <ConfigSourceNote text={userLayerStorageAvailable ? 'pliego personalizado' : 'pliego personalizado, guardado solo para esta sesión'} />
-          ) : catalog && (
-            <ConfigSourceNote file="config/pliegos.json" text={catalog.sheetSizesSource} />
+          {isSelectedSheetCustom && !userLayerStorageAvailable && (
+            <p className="config-source-note">pliego personalizado, guardado solo para esta sesión</p>
           )}
         </div>
       </div>

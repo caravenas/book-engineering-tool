@@ -1,5 +1,4 @@
 import { useBookStore, getAllBindings } from '../store/useBookStore';
-import { ConfigSourceNote } from './ConfigSourceNote';
 import type { Binding, Cover } from '../types';
 
 /**
@@ -48,9 +47,6 @@ export function CoverPanel() {
               </option>
             ))}
         </select>
-        {catalog && (
-          <ConfigSourceNote file="config/tapas.json" text={catalog.coversSource} />
-        )}
       </div>
 
       {coverError && (

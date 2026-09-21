@@ -370,32 +370,14 @@ describe('Honest and recoverable UI', () => {
     expect(container.querySelector('#spine-calculator')?.textContent).not.toContain('Hojas físicas');
   });
 
-  it('shows the config source for a shipped grammage and the custom-source note for a custom one', () => {
-    const substrateSelector = render(<SubstrateSelectorScreen />);
-    expect(screen.getByText('config/sustratos.json')).toBeTruthy();
-    expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
-    expect(screen.queryByText(/^Fuente: /)).toBeNull();
-    substrateSelector.unmount();
+  it('no longer repeats the provenance of the catalog under every control', () => {
+    const substrate = render(<SubstrateSelectorScreen />);
+    expect(substrate.container.textContent).not.toContain('config/sustratos.json');
+    substrate.unmount();
 
-    useBookStore.getState().addCustomGrammage('couche_matte', 999, 100);
-    render(<SubstrateSelectorScreen />);
-    expect(screen.getByText('gramaje personalizado')).toBeTruthy();
-    expect(screen.queryByText(/config\/sustratos\.json/)).toBeNull();
-    expect(screen.queryByText(/^Fuente: /)).toBeNull();
-  });
-
-  it('shows the config source for a shipped sheet size and the custom-source note for a custom one', () => {
-    const impositionVisualizer = render(<ImpositionVisualizerScreen />);
-    expect(screen.getByText('config/pliegos.json')).toBeTruthy();
-    expect(impositionVisualizer.container.textContent).toContain('Valores de ejemplo; reemplazar por datos reales de la imprenta.');
-    expect(screen.queryByText(/^Fuente: /)).toBeNull();
-    impositionVisualizer.unmount();
-
-    useBookStore.getState().addCustomSheetSize('Pliego personalizado', 500, 700);
-    render(<ImpositionVisualizerScreen />);
-    expect(screen.getByText('pliego personalizado')).toBeTruthy();
-    expect(screen.queryByText(/config\/pliegos\.json/)).toBeNull();
-    expect(screen.queryByText(/^Fuente: /)).toBeNull();
+    const imposition = render(<ImpositionVisualizerScreen />);
+    expect(imposition.container.textContent).not.toContain('config/pliegos.json');
+    expect(imposition.container.textContent).not.toContain('config/maquinas.json');
   });
 });
 
@@ -451,11 +433,12 @@ describe('Binding selector', () => {
     expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
   });
 
-  it('shows the config source note for the binding catalog', () => {
-    render(<BindingPanelScreen />);
-    expect(screen.getByText('config/encuadernaciones.json')).toBeTruthy();
-    expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
-    expect(screen.queryByText(/^Fuente: /)).toBeNull();
+  it('says where the selected method comes from beside its label, not under the dropdown', () => {
+    const { container } = render(<BindingPanelScreen />);
+
+    const badge = container.querySelector('.form-label-row .origin-badge');
+    expect(badge?.textContent).toBe('de fábrica');
+    expect(container.textContent).not.toContain('config/encuadernaciones.json');
   });
 });
 
@@ -844,12 +827,11 @@ describe('Signature imposition preview', () => {
     expect(document.querySelector('.imposition-svg')).toBeNull();
   });
 
-  it('shows the source notes for the press and folding-scheme catalogs', () => {
+  it('says where the press and the sheet come from beside their labels', () => {
     render(<ImpositionVisualizerScreen />);
 
-    const step = screen.getByRole('group', { name: 'Prensa' });
-    expect(within(step).getByText(/config\/maquinas\.json/)).toBeTruthy();
-    expect(screen.getAllByText(/config\/esquemas\.json/).length).toBeGreaterThan(0);
+    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('de fábrica')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Tamaño del pliego' })).getByText('de fábrica')).toBeTruthy();
   });
 
   it('names the press-sheet stat apart from the folded, per-4-page sheet used for creep', () => {
@@ -967,9 +949,15 @@ describe('Cover panel', () => {
     expect(screen.queryByText('Ancho del cartón lateral (mm)')).toBeNull();
   });
 
-  it('shows the config source note for the cover catalog', () => {
-    render(<CoverPanelScreen />);
-    expect(screen.getByText(/config\/tapas\.json/)).toBeTruthy();
+  /*
+   * Covers are read-only, so the step carries no origin badge: saying "de
+   * fábrica" beside a field that could never say anything else is noise.
+   * Their provenance is at the foot of the sheet with the rest.
+   */
+  it('carries neither a source note nor an origin badge', () => {
+    const { container } = render(<CoverPanelScreen />);
+    expect(container.textContent).not.toContain('config/tapas.json');
+    expect(container.querySelector('.origin-badge')).toBeNull();
   });
 });
 
@@ -1106,7 +1094,7 @@ describe('Custom press quick-add (UX-4)', () => {
     expect(document.getElementById('custom-entry-form')).toBeNull();
     const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
     expect(select.value).toBe(newPressId);
-    expect(screen.getByText('prensa personalizada')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('tuyo')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customPresses).toHaveLength(0);
@@ -1142,7 +1130,7 @@ describe('Custom binding quick-add (UX-4)', () => {
     expect(document.getElementById('custom-entry-form')).toBeNull();
     const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
     expect(select.value).toBe(newBindingId);
-    expect(screen.getByText('encuadernación personalizada')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Encuadernación' })).getByText('tuyo')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customBindings).toHaveLength(0);
@@ -1180,7 +1168,7 @@ describe('Custom proportion quick-add (UX-4)', () => {
     expect(groupButtons[groupButtons.length - 1].textContent).toBe('Manual');
     const newButton = within(proportionGroup).getByRole('button', { name: '4:5' });
     expect(newButton.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('proporción personalizada')).toBeTruthy();
+    expect(document.querySelector('#canvas-designer .origin-badge')?.textContent).toBe('tuyo');
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customProportions).toHaveLength(0);

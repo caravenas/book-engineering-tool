@@ -25,10 +25,15 @@ export const ORIGIN_LABEL: Record<CatalogOrigin, string> = {
 };
 
 /**
- * Plain-text origin badge for the selected catalog entry: readable by a
- * screen reader without depending on color or a symbol. It accompanies the
- * existing `ConfigSourceNote`, it does not replace it.
+ * Where the selected entry comes from, said in words rather than by a colour
+ * or a symbol, beside the label of the field it describes. It used to sit
+ * under the control as a line of its own, which read as a caption to the
+ * value and put the answer one line away from the question.
+ *
+ * It appears on the five catalogs that can be changed and nowhere else:
+ * saying "de fábrica" beside a field that could never be anything else is
+ * noise, not information.
  */
-export function CatalogOriginNote({ origin }: { origin: CatalogOrigin }) {
-  return <p className="config-source-note">{ORIGIN_LABEL[origin]}</p>;
+export function OriginBadge({ origin }: { origin: CatalogOrigin }) {
+  return <span className="origin-badge">{ORIGIN_LABEL[origin]}</span>;
 }

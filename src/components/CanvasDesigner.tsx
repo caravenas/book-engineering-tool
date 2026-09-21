@@ -1,8 +1,7 @@
 import { useCatalogPanel } from './CatalogPanel';
 import { useBookStore, getAllProportions } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
-import { ConfigSourceNote } from './ConfigSourceNote';
-import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { getCatalogOrigin, OriginBadge } from './CatalogOrigin';
 import type { BookFormat } from '../types';
 
 const FORMAT_OPTIONS: { value: BookFormat; label: string }[] = [
@@ -69,6 +68,7 @@ export function CanvasDesigner() {
       >
         <div className="form-label-row">
           <span className="form-label" id="proportion-group-label">Proporción</span>
+          {proportionId !== null && <OriginBadge origin={proportionOrigin} />}
           <button
             type="button"
             className="step-options"
@@ -124,10 +124,9 @@ export function CanvasDesigner() {
             </button>
           </div>
         </div>
-        {isSelectedProportionCustom && (
-          <ConfigSourceNote text={userLayerStorageAvailable ? 'proporción personalizada' : 'proporción personalizada, guardada solo para esta sesión'} />
+        {isSelectedProportionCustom && !userLayerStorageAvailable && (
+          <p className="config-source-note">proporción personalizada, guardada solo para esta sesión</p>
         )}
-        {proportionId !== null && <CatalogOriginNote origin={proportionOrigin} />}
       </div>
 
       {/* Dimensions and Units side by side */}

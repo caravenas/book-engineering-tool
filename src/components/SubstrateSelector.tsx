@@ -1,6 +1,6 @@
 import { useCatalogPanel } from './CatalogPanel';
 import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
-import { ConfigSourceNote } from './ConfigSourceNote';
+import { OriginBadge } from './CatalogOrigin';
 
 export function SubstrateSelector() {
   const { open: openCatalog } = useCatalogPanel();
@@ -60,6 +60,7 @@ export function SubstrateSelector() {
       <div className="form-group" role="group" aria-labelledby="grammage-group-label">
         <div className="form-label-row">
           <span className="form-label" id="grammage-group-label">Gramaje</span>
+          <OriginBadge origin={isSelectedGrammageCustom ? 'own' : 'factory'} />
           <button
             type="button"
             className="step-options"
@@ -91,14 +92,8 @@ export function SubstrateSelector() {
             );
           })}
         </div>
-        {isSelectedGrammageCustom ? (
-          <ConfigSourceNote
-            text={userLayerStorageAvailable
-              ? 'gramaje personalizado'
-              : 'gramaje personalizado, guardado solo para esta sesión'}
-          />
-        ) : catalog && (
-          <ConfigSourceNote file="config/sustratos.json" text={catalog.substratesSource} />
+        {isSelectedGrammageCustom && !userLayerStorageAvailable && (
+          <p className="config-source-note">gramaje personalizado, guardado solo para esta sesión</p>
         )}
       </div>
 

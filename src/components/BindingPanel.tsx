@@ -1,7 +1,6 @@
 import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { useCatalogPanel } from './CatalogPanel';
-import { ConfigSourceNote } from './ConfigSourceNote';
-import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
+import { getCatalogOrigin, OriginBadge } from './CatalogOrigin';
 
 export function BindingPanel() {
   const { open: openCatalog } = useCatalogPanel();
@@ -31,6 +30,7 @@ export function BindingPanel() {
       <div className="form-group" role="group" aria-labelledby="binding-group-label">
         <div className="form-label-row">
           <span id="binding-group-label" className="form-label">Encuadernación</span>
+          <OriginBadge origin={bindingOrigin} />
           <button
             type="button"
             className="step-options"
@@ -53,11 +53,8 @@ export function BindingPanel() {
             <option key={binding.id} value={binding.id}>{binding.name}</option>
           ))}
         </select>
-        <CatalogOriginNote origin={bindingOrigin} />
-        {isSelectedBindingCustom ? (
-          <ConfigSourceNote text={userLayerStorageAvailable ? 'encuadernación personalizada' : 'encuadernación personalizada, guardada solo para esta sesión'} />
-        ) : catalog && (
-          <ConfigSourceNote file="config/encuadernaciones.json" text={catalog.bindingsSource} />
+        {isSelectedBindingCustom && !userLayerStorageAvailable && (
+          <p className="config-source-note">encuadernación personalizada, guardada solo para esta sesión</p>
         )}
       </div>
 
