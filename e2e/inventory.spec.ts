@@ -117,7 +117,7 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   // The preview column shows one drawing at a time, so its controls have to be
   // walked the same way: the shown-side switch only exists while the sheet is
   // the drawing on screen.
-  const views = page.locator('.preview-switch-option');
+  const views = page.locator('.preview-switch .segment-btn');
   const viewCount = await views.count();
   for (let index = 0; index < viewCount; index += 1) {
     await views.nth(index).click();

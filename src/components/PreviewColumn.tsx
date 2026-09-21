@@ -29,12 +29,12 @@ export function PreviewColumn() {
 
   return (
     <>
-      <div className="preview-switch" role="group" aria-label="Vista">
+      <div className="segment-group preview-switch" role="group" aria-label="Vista">
         {VIEWS.map(({ id, label }) => (
           <button
             key={id}
             type="button"
-            className="preview-switch-option"
+            className={`segment-btn ${view === id ? 'active' : ''}`}
             aria-pressed={view === id}
             onClick={() => setView(id)}
           >

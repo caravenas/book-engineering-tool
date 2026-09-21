@@ -70,7 +70,7 @@ export function SubstrateSelector() {
             ···
           </button>
         </div>
-        <div className="grammage-options">
+        <div className="segment-group grammage-options">
           {allOptions.map(option => {
             const isCustom = customGrammages.some(custom => (
               custom.substrateId === substrateId && custom.grammage === option.grammage
@@ -81,20 +81,10 @@ export function SubstrateSelector() {
               <button
                 key={option.grammage}
                 type="button"
+                className={`segment-btn ${isActive ? 'active' : ''}`}
                 onClick={() => setGrammage(option.grammage)}
                 aria-pressed={isActive}
                 id={`grammage-${substrateId}-${option.grammage}`}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '3px solid #E63946' : '3px solid transparent',
-                  padding: '0 0 2px 0',
-                  fontSize: '14px',
-                  fontWeight: isActive ? 700 : 500,
-                  color: 'var(--color-text-primary)',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s',
-                }}
               >
                 {`${option.grammage} g/m²`}{isCustom && ' *'}
               </button>

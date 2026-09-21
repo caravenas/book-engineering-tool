@@ -341,32 +341,10 @@ body::before {
    gone. A hairline does the same work in a column. */
 /* ─── Preview switch ────────────────────────────────────────────────── */
 
+/* The same segmented control the format and proportion rows use; only its
+   place on the page differs. */
 .preview-switch {
-  display: flex;
-  gap: var(--space-1);
   margin-bottom: var(--space-6);
-  padding: 3px;
-  border: 1px solid var(--color-text-primary);
-  border-radius: var(--radius-full, 999px);
-}
-
-.preview-switch-option {
-  flex: 1;
-  /* 40px of target on a control that is a row of four. */
-  min-height: 40px;
-  border: 0;
-  border-radius: var(--radius-full, 999px);
-  background: transparent;
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-
-.preview-switch-option[aria-pressed="true"] {
-  background: var(--color-text-primary);
-  color: var(--color-bg-primary);
 }
 
 /* ─── Spec steps ────────────────────────────────────────────────────── */
@@ -541,6 +519,7 @@ select.form-input {
 
 .segment-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   background: transparent;
   border: 1px solid var(--color-text-primary);
@@ -549,6 +528,8 @@ select.form-input {
 }
 
 .segment-btn {
+  /* Equal shares of the row, so a long label does not make its segment wider
+     than its neighbours. */
   flex: 1;
   padding: var(--space-1) var(--space-3);
   border: none;
@@ -973,50 +954,44 @@ select.form-input {
   margin-bottom: var(--space-4);
 }
 
+/* A grammage is a choice among a handful, like a format or a proportion, so
+   it looks like one. The red underline it used was the only place in the app
+   with that colour. */
+/*
+ * A stadium outline drawn around two rows is not a segmented control, it is a
+ * bag: the second row sits ragged inside a shape that curves away from it. The
+ * grammages are capsules one by one, each with its own outline, which is what
+ * the proposal asks of a chip anyway.
+ */
 .grammage-options {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   margin-top: var(--space-2);
-  padding: var(--space-2);
+  border: none;
+  padding: 0;
 }
 
-.grammage-option {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
+.grammage-options .segment-btn {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
 }
 
-.remove-grammage-button {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(244, 63, 94, 0.3);
-  border-radius: 50%;
-  background: rgba(244, 63, 94, 0.1);
-  color: var(--color-danger-foreground);
-  cursor: pointer;
-  line-height: 1;
+.grammage-options .segment-btn.active {
+  border-color: var(--color-text-primary);
 }
+
+
 
 /* Enlarges the tap target to 44x44 without resizing the painted circle: an
    invisible pseudo-element overlay, biased away from the adjacent grammage
    toggle button (only 4px apart) so the two hit areas never overlap. */
-.remove-grammage-button::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  left: 0;
-  right: -12px;
-}
 
 .remove-sheet-button {
   position: relative;
 }
 
-/* Same technique as .remove-grammage-button: an invisible overlay grows the
+/* An invisible overlay grows the
    tap target to 44x44 without changing the painted button, which already
    sits inside an 8px flex gap next to the sheet-size select. */
 .remove-sheet-button::before {
