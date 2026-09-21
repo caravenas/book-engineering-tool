@@ -390,7 +390,26 @@ Se parte en cortes verticales y no por capas, para que no haya una ventana en la
   Es una limitación anterior a R-4, que el formulario en línea escondía ocultando su control de editar.
   Darles edición de verdad exige una acción nueva en el store y queda como punto abierto.
 - **R-4b**: Pliegos, Proporciones y Encuadernaciones entran igual, y salen de sus pasos.
+
+  **Cerrado el 2026-09-20** en `363acad` y `5f72a5b`.
+  Los cuatro catálogos comparten un formulario guiado por un descriptor, en vez de cuatro copias de las mismas veinte decisiones.
+  `CanvasDesigner` pierde 240 líneas, `BindingPanel` 435 e `ImpositionVisualizer` otras 340.
+
 - **R-4c**: Gramajes anidados bajo Papeles, la sección de ocultas para restaurar, y el indicador de persistencia en la cabecera del panel.
+
+  **Cerrado el 2026-09-21** en `9ea785d`.
+  Un gramaje no es un catálogo hermano de los papeles: cuelga de uno y se identifica por su propio valor, así que no hay id que parchear ni nada que ocultar.
+  El descriptor lo dice omitiendo `patch`, `unpatch` y `hide`, y el formulario muestra solo lo que ese catálogo puede hacer.
+  La sección de ocultas se resolvió por catálogo, en la propia cabecera de cada formulario, en vez de como una sección aparte.
+
+### Lo que el catálogo dejó abierto
+
+- Una entrada propia no se edita, solo se elimina y se vuelve a añadir; exige una acción de store que no existe.
+- El formulario edita la entrada **seleccionada**, y la lista de arriba no deja elegir otra para editarla ni marca cuál es.
+- La prueba de reconciliación del guardián perdió fuerza con el modal: al barrer el documento con el panel cerrado, los catálogos no visitados están desmontados.
+- El recorrido no abre los formularios de alta, así que sus campos en modo alta siguen fuera del inventario.
+- El test de tamaños mide el catálogo y los botones que lo abren, no los controles que quedan en los pasos: los segmentos miden 23 px, los campos 35 y las fichas de gramaje 21.
+  Eso es trabajo del restyle, y ese incremento tiene que ampliar el test y dejarlo en verde.
 
 Dos decisiones ya tomadas, de `docs/UI-REDESIGN.md`:
 una entrada de fábrica ofrece «Volver a fábrica» y «Ocultar», y una entrada tuya ofrece «Eliminar» en su lugar, porque no tiene fábrica a la que volver;
