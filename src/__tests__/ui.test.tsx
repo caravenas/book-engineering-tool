@@ -353,6 +353,23 @@ describe('Honest and recoverable UI', () => {
     expect(formulaCopy.textContent).toContain('× 17 hojas × 150 g/m²');
   });
 
+  it('keeps the formulas folded away behind "Cómo se calcula", and out of the step', () => {
+    const { container } = render(<SpineCalculatorScreen />);
+
+    // jsdom renders a closed <details> children and all, so a text query alone
+    // would pass whether or not the drawer exists. What is asserted is the
+    // drawer: closed to begin with, and holding the formulas.
+    const drawer = container.querySelector('details.how-panel') as HTMLDetailsElement;
+    expect(drawer).toBeTruthy();
+    expect(drawer.open).toBe(false);
+    expect(drawer.querySelector('summary')?.textContent).toBe('Cómo se calcula');
+    expect(drawer.textContent).toContain('Hojas físicas');
+
+    // And nowhere else: the step that takes the page count no longer carries
+    // the derivation it used to show under the field.
+    expect(container.querySelector('#spine-calculator')?.textContent).not.toContain('Hojas físicas');
+  });
+
   it('shows the config source for a shipped grammage and the custom-source note for a custom one', () => {
     const substrateSelector = render(<SubstrateSelectorScreen />);
     expect(screen.getByText('config/sustratos.json')).toBeTruthy();
@@ -417,14 +434,20 @@ describe('Binding selector', () => {
     expect(screen.getByText('Grosor del papel en el pliegue (mm)').nextSibling?.textContent).toBe('1.92');
   });
 
-  it('shows the creep block for grapa and hides it for a method that declares no creep', () => {
-    render(<BindingPanelScreen />);
+  it('reports creep as a figure, explains it in the drawer, and drops both for a method without it', () => {
+    const { container } = render(<BindingPanelScreen />);
 
-    expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('8 pliegos anidados');
-    expect(screen.getByText(/Corrimiento \(creep\)/).textContent).toContain('0.96 mm');
+    expect(screen.getByText('Corrimiento máx. (mm)').nextSibling?.textContent).toBe('0.96');
+    const drawer = container.querySelector('details.how-panel') as HTMLDetailsElement;
+    expect(drawer.open).toBe(false);
+    expect(drawer.textContent).toContain('8 pliegos anidados');
+    // The step that chooses the method no longer carries the longest text in
+    // the app under its dropdown.
+    expect(container.querySelector('#binding-panel')?.textContent).not.toContain('Corrimiento');
 
     fireEvent.change(screen.getByLabelText('Encuadernación seleccionada'), { target: { value: 'hotmelt' } });
 
+    expect(screen.queryByText('Corrimiento máx. (mm)')).toBeNull();
     expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
   });
 

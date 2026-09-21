@@ -13,6 +13,7 @@ import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
 import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
+import { HowItIsCalculated } from '../components/HowItIsCalculated';
 
 /**
  * A panel's controls, its drawing and its results are three components that
@@ -48,6 +49,7 @@ export function SpineCalculatorScreen() {
       <SpinePreview />
       <SpineThicknessPreview />
       <SpineResults />
+      <HowItIsCalculated />
     </CatalogPanelProvider>
   );
 }
@@ -57,6 +59,7 @@ export function BindingPanelScreen() {
     <CatalogPanelProvider>
       <BindingPanel />
       <BindingSpineResults />
+      <HowItIsCalculated />
     </CatalogPanelProvider>
   );
 }

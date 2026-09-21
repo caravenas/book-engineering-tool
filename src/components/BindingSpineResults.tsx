@@ -8,7 +8,7 @@ import { ResultList, ResultRow } from './ResultList';
  * draws it today won't be able to pass it anything.
  */
 export function BindingSpineResults() {
-  const { catalog, bindingId, customBindings, bindingPatches, hiddenBindingIds, bindingSpine } = useBookStore();
+  const { catalog, bindingId, customBindings, bindingPatches, hiddenBindingIds, bindingSpine, bindingCreep } = useBookStore();
 
   const allBindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
   const { hasFlatSpine } = getSelectedBindingInfo(allBindings, bindingId);
@@ -22,6 +22,13 @@ export function BindingSpineResults() {
       <ResultRow label={hasFlatSpine ? 'Lomo final con encuadernación (mm)' : 'Grosor del papel en el pliegue (mm)'}>
         {formatRoundedValue(bindingSpine.total_mm, 2)}
       </ResultRow>
+      {/* A method that nests its sheets shifts the outermost one; one that does
+          not has no creep to report, and reporting a zero would suggest it was
+          measured rather than inapplicable. The paragraph that explains it is
+          in "Cómo se calcula", at the foot of this column. */}
+      {bindingCreep && (
+        <ResultRow label="Corrimiento máx. (mm)">{formatRoundedValue(bindingCreep.maxShift_mm, 3)}</ResultRow>
+      )}
     </ResultList>
   );
 }

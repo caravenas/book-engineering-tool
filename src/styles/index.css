@@ -613,6 +613,61 @@ select.form-input {
   font-weight: 500;
 }
 
+/* The derivations behind the figures, folded away at the foot of the column
+   they explain. Its summary is a label like the ones above it, not a title:
+   it names a drawer, and the figures are what the column is for. */
+.how-panel {
+  margin-top: var(--space-6);
+}
+
+.how-panel-summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+.how-panel-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The triangle the marker would have drawn, turned by the open state, so the
+   drawer says which way it goes without depending on the browser's own. */
+.how-panel-summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-right: var(--space-2);
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s ease;
+}
+
+.how-panel[open] .how-panel-summary::before {
+  transform: rotate(90deg);
+}
+
+.how-panel-formula {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.how-panel-text {
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin-top: var(--space-4);
+}
+
 /* ─── Spine Visualizer ──────────────────────────────────────────────── */
 
 .spine-visual {

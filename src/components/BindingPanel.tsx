@@ -1,6 +1,5 @@
 import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { useCatalogPanel } from './CatalogPanel';
-import { formatRoundedValue } from '../engine/units';
 import { ConfigSourceNote } from './ConfigSourceNote';
 import { getCatalogOrigin, CatalogOriginNote } from './CatalogOrigin';
 
@@ -16,7 +15,6 @@ export function BindingPanel() {
     setBinding,
     bindingPageCount,
     bindingSpine,
-    bindingCreep,
     bindingError,
   } = useBookStore();
 
@@ -74,14 +72,6 @@ export function BindingPanel() {
       {bindingSpine && !hasFlatSpine && (
         <p className="calculation-note" style={{ marginTop: 'var(--space-2)' }}>
           Este método no tiene lomo plano: el libro queda con un pliegue, no un lomo cuadrado.
-        </p>
-      )}
-
-      {bindingCreep && (
-        <p className="calculation-note" style={{ marginTop: 'var(--space-4)' }}>
-          Corrimiento (creep): esta encuadernación anida pliegos plegados de 4 páginas, uno dentro de otro; hay {bindingCreep.nestedSheets} pliegos anidados.
-          El pliego más externo se desplaza un máximo de {formatRoundedValue(bindingCreep.maxShift_mm, 3)} mm y el más interno no se desplaza.
-          Este pliego plegado es distinto del pliego de prensa de Imposición por firmas, porque aquí se cuenta cada grupo de 4 páginas ya plegado, sin importar el esquema de plegado elegido arriba.
         </p>
       )}
     </div>

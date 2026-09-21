@@ -11,6 +11,7 @@ import { SpineResults } from './components/SpineResults';
 import { BindingSpineResults } from './components/BindingSpineResults';
 import { ImpositionResults } from './components/ImpositionResults';
 import { CoverResults } from './components/CoverResults';
+import { HowItIsCalculated } from './components/HowItIsCalculated';
 
 type LoadState =
   | { status: 'loading' }
@@ -233,6 +234,7 @@ export default function App() {
                 <BindingSpineResults />
                 <ImpositionResults />
                 <CoverResults />
+                <HowItIsCalculated />
               </section>
             </div>
           )}

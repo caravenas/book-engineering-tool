@@ -1,21 +1,15 @@
 import { useBookStore, parsePositiveSafeInteger, getSafeSpineResult } from '../store/useBookStore';
-import { formatRoundedValue } from '../engine/units';
 
 export function SpineCalculator() {
   const {
-    totalPages,
     totalPagesInput,
     setTotalPagesInput,
     spineResult,
     spineError,
-    pageWidth_mm,
-    pageHeight_mm,
-    selectedGrammage,
   } = useBookStore();
 
   const hasInvalidPageCount = parsePositiveSafeInteger(totalPagesInput) === null;
   const safeResult = getSafeSpineResult(totalPagesInput, spineResult);
-  const sheetCount = Math.ceil(totalPages / 2);
 
   return (
     <div className="panel" id="spine-calculator">
@@ -55,15 +49,6 @@ export function SpineCalculator() {
         <p className="calculation-error" id="pages-calculation-error" role="alert">{spineError}</p>
       )}
 
-      {safeResult && (
-        <div style={{ marginTop: 'var(--space-6)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
-          <p style={{ fontSize: '11px', color: 'var(--color-text-primary)', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
-            Hojas físicas = ⌈{totalPages} ÷ 2⌉ = {sheetCount} hojas<br />
-            Lomo estimado = {sheetCount} hojas × calibre<br />
-            Peso interior estimado = ({formatRoundedValue(pageWidth_mm / 1000, 4)} × {formatRoundedValue(pageHeight_mm / 1000, 4)}) m² × {sheetCount} hojas × {selectedGrammage} g/m²
-          </p>
-        </div>
-      )}
     </div>
   );
 }

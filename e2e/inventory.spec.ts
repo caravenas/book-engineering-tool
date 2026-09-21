@@ -274,6 +274,7 @@ const EXPECTED_RESULT_LABELS = [
   'Lomo del papel interior (mm)',
   'Aporte de la encuadernación (mm)',
   'Grosor del papel en el pliegue (mm)',
+  'Corrimiento máx. (mm)',
   'Páginas / cara del pliego',
   'Firmas por ejemplar',
   'Páginas en blanco',
@@ -284,7 +285,7 @@ const EXPECTED_RESULT_LABELS = [
   'Alto del pliego de tapa (mm)',
   'Peso del papel de tapa',
 ] as const;
-const EXPECTED_RESULT_LABEL_COUNT = 16;
+const EXPECTED_RESULT_LABEL_COUNT = 17;
 
 test.describe('page-wide inventory of controls and results, at 1440x900', () => {
   test.beforeEach(async ({ page }) => {
