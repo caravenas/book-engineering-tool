@@ -534,6 +534,63 @@ Con el tope de 1440 px, una pantalla ancha dibujaba la herramienta como una losa
   Una pantalla ancha compra margen alrededor del dibujo, no un dibujo más grande.
   Que el dibujo use el alto disponible es otro incremento, y toca los cuatro dibujos por separado.
 
+## Que un taller pueda añadir sus máquinas y sus materiales — R-8 a R-11
+
+Instrucción de Chris el 2026-09-21: si un taller necesita añadir una máquina nueva o materiales con configuraciones nuevas, tiene que ser simple hacerlo **desde la app**, no editando un archivo.
+Lo que se añada persiste en el almacenamiento del navegador, que es un apaño hasta que haya un backend detrás.
+Además: no se implementa nada de móvil ni de accesibilidad hasta que Chris lo diga, porque el diseño no está cerrado.
+
+### Sobre dónde persiste
+
+Hoy persiste en `localStorage`, no en `sessionStorage`.
+La diferencia importa para esta instrucción: `sessionStorage` se vacía al cerrar la pestaña, así que una prensa dada de alta el lunes no estaría el martes, que es justo lo contrario de lo que pide un taller.
+Se deja en `localStorage` y se anota; si Chris quería decir `sessionStorage` literalmente, es un cambio de una línea en `getDefaultUserLayerStorage`.
+
+La forma en que se guarda ya está lista para un backend: `UserLayer` es un objeto JSON plano y `readUserLayer(storage)` recibe el almacenamiento como argumento, así que cambiar el transporte no toca ni el store ni los motores.
+
+### Lo que un taller puede hacer hoy, y lo que no
+
+| Catálogo | Añadir | Editar de fábrica | Editar la tuya | Ocultar | Eliminar |
+| --- | --- | --- | --- | --- | --- |
+| Proporciones | sí | sí | **no** | sí | sí |
+| Pliegos | sí | sí | **no** | sí | sí |
+| Prensas | sí | sí | **no** | sí | sí |
+| Encuadernaciones | sí | sí | **no** | sí | sí |
+| Gramajes de un papel | sí | — | — | — | sí |
+| **Papeles** | **no** | **no** | — | **no** | — |
+| **Tapas** | **no** | **no** | — | **no** | — |
+| **Esquemas de plegado** | **no** | **no** | — | **no** | — |
+
+Un taller que compra un papel que el catálogo no trae no puede darlo de alta: puede añadir un gramaje a un papel que ya existe, pero no el papel.
+Eso es lo que falta para «materiales con configuraciones nuevas».
+
+### Los incrementos
+
+- **R-8 — Editar una entrada tuya.**
+  Hoy se elimina y se vuelve a añadir, y el formulario ofrece los campos en gris.
+  Exige una acción de store por catálogo, construida sobre los validadores que ya existen (`isValidPress` y compañía), con la misma comprobación de nombre duplicado que hace el alta.
+- **R-9 — Elegir en la lista qué entrada editar.**
+  Hoy el formulario edita la entrada **seleccionada en la app**, y la lista de arriba no deja elegir otra ni marca cuál es.
+- **R-10 — Los papeles, catálogo completo.**
+  Añadir, editar, ocultar y eliminar un papel, con sus gramajes dentro.
+  Es el que cierra «materiales».
+- **R-11 — Las tapas, catálogo completo.**
+
+### Lo que estos incrementos no tocan
+
+- **Los esquemas de plegado siguen siendo solo lectura.**
+  Un esquema no son medidas: es el emparejamiento de qué página cae en qué hueco del pliego y con qué giro.
+  Equivocarlo no da un número raro, da un libro con las páginas desordenadas, y no se ve hasta que está impreso.
+  Darlos de alta a mano por un formulario de números es la manera más fácil de equivocarlo; necesita el editor visual que `docs/UX-REVIEW.md` apuntó como UX-9 y nunca llegó a ser una tarea.
+- **Móvil y accesibilidad quedan congelados** por decisión de Chris, hasta que el diseño se cierre.
+
+### Un hueco que se ve desde aquí
+
+`addCustomPress` rechaza un nombre que ya existe; `patchPress` no.
+Así que renombrar una prensa de fábrica hasta chocar con otra sí se permite, y el desplegable queda con dos entradas que se leen igual.
+Lo mismo en pliegos, encuadernaciones y proporciones.
+R-8 lo comprueba en las acciones nuevas; corregir las de parche es un arreglo aparte, porque cambia el comportamiento de algo que ya está en uso.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.
