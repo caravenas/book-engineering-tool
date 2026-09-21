@@ -127,3 +127,48 @@ test('no closed step truncates what it says, and the whole sheet fits', async ({
   // With four of five steps closed the sheet is short enough to sit still.
   expect(measured.specScrolls).toBe(false);
 });
+
+/**
+ * The results bar is a claim about what stays on screen while the page moves
+ * under it, and that is a claim about layout: jsdom has no scrolling and no
+ * sticky positioning, so only a browser can say whether it holds.
+ */
+test('on a phone the three headline figures stay put while the page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openTheApp(page);
+
+  const bar = page.locator('.results-bar');
+  await expect(bar).toBeVisible();
+  await expect(bar.locator('.results-bar-label')).toHaveText(['Lomo', 'Pliegos', 'Peso interior']);
+  // The default book: a saddle stitch on 32 pages of 150 g/m² Couché.
+  await expect(bar.locator('.results-bar-value')).toHaveText(['1.92 mm', '2', '70.6 g']);
+
+  const before = await bar.boundingBox();
+  expect(before?.y).toBe(await page.evaluate(() => {
+    const element = document.querySelector('.results-bar') as HTMLElement;
+    return element.getBoundingClientRect().y;
+  }));
+
+  await page.evaluate(() => window.scrollBy(0, 600));
+  await expect(bar).toBeVisible();
+  const after = await bar.boundingBox();
+  // Stuck to the top of the viewport, not carried off with the header.
+  expect(Math.round(after?.y ?? -1)).toBe(0);
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
+/**
+ * Above the breakpoint the results column is already on screen beside the
+ * steps, so pinning three of its figures would be saying them twice for no
+ * reason. It is not rendered small and hidden: it takes no space at all.
+ */
+test('at 1440px there is no results bar, because the results never left', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openTheApp(page);
+
+  await expect(page.locator('.results-bar')).toBeHidden();
+  expect(await page.evaluate(() => {
+    const element = document.querySelector('.results-bar') as HTMLElement;
+    return element.getBoundingClientRect().height;
+  })).toBe(0);
+});

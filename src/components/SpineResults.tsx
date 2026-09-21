@@ -1,5 +1,5 @@
 import { useBookStore, getSafeSpineResult } from '../store/useBookStore';
-import { formatRoundedValue } from '../engine/units';
+import { formatRoundedValue, formatWeight } from '../engine/units';
 import { ResultList, ResultRow } from './ResultList';
 
 /**
@@ -18,11 +18,7 @@ export function SpineResults() {
   return (
     <ResultList>
       <ResultRow label="Lomo estimado (mm)">{formatRoundedValue(safeResult.thickness_mm, 2)}</ResultRow>
-      <ResultRow label="Peso estimado del papel interior">
-        {safeResult.totalWeight_g >= 1000
-          ? `${formatRoundedValue(safeResult.totalWeight_g / 1000, 2)} kg`
-          : `${formatRoundedValue(safeResult.totalWeight_g, 1)} g`}
-      </ResultRow>
+      <ResultRow label="Peso estimado del papel interior">{formatWeight(safeResult.totalWeight_g)}</ResultRow>
       <ResultRow label="Hojas de papel (interior)">{sheetCount}</ResultRow>
       <ResultRow label="Gramaje">{selectedGrammage} g/m²</ResultRow>
     </ResultList>

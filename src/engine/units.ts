@@ -78,9 +78,16 @@ export function formatMm(value: number): string {
   return formatRoundedValue(value, 2);
 }
 
-/** Format a weight in grams, switching to kilograms above 1000 g. */
+/**
+ * Format a weight in grams, switching to kilograms above 1000 g.
+ *
+ * One decimal of a gram, not two: the cover weight printed 18.53 g beside an
+ * interior weight that printed 70.6 g, the same quantity written two ways in
+ * one column, and the second decimal claims a precision a tool that calls
+ * every figure a preliminary reference does not have.
+ */
 export function formatWeight(grams: number): string {
-  return grams >= 1000 ? `${formatMm(grams / 1000)} kg` : `${formatMm(grams)} g`;
+  return grams >= 1000 ? `${formatRoundedValue(grams / 1000, 2)} kg` : `${formatRoundedValue(grams, 1)} g`;
 }
 
 /** Format an area in square meters, rounded to 4 decimals. */

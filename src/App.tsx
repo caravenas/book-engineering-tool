@@ -12,6 +12,7 @@ import { BindingSpineResults } from './components/BindingSpineResults';
 import { ImpositionResults } from './components/ImpositionResults';
 import { CoverResults } from './components/CoverResults';
 import { HowItIsCalculated } from './components/HowItIsCalculated';
+import { ResultsBar } from './components/ResultsBar';
 
 type LoadState =
   | { status: 'loading' }
@@ -229,6 +230,8 @@ export default function App() {
           )}
 
           {loadState.status === 'ready' && (
+            <>
+            <ResultsBar />
             <div className="app-grid">
               <section className="app-column column-spec" aria-label="Ficha técnica">
                 <SpecSteps />
@@ -244,6 +247,7 @@ export default function App() {
                 <HowItIsCalculated />
               </section>
             </div>
+            </>
           )}
         </main>
       </div>

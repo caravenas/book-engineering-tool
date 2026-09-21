@@ -283,9 +283,53 @@ body::before {
   white-space: nowrap;
 }
 
+/* Above the breakpoint the three columns are side by side and the results
+   are already in view, so there is nothing to pin. */
+.results-bar {
+  display: none;
+}
+
 /* Single layout breakpoint: 1024px sits inside the 960-1200px window
    UX-REVIEW.md 2.2 allows, replacing the three values used here before. */
 @media (max-width: 1024px) {
+  /* Sticky rather than fixed: it stays in the flow, so it takes its own
+     height from the page instead of covering the first thing under it. */
+  .results-bar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-bg-primary);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .results-bar-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .results-bar-label {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+
+  .results-bar-value {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* One column, and the page scrolls again: locking the viewport height and
      scrolling three stacked regions separately is the wrong shape on a phone. */
   .page-wrapper {
