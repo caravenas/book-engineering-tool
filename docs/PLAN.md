@@ -579,6 +579,11 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
 ### Lo que estos incrementos no tocan
 
 - **Los esquemas de plegado siguen siendo solo lectura.**
+  Lo que sí se añadió el 2026-09-21 es el invariante de la hoja en el validador, que no depende de cómo se den de alta: cada posición del tiro y la que tiene detrás son las dos caras de una misma hoja, es decir una página impar y la siguiente.
+  Cubre el hueco que la validación de cobertura no puede ver: intercambiar dos números de página deja todas las páginas presentes una vez, así que pasa, y el libro sale con las páginas desordenadas.
+  Medido contra los esquemas entregados, rechaza 24 de los 28 intercambios posibles en el de 8 páginas y 112 de los 120 en el de 16.
+  Fija además por escrito la convención de volteo — el pliego gira sobre su eje vertical, así que (fila, columna) se encuentra con (fila, columnas − 1 − columna) — que el motor de firmas ya usaba en `detectPrintingMode` sin que estuviera declarada en ningún sitio.
+  Es condición necesaria y no suficiente: prueba que cada hoja es una hoja de verdad, no que las hojas salgan en orden al plegar.
   Un esquema no son medidas: es el emparejamiento de qué página cae en qué hueco del pliego y con qué giro.
   Equivocarlo no da un número raro, da un libro con las páginas desordenadas, y no se ve hasta que está impreso.
   Darlos de alta a mano por un formulario de números es la manera más fácil de equivocarlo; necesita el editor visual que `docs/UX-REVIEW.md` apuntó como UX-9 y nunca llegó a ser una tarea.

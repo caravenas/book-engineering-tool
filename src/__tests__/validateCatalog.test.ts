@@ -776,6 +776,96 @@ describe('validateCatalog', () => {
       assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides.front[0].rotation');
     });
 
+    /**
+     * Swapping two page numbers keeps every page present exactly once, so
+     * coverage validation passes and the scheme still ruins the book: the
+     * pages come out in the wrong order, and nothing says so until it is
+     * printed and folded. What catches it is that a slot and the slot it
+     * backs onto have to be the two faces of one leaf.
+     */
+    it('rejects a scheme where a slot and its back do not make one leaf', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            // Pages 1 and 3 swapped: every page from 1 to 8 still appears
+            // exactly once, so coverage has nothing to report.
+            front: [
+              scheme.sides.front[0],
+              { page: 3, rotation: 0 },
+              scheme.sides.front[2],
+              { page: 1, rotation: 0 },
+            ],
+            back: scheme.sides.back,
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      assertError(result.errors, 'esquemas.json', 'foldingSchemes[0].sides');
+      expect(result.errors.some(error => error.message.includes('dos caras de una misma hoja'))).toBe(true);
+      // And not as a coverage fault, which is a different diagnosis.
+      expect(result.errors.some(error => error.message.includes('Faltan las páginas'))).toBe(false);
+    });
+
+    it('names the slot at fault by its row and column', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            front: [
+              scheme.sides.front[0],
+              scheme.sides.front[1],
+              { page: 3, rotation: 180 },
+              { page: 6, rotation: 0 },
+            ],
+            back: scheme.sides.back,
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.errors.some(error => error.message.includes('fila 2, columna 1'))).toBe(true);
+    });
+
+    /**
+     * Two faults, one diagnosis: a scheme that already repeats a page is
+     * reported as a coverage problem and not also as a pairing one, or the
+     * same mistake would be described twice in different words.
+     */
+    it('reports a duplicated page once, as coverage, not twice', () => {
+      const input = validInput();
+      const scheme = validEsquemas().foldingSchemes[0];
+      input['esquemas.json'] = {
+        source: 'Datos de prueba.',
+        foldingSchemes: [{
+          ...scheme,
+          sides: {
+            front: scheme.sides.front,
+            back: [
+              scheme.sides.back[0], scheme.sides.back[1], scheme.sides.back[2],
+              { page: 4, rotation: 0 },
+            ],
+          },
+        }],
+      };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.errors.some(error => error.message.includes('dos caras de una misma hoja'))).toBe(false);
+    });
+
     it('rejects a scheme with a page missing between front and back', () => {
       const input = validInput();
       const scheme = validEsquemas().foldingSchemes[0];

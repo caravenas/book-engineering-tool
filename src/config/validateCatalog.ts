@@ -577,6 +577,59 @@ function validatePageCoverage(
 }
 
 /**
+ * Every slot on the front and the slot it backs onto must hold the two faces
+ * of one leaf, which is an odd page and the one after it.
+ *
+ * This is the check that page coverage cannot make. Swap two page numbers in
+ * a scheme and coverage still passes — every page is present exactly once —
+ * but the book comes out with its pages in the wrong order, and nothing says
+ * so until it is printed and folded. Measured against the shipped schemes,
+ * this rejects 24 of the 28 possible two-page swaps in the 8pp scheme and
+ * 112 of the 120 in the 16pp one.
+ *
+ * Which slot backs onto which is the sheet-turning convention: turned about
+ * its vertical axis, the slot at (row, col) meets the one at
+ * (row, cols - 1 - col). That is the same mirror `detectPrintingMode` already
+ * uses in the signature engine to decide whether one plate can print both
+ * sides, so this states in the validator a convention the code was already
+ * relying on without writing down.
+ *
+ * It is a necessary condition and not a sufficient one: it proves every leaf
+ * is a real leaf, not that the leaves come out in the right order once the
+ * sheet is folded. Only folding a sheet settles that.
+ */
+function validateLeafPairing(
+  front: SlotPlacement[],
+  back: SlotPlacement[],
+  cols: number,
+  rows: number,
+  schemePath: string,
+  errors: ConfigError[]
+): boolean {
+  let valid = true;
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const frontPage = front[row * cols + col].page;
+      const backPage = back[row * cols + (cols - 1 - col)].page;
+      const lower = Math.min(frontPage, backPage);
+      const higher = Math.max(frontPage, backPage);
+
+      if (higher - lower !== 1 || lower % 2 !== 1) {
+        errors.push({
+          file: ESQUEMAS_FILE,
+          path: `${schemePath}.sides`,
+          message: `La posición (fila ${row + 1}, columna ${col + 1}) pone la página ${frontPage} en el tiro y la ${backPage} en su dorso, y esas dos no son las dos caras de una misma hoja: tienen que ser una página impar y la siguiente.`,
+        });
+        valid = false;
+      }
+    }
+  }
+
+  return valid;
+}
+
+/**
  * Validate `esquemas.json` and collect every structural or semantic error found.
  */
 function validateFoldingSchemes(raw: unknown, available: boolean, errors: ConfigError[]): FoldingSchemesValidation {
@@ -703,7 +756,13 @@ function validateFoldingSchemes(raw: unknown, available: boolean, errors: Config
       // already reported above (e.g. one rejected rotation) would also
       // surface as a confusing, redundant "faltan las páginas" here.
       if (pagesValid && frontSide.valid && backSide.valid && frontCountValid && backCountValid) {
+        // Leaf pairing is only meaningful once every page is present exactly
+        // once: run on a scheme with a duplicate, it would report the same
+        // fault a second time in different words.
         if (!validatePageCoverage(front, back, pagesPerSignature as number, path, errors)) {
+          valid = false;
+        } else if (colsValid && rowsValid
+          && !validateLeafPairing(front, back, cols as number, rows as number, path, errors)) {
           valid = false;
         }
       }
