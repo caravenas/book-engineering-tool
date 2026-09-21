@@ -21,6 +21,8 @@ import type {
   SheetSizePatch,
   SignaturePlanResult,
   SoftCoverResult,
+  Cover,
+  CoverPatch,
   SpineResult,
   Substrate,
   SubstratePatch,
@@ -39,6 +41,7 @@ import {
   isValidBinding,
   isValidPress,
   isValidProportion,
+  isValidCover,
   isValidSheetSize,
   isValidSubstrate,
   writeUserLayer,
@@ -179,6 +182,50 @@ function getAllSubstrates(
   );
 }
 
+/** Every cover the tool offers: factory, patched, minus hidden, plus your own. */
+/**
+ * Whether the paper a cover names is one the tool has, in a weight that paper
+ * sells. A cover carries its material by reference, so it is the one entry
+ * that a change in another catalog can invalidate, and saying which of the
+ * two is wrong is worth more than "datos inválidos".
+ */
+function coverMaterialProblem(state: BookConfig & { catalog: Catalog | null }, cover: Cover): string | null {
+  if (!state.catalog) return null;
+  const substrates = getAllSubstrates(
+    state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+  );
+  const paper = substrates.find(item => item.id === cover.substrateId);
+  if (!paper) return 'La tapa tiene que estar hecha de un papel del catálogo; el que nombra no está.';
+
+  const options = getAllGrammageOptions(substrates, cover.substrateId, state.customGrammages);
+  if (!options.some(option => option.grammage === cover.grammage)) {
+    return `El papel "${paper.name}" no se ofrece en ${cover.grammage} g/m². Elige uno de sus gramajes.`;
+  }
+  return null;
+}
+
+/** Which of the kind's rules a cover breaks, in the words the rule is written in. */
+function coverShapeProblem(cover: Cover): string {
+  if (cover.kind === 'blanda') {
+    return 'Una tapa blanda no lleva cartón: la ceja, el canal de bisagra, el doblez de forro y el grosor de cartón tienen que ser exactamente 0.';
+  }
+  return 'Una tapa dura lleva cartón y no lleva solapas: la ceja, el canal, el doblez y el grosor tienen que ser mayores que cero, y el ancho de solapa exactamente 0.';
+}
+
+function getAllCovers(
+  catalog: Catalog,
+  customCovers: Cover[],
+  coverPatches: CoverPatch[],
+  hiddenCoverIds: readonly string[]
+): Cover[] {
+  return mergeCatalogWithPatches(
+    catalog.covers, cover => cover.id,
+    coverPatches, patch => patch.id,
+    hiddenCoverIds,
+    customCovers
+  );
+}
+
 function getAllPresses(
   catalog: Catalog,
   customPresses: Press[],
@@ -308,6 +355,11 @@ function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Omit<UserLayer,
   return {
     ...userLayer,
     customGrammages: userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId)),
+    // A cover names the paper it is made of, so one whose paper is gone has
+    // no material and no weight: it is dropped for the same reason a grammage
+    // attached to a missing paper is, rather than kept as an orphan nothing
+    // could compute with.
+    customCovers: userLayer.customCovers.filter(cover => knownSubstrateIds.has(cover.substrateId)),
   };
 }
 
@@ -317,16 +369,19 @@ function extractUserLayer(state: BookConfig): UserLayer {
     customProportions: state.customProportions,
     customGrammages: state.customGrammages,
     customSubstrates: state.customSubstrates,
+    customCovers: state.customCovers,
     customSheetSizes: state.customSheetSizes,
     customPresses: state.customPresses,
     customBindings: state.customBindings,
     proportionPatches: state.proportionPatches,
     substratePatches: state.substratePatches,
+    coverPatches: state.coverPatches,
     sheetSizePatches: state.sheetSizePatches,
     pressPatches: state.pressPatches,
     bindingPatches: state.bindingPatches,
     hiddenProportionLabels: state.hiddenProportionLabels,
     hiddenSubstrateIds: state.hiddenSubstrateIds,
+    hiddenCoverIds: state.hiddenCoverIds,
     hiddenSheetSizeIds: state.hiddenSheetSizeIds,
     hiddenPressIds: state.hiddenPressIds,
     hiddenBindingIds: state.hiddenBindingIds,
@@ -343,6 +398,7 @@ function extractUserLayer(state: BookConfig): UserLayer {
 function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer): OrphanedUserLayerEntry[] {
   const knownProportionLabels = new Set(catalog.proportions.map(p => p.label));
   const knownSubstrateIds = new Set(catalog.substrates.map(s => s.id));
+  const knownCoverIds = new Set(catalog.covers.map(c => c.id));
   const knownSheetSizeIds = new Set(catalog.sheetSizes.map(s => s.id));
   const knownPressIds = new Set(catalog.presses.map(p => p.id));
   const knownBindingIds = new Set(catalog.bindings.map(b => b.id));
@@ -353,6 +409,9 @@ function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer)
   }
   for (const patch of userLayer.substratePatches) {
     if (!knownSubstrateIds.has(patch.id)) orphans.push({ kind: 'substratePatch', targetId: patch.id });
+  }
+  for (const patch of userLayer.coverPatches) {
+    if (!knownCoverIds.has(patch.id)) orphans.push({ kind: 'coverPatch', targetId: patch.id });
   }
   for (const patch of userLayer.sheetSizePatches) {
     if (!knownSheetSizeIds.has(patch.id)) orphans.push({ kind: 'sheetSizePatch', targetId: patch.id });
@@ -368,6 +427,9 @@ function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer)
   }
   for (const id of userLayer.hiddenSubstrateIds) {
     if (!knownSubstrateIds.has(id)) orphans.push({ kind: 'hiddenSubstrate', targetId: id });
+  }
+  for (const id of userLayer.hiddenCoverIds) {
+    if (!knownCoverIds.has(id)) orphans.push({ kind: 'hiddenCover', targetId: id });
   }
   for (const id of userLayer.hiddenSheetSizeIds) {
     if (!knownSheetSizeIds.has(id)) orphans.push({ kind: 'hiddenSheetSize', targetId: id });
@@ -576,7 +638,8 @@ function calculateCoverResult(
   bindingSpine: BindingSpineResult | null
 ): CoverResults {
   try {
-    const cover = catalog.covers.find(c => c.id === state.coverId);
+    const cover = getAllCovers(catalog, state.customCovers, state.coverPatches, state.hiddenCoverIds)
+      .find(c => c.id === state.coverId);
     if (!cover) {
       throw new RangeError(`La tapa "${state.coverId}" no existe en la configuración`);
     }
@@ -796,6 +859,7 @@ function resolveVisibleId<T extends { id: string }>(effective: T[], selectedId: 
 let customSheetCounter = 0;
 let customPressCounter = 0;
 let customSubstrateCounter = 0;
+let customCoverCounter = 0;
 let customBindingCounter = 0;
 
 /**
@@ -828,6 +892,9 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   customSubstrates: [],
   substratePatches: [],
   hiddenSubstrateIds: [],
+  customCovers: [],
+  coverPatches: [],
+  hiddenCoverIds: [],
 
   // Imposition
   sheetSizeId: '',
@@ -870,6 +937,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   coverError: null,
   customGrammageError: null,
   customSubstrateError: null,
+  customCoverError: null,
   customSheetSizeError: null,
   customPressError: null,
   customBindingError: null,
@@ -895,6 +963,9 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       );
       const effectiveSubstrates = getAllSubstrates(
         catalog, merged.customSubstrates, merged.substratePatches, merged.hiddenSubstrateIds
+      );
+      const effectiveCovers = getAllCovers(
+        catalog, merged.customCovers, merged.coverPatches, merged.hiddenCoverIds
       );
       const effectiveSheetSizes = getAllSheetSizes(
         catalog, merged.customSheetSizes, merged.sheetSizePatches, merged.hiddenSheetSizeIds
@@ -937,7 +1008,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         foldingSchemeId: null,
         totalPages,
         bindingId: resolveVisibleId(effectiveBindings, defaults.bindingId),
-        coverId: defaults.coverId,
+        coverId: resolveVisibleId(effectiveCovers, defaults.coverId),
         ...merged,
       };
 
@@ -1277,6 +1348,206 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
 
   clearCustomSheetSizeError: () => {
     set(state => (state.catalog ? { customSheetSizeError: null } : state));
+  },
+
+  // ─── Custom Covers ───────────────────────────────────────────────
+
+  addCustomCover: (cover) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const name = cover.name.trim();
+    if (!name) {
+      set({ customCoverError: 'El nombre de la tapa debe ser un texto no vacío.' });
+      return false;
+    }
+
+    const covers = getAllCovers(state.catalog, state.customCovers, state.coverPatches, state.hiddenCoverIds);
+    if (covers.some(item => namesMatch(item.name, name))) {
+      set({ customCoverError: `Ya existe una tapa llamada "${name}". Introduce otro nombre o cancela.` });
+      return false;
+    }
+
+    const id = `custom_cover_${++customCoverCounter}_${Date.now()}`;
+    const candidate: Cover = { ...cover, name, id };
+
+    const material = coverMaterialProblem(state, candidate);
+    if (material) {
+      set({ customCoverError: material });
+      return false;
+    }
+    if (!isValidCover(candidate)) {
+      set({ customCoverError: coverShapeProblem(candidate) });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          customCovers: [...currentState.customCovers, candidate],
+          coverId: id,
+        }),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  /** Editing an entry of your own replaces it; see `editCustomPress`. */
+  editCustomCover: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customCovers.find(item => item.id === id);
+    if (!existing) {
+      set({ customCoverError: `La tapa "${id}" no es una de las tuyas, así que no se puede editar.` });
+      return false;
+    }
+
+    const candidate: Cover = { ...existing, ...changes, name: (changes.name ?? existing.name).trim() };
+    const material = coverMaterialProblem(state, candidate);
+    if (material) {
+      set({ customCoverError: material });
+      return false;
+    }
+
+    const result = editedOwnEntries<Cover>(
+      state.customCovers,
+      getAllCovers(state.catalog, state.customCovers, state.coverPatches, state.hiddenCoverIds),
+      id,
+      item => item.id,
+      item => item.name,
+      candidate,
+      isValidCover,
+      {
+        invalid: coverShapeProblem(candidate),
+        duplicate: name => `Ya existe una tapa llamada "${name}". Introduce otro nombre o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customCoverError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, { customCovers: result.entries }),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  removeCustomCover: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.customCovers.some(item => item.id === id)) return state;
+
+      const remaining = state.customCovers.filter(item => item.id !== id);
+      const inputPatch: Partial<BookConfig> = { customCovers: remaining };
+      if (state.coverId === id) {
+        const effective = getAllCovers(state.catalog, remaining, state.coverPatches, state.hiddenCoverIds);
+        inputPatch.coverId = effective[0]?.id ?? state.catalog.covers[0].id;
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  patchCover: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.covers.find(item => item.id === id);
+    if (!factoryEntry) {
+      set({ customCoverError: `La tapa "${id}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: Cover = { ...factoryEntry, ...changes };
+    const material = coverMaterialProblem(state, candidate);
+    if (material) {
+      set({ customCoverError: material });
+      return false;
+    }
+    if (!isValidCover(candidate)) {
+      set({ customCoverError: coverShapeProblem(candidate) });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.coverPatches.filter(patch => patch.id !== id);
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          coverPatches: [...remainingPatches, { id, changes }],
+        }),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchCover: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.coverPatches.some(patch => patch.id === id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          coverPatches: state.coverPatches.filter(item => item.id !== id),
+        }),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hideCover: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.covers.some(item => item.id === id)) return state;
+      if (state.hiddenCoverIds.includes(id)) return state;
+
+      const hidden = [...state.hiddenCoverIds, id];
+      const effective = getAllCovers(state.catalog, state.customCovers, state.coverPatches, hidden);
+      const inputPatch: Partial<BookConfig> = { hiddenCoverIds: hidden };
+      if (state.coverId === id && effective.length > 0) inputPatch.coverId = effective[0].id;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showCover: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenCoverIds.includes(id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          hiddenCoverIds: state.hiddenCoverIds.filter(item => item !== id),
+        }),
+        customCoverError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  clearCustomCoverError: () => {
+    set(state => (state.catalog ? { customCoverError: null } : state));
   },
 
   // ─── Custom Substrates ───────────────────────────────────────────
@@ -2287,4 +2558,4 @@ export const useBookStore = createBookStore(userLayerStorage);
 
 // ─── Exported helpers for components ─────────────────────────────────────
 
-export { getAllSheetSizes, getAllGrammageOptions, getAllSubstrates, getAllPresses, getAllBindings, getAllProportions };
+export { getAllSheetSizes, getAllGrammageOptions, getAllSubstrates, getAllCovers, getAllPresses, getAllBindings, getAllProportions };

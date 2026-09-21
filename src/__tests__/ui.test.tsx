@@ -12,9 +12,10 @@ function openPressCatalog() {
   openCatalogFor('prensa');
 }
 
-/** Grammages live inside their paper in the catalog since R-4c. */
+/** Grammages live inside their paper in the catalog since R-4c, and since
+ *  R-10 that catalog holds the paper itself, so the way in is named for it. */
 function openGrammageCatalog() {
-  fireEvent.click(screen.getByRole('button', { name: 'Opciones de gramaje' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
 }
 import {
   CanvasDesignerScreen,
@@ -1291,7 +1292,7 @@ describe('Renaming a proportion of your own (R-8)', () => {
  */
 describe('Adding a paper from the catalog (R-10)', () => {
   function openPaperCatalog() {
-    fireEvent.click(screen.getByRole('button', { name: 'Opciones de gramaje' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
   }
 
   it('adds a paper with its first weight, and the step offers it', () => {
@@ -1362,5 +1363,75 @@ describe('Adding a paper from the catalog (R-10)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
     expect(useBookStore.getState().substratePatches).toHaveLength(0);
+  });
+});
+
+/**
+ * The catalog that needed the form to grow two things: a field that chooses
+ * among another catalog's entries, and fields that only apply to some kinds
+ * of entry. A soft cover has no boards and a hard one has no flaps, so the
+ * form offers the measurements the chosen kind actually uses and no others.
+ */
+describe('Adding a cover from the catalog (R-11)', () => {
+  function openCoverCatalog() {
+    fireEvent.click(screen.getByRole('button', { name: 'Opciones de tapa' }));
+  }
+
+  it('offers the measurements the chosen kind uses, and hides the rest', () => {
+    render(<CoverPanelScreen />);
+    openCoverCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva tapa' }));
+
+    // A new cover starts soft, which is the first choice offered.
+    expect(screen.getByLabelText('Ancho de solapa')).toBeTruthy();
+    expect(screen.queryByLabelText('Grosor de cartón')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'dura' } });
+
+    expect(screen.queryByLabelText('Ancho de solapa')).toBeNull();
+    expect(screen.getByLabelText('Grosor de cartón')).toBeTruthy();
+    expect(screen.getByLabelText('Ceja')).toBeTruthy();
+  });
+
+  it('adds a hard cover and the step offers it for a binding that allows one', () => {
+    useBookStore.getState().setBinding('hotmelt');
+    render(<CoverPanelScreen />);
+    openCoverCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva tapa' }));
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Dura del taller' } });
+    fireEvent.change(screen.getByLabelText('Tipo'), { target: { value: 'dura' } });
+    fireEvent.change(screen.getByLabelText('Papel de la tapa'), { target: { value: 'cardboard_sulfate' } });
+    fireEvent.change(screen.getByLabelText('Gramaje de la tapa'), { target: { value: '300' } });
+    fireEvent.change(screen.getByLabelText('Ceja'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('Canal de bisagra'), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText('Doblez de forro'), { target: { value: '15' } });
+    fireEvent.change(screen.getByLabelText('Grosor de cartón'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir tapa' }));
+
+    expect(useBookStore.getState().customCovers).toHaveLength(1);
+    expect(useBookStore.getState().customCovers[0]).toMatchObject({
+      name: 'Dura del taller', kind: 'dura', flapWidth_mm: 0, boardThickness_mm: 2,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
+    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.textContent)).toContain('Dura del taller');
+  });
+
+  it('keeps a cover the store refuses on screen, with the reason it gave', () => {
+    render(<CoverPanelScreen />);
+    openCoverCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva tapa' }));
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Imposible' } });
+    // A weight the chosen paper does not sell.
+    fireEvent.change(screen.getByLabelText('Gramaje de la tapa'), { target: { value: '999' } });
+    fireEvent.change(screen.getByLabelText('Ancho de solapa'), { target: { value: '80' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir tapa' }));
+
+    expect(useBookStore.getState().customCovers).toHaveLength(0);
+    expect(screen.getByRole('alert').textContent).toContain('999 g/m²');
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Imposible');
   });
 });

@@ -1,4 +1,4 @@
-import { useBookStore, getAllBindings, getAllPresses, getAllSubstrates, parsePositiveSafeInteger } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getAllCovers, getAllPresses, getAllSubstrates, parsePositiveSafeInteger } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
 import { CanvasDesigner } from './CanvasDesigner';
 import { SubstrateSelector } from './SubstrateSelector';
@@ -43,6 +43,9 @@ function useStepSummaries(): string[] {
     pressPatches,
     hiddenPressIds,
     coverId,
+    customCovers,
+    coverPatches,
+    hiddenCoverIds,
   } = useBookStore();
 
   const { displayW, displayH, unit } = getPageDisplayDimensions(pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem);
@@ -56,7 +59,8 @@ function useStepSummaries(): string[] {
     .find(item => item.id === bindingId) ?? null;
   const press = (catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses)
     .find(item => item.id === pressId) ?? null;
-  const cover = catalog?.covers.find(item => item.id === coverId) ?? null;
+  const cover = (catalog ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds) : customCovers)
+    .find(item => item.id === coverId) ?? null;
 
   // A summary reports the field as typed, not as last understood: showing the
   // last valid page count beside a field holding something else would say the

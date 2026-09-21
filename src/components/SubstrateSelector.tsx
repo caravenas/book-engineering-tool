@@ -34,7 +34,20 @@ export function SubstrateSelector() {
     <div className="panel" id="substrate-selector">
 
       <div className="form-group">
-        <label className="form-label" htmlFor="select-substrate">Tipo de papel</label>
+        <div className="form-label-row">
+          <label className="form-label" htmlFor="select-substrate">Tipo de papel</label>
+          {/* One way in per step, named for the catalog it opens: since R-10
+              that catalog holds the paper itself, not only its weights. */}
+          <button
+            type="button"
+            className="step-options"
+            aria-label="Opciones de papel"
+            aria-haspopup="dialog"
+            onClick={() => openCatalog('substrates')}
+          >
+            ···
+          </button>
+        </div>
         <select
           className="form-input"
           value={substrateId}
@@ -66,15 +79,6 @@ export function SubstrateSelector() {
         <div className="form-label-row">
           <span className="form-label" id="grammage-group-label">Gramaje</span>
           <OriginBadge origin={isSelectedGrammageCustom ? 'own' : 'factory'} />
-          <button
-            type="button"
-            className="step-options"
-            aria-label="Opciones de gramaje"
-            aria-haspopup="dialog"
-            onClick={() => openCatalog('substrates')}
-          >
-            ···
-          </button>
         </div>
         <div className="segment-group grammage-options">
           {allOptions.map(option => {

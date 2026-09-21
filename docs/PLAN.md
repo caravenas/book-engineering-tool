@@ -558,7 +558,7 @@ La forma en que se guarda ya está lista para un backend: `UserLayer` es un obje
 | Encuadernaciones | sí | sí | sí *(R-8)* | sí | sí |
 | Gramajes de un papel | sí | — | — | — | sí |
 | Papeles | sí | sí | sí | sí | sí | *(R-10)*
-| **Tapas** | **no** | **no** | — | **no** | — |
+| Tapas | sí | sí | sí | sí | sí | *(R-11)*
 | **Esquemas de plegado** | **no** | **no** | — | **no** | — |
 
 Un taller que compra un papel que el catálogo no trae no puede darlo de alta: puede añadir un gramaje a un papel que ya existe, pero no el papel.
@@ -579,7 +579,12 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
   Dos campos del formulario se piden solo al dar de alta (`onlyWhenAdding`), porque ofrecerlos al editar sugeriría editar esa lista desde el sitio equivocado.
   Al borrar un papel tuyo se van con él sus gramajes: sueltos nombrarían un papel que ya no existe.
   `type` se rellena con el id del propio papel, que es lo que hacen los siete de fábrica: el esquema del catálogo lo exige y no lo lee nadie.
-- **R-11 — Las tapas, catálogo completo.**
+- **R-11 — Las tapas, catálogo completo. Cerrado el 2026-09-21.**
+  Una tapa es la única entrada hecha de otra: nombra el papel con el que se imprime y el gramaje de ese papel, así que su material se elige entre los papeles que la herramienta tiene y no se teclea.
+  Es también la única cuyos campos significan cosas distintas según lo que sea: una tapa blanda no lleva cartón y una dura no lleva solapas, y las medidas que su tipo prohíbe tienen que valer exactamente cero o el motor dibuja una plantilla que nadie puede cortar.
+  El formulario ofrece las medidas que el tipo elegido usa y ninguna más, y el editor pone los ceros.
+  Cambiar el tipo reescribe todas las medidas, no solo las que están en pantalla.
+  Una tapa cuyo papel desaparece del catálogo se descarta al arrancar, por la misma razón que un gramaje colgado de un papel que ya no está: sin material no hay peso ni plantilla.
 
 
 ### Lo que R-10 arregló de paso
@@ -590,6 +595,22 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
 - El papel por defecto no se resolvía contra el catálogo efectivo en `initialize`, así que un papel oculto habría vuelto seleccionado tras recargar.
   Ahora se resuelve, y el gramaje va detrás del papel: caer en otro papel con un gramaje que ese papel no vende era el fallo siguiente.
 - La nota del panel decía que los papeles solo se leen. Ya no es cierto y se ha reescrito con lo que sigue siéndolo: los gramajes de fábrica no se editan ni se ocultan.
+
+
+### Lo que R-11 añadió al formulario compartido
+
+- Un campo de tipo `choice`, para elegir entre las entradas de otro catálogo.
+  Lleva `aria-label` propio porque un `<select>` envuelto en su `<label>` toma el nombre del texto de esa etiqueta, y el texto de una etiqueta incluye todas sus opciones: se anunciaba como «Papel de la tapa» seguido de los siete papeles.
+  Sin eso, el guardián se rompería cada vez que alguien añadiera un papel.
+- `showWhen`, para campos que solo aplican a algunas entradas de su catálogo.
+  Un campo oculto no se ofrece, así que tampoco se compara: el editor suministra el cero que debe llevar.
+
+### Lo que R-11 arregló de paso
+
+- **El paso de Tapa no tenía forma de abrir su catálogo.**
+  Nunca la tuvo porque las tapas eran de solo lectura; en cuanto dejaron de serlo, era el único paso sin puerta de entrada.
+- El botón del paso de papel se llamaba «Opciones de gramaje» y abre un catálogo que desde R-10 contiene el papel entero.
+  Ahora se llama «Opciones de papel» y está junto a «Tipo de papel», que es donde se busca.
 
 ### Lo que estos incrementos no tocan
 

@@ -1,6 +1,8 @@
 import type {
   Binding,
   BindingPatch,
+  Cover,
+  CoverPatch,
   CustomGrammageOption,
   Press,
   PressPatch,
@@ -37,16 +39,19 @@ export function emptyUserLayer(): UserLayer {
     customProportions: [],
     customGrammages: [],
     customSubstrates: [],
+    customCovers: [],
     customSheetSizes: [],
     customPresses: [],
     customBindings: [],
     proportionPatches: [],
     substratePatches: [],
+    coverPatches: [],
     sheetSizePatches: [],
     pressPatches: [],
     bindingPatches: [],
     hiddenProportionLabels: [],
     hiddenSubstrateIds: [],
+    hiddenCoverIds: [],
     hiddenSheetSizeIds: [],
     hiddenPressIds: [],
     hiddenBindingIds: [],
@@ -219,6 +224,67 @@ export function isValidSubstrate(value: unknown): value is Substrate {
   });
 }
 
+/**
+ * The rules that make a cover's measurements consistent with what it is.
+ *
+ * A soft cover has no boards, so its squares, hinge, turn-in and board
+ * thickness are exactly zero; a hard cover in this model has no flaps, and
+ * those same four must be positive. They are not style: the cover engine
+ * reads them straight, so a hard cover with a board thickness of zero reports
+ * boards with no thickness and a template nobody can cut.
+ *
+ * Written here rather than only in `validateCatalog` because a cover a print
+ * shop adds has to satisfy exactly what a shipped one does, and the two would
+ * otherwise drift.
+ */
+export function coverMeasurementsMatchKind(cover: Cover): boolean {
+  const boardParts = [cover.squares_mm, cover.hingeGap_mm, cover.turnIn_mm, cover.boardThickness_mm];
+  if (cover.kind === 'blanda') return boardParts.every(part => part === 0);
+  return boardParts.every(part => part > 0) && cover.flapWidth_mm === 0;
+}
+
+export function isValidCover(value: unknown): value is Cover {
+  if (!isPlainObject(value)) return false;
+  const {
+    id, name, kind, substrateId, grammage, flapWidth_mm, squares_mm, hingeGap_mm, turnIn_mm, boardThickness_mm,
+  } = value;
+  if (!isNonEmptyString(id) || !isNonEmptyString(name)) return false;
+  if (kind !== 'blanda' && kind !== 'dura') return false;
+  if (!isNonEmptyString(substrateId)) return false;
+  if (!isFiniteNumber(grammage) || grammage <= 0) return false;
+  for (const measurement of [flapWidth_mm, squares_mm, hingeGap_mm, turnIn_mm, boardThickness_mm]) {
+    if (!isFiniteNumber(measurement) || measurement < 0) return false;
+  }
+  return coverMeasurementsMatchKind(value as unknown as Cover);
+}
+
+const COVER_PATCH_KEYS = new Set([
+  'name', 'kind', 'substrateId', 'grammage',
+  'flapWidth_mm', 'squares_mm', 'hingeGap_mm', 'turnIn_mm', 'boardThickness_mm',
+]);
+
+/*
+ * A patch is validated field by field and not against the kind rules: it
+ * carries only what changed, so the squares of a cover turning soft arrive in
+ * the same patch as its kind and the pair is only coherent once applied.
+ * `patchCover` checks the applied result, which is where the rule belongs.
+ */
+function isValidCoverPatch(value: unknown): value is CoverPatch {
+  if (!isPlainObject(value)) return false;
+  const { id, changes } = value;
+  if (!isNonEmptyString(id)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, COVER_PATCH_KEYS)) return false;
+
+  if ('name' in changes && !isNonEmptyString(changes.name)) return false;
+  if ('kind' in changes && changes.kind !== 'blanda' && changes.kind !== 'dura') return false;
+  if ('substrateId' in changes && !isNonEmptyString(changes.substrateId)) return false;
+  if ('grammage' in changes && (!isFiniteNumber(changes.grammage) || changes.grammage <= 0)) return false;
+  for (const key of ['flapWidth_mm', 'squares_mm', 'hingeGap_mm', 'turnIn_mm', 'boardThickness_mm'] as const) {
+    if (key in changes && (!isFiniteNumber(changes[key]) || (changes[key] as number) < 0)) return false;
+  }
+  return true;
+}
+
 const SUBSTRATE_PATCH_KEYS = new Set(['name', 'description']);
 
 function isValidSubstratePatch(value: unknown): value is SubstratePatch {
@@ -300,6 +366,7 @@ function readAltaLists(parsed: Record<string, unknown>) {
     customProportions: filterValid(parsed.customProportions, isValidProportion),
     customGrammages: filterValid(parsed.customGrammages, isValidCustomGrammageOption),
     customSubstrates: filterValid(parsed.customSubstrates, isValidSubstrate),
+    customCovers: filterValid(parsed.customCovers, isValidCover),
     customSheetSizes: filterValid(parsed.customSheetSizes, isValidSheetSize),
     customPresses: filterValid(parsed.customPresses, isValidPress),
     customBindings: filterValid(parsed.customBindings, isValidBinding),
@@ -344,11 +411,13 @@ export function readUserLayer(storage: Storage | null = getDefaultUserLayerStora
       ...readAltaLists(parsed),
       proportionPatches: [],
       substratePatches: [],
+      coverPatches: [],
       sheetSizePatches: [],
       pressPatches: [],
       bindingPatches: [],
       hiddenProportionLabels: [],
       hiddenSubstrateIds: [],
+      hiddenCoverIds: [],
       hiddenSheetSizeIds: [],
       hiddenPressIds: [],
       hiddenBindingIds: [],
@@ -363,11 +432,13 @@ export function readUserLayer(storage: Storage | null = getDefaultUserLayerStora
     ...readAltaLists(parsed),
     proportionPatches: filterValid(parsed.proportionPatches, isValidProportionPatch),
     substratePatches: filterValid(parsed.substratePatches, isValidSubstratePatch),
+    coverPatches: filterValid(parsed.coverPatches, isValidCoverPatch),
     sheetSizePatches: filterValid(parsed.sheetSizePatches, isValidSheetSizePatch),
     pressPatches: filterValid(parsed.pressPatches, isValidPressPatch),
     bindingPatches: filterValid(parsed.bindingPatches, isValidBindingPatch),
     hiddenProportionLabels: filterValid(parsed.hiddenProportionLabels, isNonEmptyString),
     hiddenSubstrateIds: filterValid(parsed.hiddenSubstrateIds, isNonEmptyString),
+    hiddenCoverIds: filterValid(parsed.hiddenCoverIds, isNonEmptyString),
     hiddenSheetSizeIds: filterValid(parsed.hiddenSheetSizeIds, isNonEmptyString),
     hiddenPressIds: filterValid(parsed.hiddenPressIds, isNonEmptyString),
     hiddenBindingIds: filterValid(parsed.hiddenBindingIds, isNonEmptyString),

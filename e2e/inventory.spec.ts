@@ -195,23 +195,32 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Prensas, 2 entradas': 1,
   'Pliegos, 6 entradas': 1,
   'Esquemas de plegado, 2 entradas, solo lectura': 1,
-  'Tapas, 3 entradas, solo lectura': 1,
+  'Tapas, 3 entradas': 1,
   'Opciones de pliego': 1,
   'Opciones de encuadernación': 1,
   'Opciones de proporción': 1,
-  'Opciones de gramaje': 1,
+  'Opciones de papel': 1,
+  'Opciones de tapa': 1,
   '+ Nuevo gramaje': 1,
   'Gramaje': 1,
   'Calibre declarado': 1,
 
-  // One form serves the five editable catalogs, so the controls it always
+  // One form serves the six editable catalogs, so the controls it always
   // carries appear once per catalog, and each catalog adds its own fields.
-  // Papers joined them in R-10: a print shop that buys a paper the catalog
-  // does not list can now add it instead of editing a file.
-  'Nombre': 4,
-  'Ocultar': 5,
-  'Guardar cambios': 5,
+  // Papers joined them in R-10 and covers in R-11: a print shop that buys a
+  // paper the catalog does not list can now add it instead of editing a file.
+  'Nombre': 5,
+  'Ocultar': 6,
+  'Guardar cambios': 6,
   '+ Nuevo papel': 1,
+  '+ Nueva tapa': 1,
+  // A cover is made of another catalog's entry, so its material is chosen
+  // rather than typed. The default cover is soft, so the four measurements
+  // only a hard one has are not on screen to be counted.
+  'Tipo': 1,
+  'Papel de la tapa': 1,
+  'Gramaje de la tapa': 1,
+  'Ancho de solapa': 1,
   '+ Nueva prensa': 1,
   '+ Nuevo pliego': 1,
   '+ Nueva encuadernación': 1,

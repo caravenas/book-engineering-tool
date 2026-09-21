@@ -12,7 +12,7 @@ import { useState } from 'react';
  * turn the ones that changed back into the shape the store patches with. The
  * rules around them are the same everywhere and live here.
  */
-export type FieldKind = 'text' | 'number' | 'boolean';
+export type FieldKind = 'text' | 'number' | 'boolean' | 'choice';
 
 export interface FieldSpec {
   key: string;
@@ -34,6 +34,16 @@ export interface FieldSpec {
    * place.
    */
   onlyWhenAdding?: boolean;
+  /** For `choice`: what the field offers, in the order it offers it. */
+  choices?: { value: string; label: string }[];
+  /**
+   * A field that only applies to some entries of its catalog. A soft cover
+   * has no boards and a hard one has no flaps, and those are not defaults a
+   * print shop may override: the measurements a kind forbids must be exactly
+   * zero or the engine draws a template nobody can cut. Hiding them is how
+   * the form says so, instead of offering a box whose only valid value is 0.
+   */
+  showWhen?: (values: FormValues) => boolean;
 }
 
 export type FormValues = Record<string, string | boolean>;
@@ -99,7 +109,7 @@ export function toNumber(value: string | boolean): number {
  * than marking all of them and leaving the reader to guess.
  */
 function isUsable(kind: FieldKind, value: string | boolean): boolean {
-  if (kind === 'boolean') return true;
+  if (kind === 'boolean' || kind === 'choice') return true;
   const text = String(value).trim();
   if (text === '') return false;
   return kind !== 'number' || Number.isFinite(Number(text));
@@ -113,7 +123,7 @@ function isUsable(kind: FieldKind, value: string | boolean): boolean {
  */
 function sameValue(kind: FieldKind, a: string | boolean, b: string | boolean): boolean {
   if (kind === 'boolean') return Boolean(a) === Boolean(b);
-  if (kind === 'text') return String(a).trim() === String(b).trim();
+  if (kind === 'text' || kind === 'choice') return String(a).trim() === String(b).trim();
   const left = Number(String(a).trim());
   const right = Number(String(b).trim());
   // Two NaNs are not equal to each other, but two empty boxes say the same
@@ -123,7 +133,13 @@ function sameValue(kind: FieldKind, a: string | boolean, b: string | boolean): b
 }
 
 function emptyValues(fields: FieldSpec[]): FormValues {
-  return Object.fromEntries(fields.map(field => [field.key, field.kind === 'boolean' ? false : '']));
+  return Object.fromEntries(fields.map(field => {
+    if (field.kind === 'boolean') return [field.key, false];
+    // A choice starts on its first option rather than blank: a select has no
+    // empty state here, and showing one would offer a value nothing accepts.
+    if (field.kind === 'choice') return [field.key, field.choices?.[0]?.value ?? ''];
+    return [field.key, ''];
+  }));
 }
 
 export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entry> }) {
@@ -176,8 +192,11 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
     const baseline = editor.origin === 'own' ? values : factoryValues;
     const changed = new Set<string>();
     if (baseline) {
-      for (const { key, kind, readOnly, onlyWhenAdding } of editor.fields) {
+      for (const { key, kind, readOnly, onlyWhenAdding, showWhen } of editor.fields) {
         if (readOnly || onlyWhenAdding) continue;
+        // A field the kind forbids is not shown and not editable, so it is
+        // not diffed either: the editor supplies the zero it must hold.
+        if (showWhen && !showWhen(shown)) continue;
         if (!sameValue(kind, shown[key], baseline[key])) changed.add(key);
       }
     }
@@ -232,10 +251,31 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
         </div>
 
         <div className="catalog-field-grid">
-          {editor.fields.filter(field => adding || !field.onlyWhenAdding).map(({ key, label, kind, readOnly }) => (
+          {editor.fields
+            .filter(field => adding || !field.onlyWhenAdding)
+            .filter(field => !field.showWhen || field.showWhen(shown))
+            .map(({ key, label, kind, readOnly, choices }) => (
             <label key={key} className={`catalog-field catalog-field-${kind}`}>
               <span className="form-label">{label}</span>
-              {kind === 'boolean' ? (
+              {kind === 'choice' ? (
+                /*
+                 * Named explicitly, because a <select> wrapped in its <label>
+                 * takes its name from that label's text, and a label's text
+                 * includes every option inside it: this one was announcing
+                 * itself as "Papel de la tapa" followed by all seven papers.
+                 */
+                <select
+                  className="form-input"
+                  aria-label={label}
+                  value={String(shown[key])}
+                  disabled={!editable || (Boolean(readOnly) && !adding)}
+                  onChange={event => setField(key, event.target.value)}
+                >
+                  {(choices ?? []).map(choice => (
+                    <option key={choice.value} value={choice.value}>{choice.label}</option>
+                  ))}
+                </select>
+              ) : kind === 'boolean' ? (
                 <input
                   type="checkbox"
                   checked={Boolean(shown[key])}

@@ -1,4 +1,5 @@
-import { useBookStore, getAllBindings } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getAllCovers } from '../store/useBookStore';
+import { useCatalogPanel } from './CatalogPanel';
 import type { Binding, Cover } from '../types';
 
 /**
@@ -12,9 +13,13 @@ function isCoverCompatible(cover: Cover, binding: Binding | null): boolean {
 }
 
 export function CoverPanel() {
+  const { open: openCatalog } = useCatalogPanel();
   const {
-    catalog, coverId, bindingId, customBindings, bindingPatches, hiddenBindingIds, setCover, coverPlan, coverError,
+    catalog, coverId, bindingId, customBindings, bindingPatches, hiddenBindingIds,
+    customCovers, coverPatches, hiddenCoverIds, setCover, coverPlan, coverError,
   } = useBookStore();
+
+  const covers = catalog ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds) : customCovers;
 
   const selectedBinding = catalog
     ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds).find(binding => binding.id === bindingId) ?? null
@@ -28,14 +33,25 @@ export function CoverPanel() {
       </p>
 
       <div className="form-group">
-        <label className="form-label" htmlFor="select-cover">Tipo de tapa</label>
+        <div className="form-label-row">
+          <label className="form-label" htmlFor="select-cover">Tipo de tapa</label>
+          <button
+            type="button"
+            className="step-options"
+            aria-label="Opciones de tapa"
+            aria-haspopup="dialog"
+            onClick={() => openCatalog('covers')}
+          >
+            ···
+          </button>
+        </div>
         <select
           className="form-input"
           value={coverId}
           onChange={event => setCover(event.target.value)}
           id="select-cover"
         >
-          {catalog?.covers
+          {covers
             .filter(cover => isCoverCompatible(cover, selectedBinding) || cover.id === coverId)
             .map(cover => (
               <option

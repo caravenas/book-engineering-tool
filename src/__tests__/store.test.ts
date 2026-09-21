@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createBookStore, getAllGrammageOptions, getAllSubstrates, useBookStore } from '../store/useBookStore';
+import { createBookStore, getAllCovers, getAllGrammageOptions, getAllSubstrates, useBookStore } from '../store/useBookStore';
 import { emptyUserLayer, readUserLayer } from '../config/userLayer';
 import { loadShippedCatalog } from './testCatalog';
 import { FakeStorage } from './fakeStorage';
@@ -1134,5 +1134,158 @@ describe('Papers a print shop adds (R-10)', () => {
     ]);
     // Kept, not dropped: the paper may come back in a later catalog.
     expect(secondMount.getState().substratePatches).toHaveLength(1);
+  });
+});
+
+/**
+ * A cover is the one catalog entry made of another: it names the paper it is
+ * printed on and the weight of that paper. It is also the one whose fields
+ * mean different things depending on what it is — a soft cover has no boards,
+ * a hard one has no flaps — and those are not defaults but rules the engine
+ * reads straight.
+ */
+describe('Covers a print shop adds (R-11)', () => {
+  const softCover = {
+    name: 'Rústica con solapas anchas',
+    kind: 'blanda' as const,
+    substrateId: 'couche_matte',
+    grammage: 300,
+    flapWidth_mm: 120,
+    squares_mm: 0,
+    hingeGap_mm: 0,
+    turnIn_mm: 0,
+    boardThickness_mm: 0,
+  };
+
+  it('adds a soft cover, selects it, and plans the sheet with its flaps', () => {
+    expect(useBookStore.getState().addCustomCover(softCover)).toBe(true);
+
+    const [cover] = useBookStore.getState().customCovers;
+    expect(cover).toMatchObject({ name: 'Rústica con solapas anchas', kind: 'blanda', flapWidth_mm: 120 });
+    expect(useBookStore.getState().coverId).toBe(cover.id);
+
+    // Not just stored: the flaps have to reach the cover plan.
+    const plan = useBookStore.getState().coverPlan;
+    expect(plan?.ok).toBe(true);
+    if (!plan?.ok || plan.cover.kind !== 'blanda') throw new Error('se esperaba una tapa blanda planificada');
+    expect(plan.cover.sections.flapLeft_mm).toBeGreaterThan(120);
+  });
+
+  it('refuses a soft cover that claims boards, and a hard one that claims flaps', () => {
+    expect(useBookStore.getState().addCustomCover({ ...softCover, boardThickness_mm: 2 })).toBe(false);
+    expect(useBookStore.getState().customCoverError).toContain('no lleva cartón');
+
+    expect(useBookStore.getState().addCustomCover({
+      ...softCover, name: 'Dura con solapas', kind: 'dura',
+      squares_mm: 3, hingeGap_mm: 7, turnIn_mm: 15, boardThickness_mm: 2,
+    })).toBe(false);
+    expect(useBookStore.getState().customCoverError).toContain('no lleva solapas');
+
+    expect(useBookStore.getState().customCovers).toHaveLength(0);
+  });
+
+  it('refuses a hard cover whose boards have no thickness', () => {
+    expect(useBookStore.getState().addCustomCover({
+      ...softCover, name: 'Dura sin cartón', kind: 'dura', flapWidth_mm: 0,
+      squares_mm: 3, hingeGap_mm: 7, turnIn_mm: 15, boardThickness_mm: 0,
+    })).toBe(false);
+    expect(useBookStore.getState().customCoverError).toContain('mayores que cero');
+  });
+
+  /**
+   * The check no other catalog needs: a cover names its material, so it can
+   * be made invalid by a paper that is missing or does not come in that
+   * weight, and saying which of the two is wrong is worth more than "datos
+   * inválidos".
+   */
+  it('refuses a cover made of a paper that does not exist, or a weight it does not sell', () => {
+    expect(useBookStore.getState().addCustomCover({ ...softCover, substrateId: 'papel_inventado' })).toBe(false);
+    expect(useBookStore.getState().customCoverError).toContain('no está');
+
+    expect(useBookStore.getState().addCustomCover({ ...softCover, grammage: 999 })).toBe(false);
+    expect(useBookStore.getState().customCoverError).toContain('999 g/m²');
+    expect(useBookStore.getState().customCovers).toHaveLength(0);
+  });
+
+  it('accepts a cover made of a paper the shop added, in a weight that paper sells', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Cartulina del taller', 'La de siempre.', 350, 420)).toBe(true);
+    const paper = useBookStore.getState().customSubstrates[0];
+
+    expect(useBookStore.getState().addCustomCover({
+      ...softCover, substrateId: paper.id, grammage: 350,
+    })).toBe(true);
+    expect(useBookStore.getState().customCovers[0].substrateId).toBe(paper.id);
+  });
+
+  it('turns a cover of your own from soft to hard, rewriting every measurement', () => {
+    expect(useBookStore.getState().addCustomCover(softCover)).toBe(true);
+    const { id } = useBookStore.getState().customCovers[0];
+
+    expect(useBookStore.getState().editCustomCover(id, {
+      kind: 'dura', flapWidth_mm: 0, squares_mm: 3, hingeGap_mm: 7, turnIn_mm: 15, boardThickness_mm: 2,
+    })).toBe(true);
+    expect(useBookStore.getState().customCovers[0]).toMatchObject({
+      id, kind: 'dura', flapWidth_mm: 0, boardThickness_mm: 2,
+    });
+
+    // Half a change is refused: the kind cannot move without its measurements.
+    expect(useBookStore.getState().editCustomCover(id, { kind: 'blanda' })).toBe(false);
+    expect(useBookStore.getState().customCovers[0].kind).toBe('dura');
+  });
+
+  it('patches a factory cover, hides one, and puts both back', () => {
+    expect(useBookStore.getState().patchCover('blanda_simple', { flapWidth_mm: 80 })).toBe(true);
+    const covers = getAllCovers(catalog, [], useBookStore.getState().coverPatches, []);
+    expect(covers.find(item => item.id === 'blanda_simple')?.flapWidth_mm).toBe(80);
+
+    useBookStore.getState().unpatchCover('blanda_simple');
+    expect(useBookStore.getState().coverPatches).toHaveLength(0);
+
+    useBookStore.getState().setCover('blanda_simple');
+    useBookStore.getState().hideCover('blanda_simple');
+    expect(useBookStore.getState().coverId).not.toBe('blanda_simple');
+    useBookStore.getState().showCover('blanda_simple');
+    expect(useBookStore.getState().hiddenCoverIds).toEqual([]);
+  });
+
+  it('survives a reload, and drops a cover whose paper is gone from the catalog', () => {
+    const storage = new FakeStorage();
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+    expect(firstMount.getState().addCustomCover(softCover)).toBe(true);
+
+    const secondMount = createBookStore(storage);
+    secondMount.getState().initialize(catalog, readUserLayer(storage));
+    expect(secondMount.getState().customCovers).toHaveLength(1);
+
+    // A cover whose paper no longer exists has no material and no weight, so
+    // it goes the way a grammage attached to a missing paper does.
+    const withoutThePaper = {
+      ...catalog,
+      substrates: catalog.substrates.filter(item => item.id !== 'couche_matte'),
+    };
+    const thirdMount = createBookStore(storage);
+    thirdMount.getState().initialize(withoutThePaper, readUserLayer(storage));
+    expect(thirdMount.getState().customCovers).toHaveLength(0);
+  });
+
+  it('reports a patch and a hide for a cover the catalog no longer has', () => {
+    const storage = new FakeStorage();
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+    expect(firstMount.getState().patchCover('blanda_simple', { flapWidth_mm: 80 })).toBe(true);
+    firstMount.getState().hideCover('dura_estandar');
+
+    const withoutThem = {
+      ...catalog,
+      covers: catalog.covers.filter(item => item.id !== 'blanda_simple' && item.id !== 'dura_estandar'),
+    };
+    const secondMount = createBookStore(storage);
+    secondMount.getState().initialize(withoutThem, readUserLayer(storage));
+
+    expect(secondMount.getState().orphanedUserLayerEntries).toEqual([
+      { kind: 'coverPatch', targetId: 'blanda_simple' },
+      { kind: 'hiddenCover', targetId: 'dura_estandar' },
+    ]);
   });
 });

@@ -29,11 +29,13 @@ const UNEXPECTED_ERROR: ConfigError = {
 const ORPHAN_CATALOG_NAME: Record<OrphanedUserLayerEntryKind, string> = {
   proportionPatch: 'proporciones',
   substratePatch: 'papeles',
+  coverPatch: 'tapas',
   sheetSizePatch: 'pliegos',
   pressPatch: 'prensas',
   bindingPatch: 'encuadernaciones',
   hiddenProportion: 'proporciones',
   hiddenSubstrate: 'papeles',
+  hiddenCover: 'tapas',
   hiddenSheetSize: 'pliegos',
   hiddenPress: 'prensas',
   hiddenBinding: 'encuadernaciones',
@@ -61,11 +63,13 @@ export default function App() {
   const orphanedUserLayerEntries = useBookStore(state => state.orphanedUserLayerEntries);
   const unpatchProportion = useBookStore(state => state.unpatchProportion);
   const unpatchSubstrate = useBookStore(state => state.unpatchSubstrate);
+  const unpatchCover = useBookStore(state => state.unpatchCover);
   const unpatchSheetSize = useBookStore(state => state.unpatchSheetSize);
   const unpatchPress = useBookStore(state => state.unpatchPress);
   const unpatchBinding = useBookStore(state => state.unpatchBinding);
   const showProportion = useBookStore(state => state.showProportion);
   const showSubstrate = useBookStore(state => state.showSubstrate);
+  const showCover = useBookStore(state => state.showCover);
   const showSheetSize = useBookStore(state => state.showSheetSize);
   const showPress = useBookStore(state => state.showPress);
   const showBinding = useBookStore(state => state.showBinding);
@@ -79,11 +83,13 @@ export default function App() {
     switch (entry.kind) {
       case 'proportionPatch': unpatchProportion(entry.targetId); break;
       case 'substratePatch': unpatchSubstrate(entry.targetId); break;
+      case 'coverPatch': unpatchCover(entry.targetId); break;
       case 'sheetSizePatch': unpatchSheetSize(entry.targetId); break;
       case 'pressPatch': unpatchPress(entry.targetId); break;
       case 'bindingPatch': unpatchBinding(entry.targetId); break;
       case 'hiddenProportion': showProportion(entry.targetId); break;
       case 'hiddenSubstrate': showSubstrate(entry.targetId); break;
+      case 'hiddenCover': showCover(entry.targetId); break;
       case 'hiddenSheetSize': showSheetSize(entry.targetId); break;
       case 'hiddenPress': showPress(entry.targetId); break;
       case 'hiddenBinding': showBinding(entry.targetId); break;

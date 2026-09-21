@@ -1,4 +1,4 @@
-import { useBookStore, getPlannedCover } from '../store/useBookStore';
+import { useBookStore, getPlannedCover, getAllCovers } from '../store/useBookStore';
 import { formatMm, isPositiveFinite } from '../engine/units';
 import type { Cover, HardCoverResult, SoftCoverResult } from '../types';
 
@@ -140,8 +140,9 @@ function getHardCoverSvg(result: HardCoverResult, rawCover: Cover): HardCoverSvg
  * live in one component instead of two.
  */
 function CoverSvg() {
-  const { catalog, coverId, coverPlan } = useBookStore();
-  const selectedCover = catalog?.covers.find(cover => cover.id === coverId) ?? null;
+  const { catalog, coverId, coverPlan, customCovers, coverPatches, hiddenCoverIds } = useBookStore();
+  const selectedCover = (catalog ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds) : customCovers)
+    .find(cover => cover.id === coverId) ?? null;
   const plan = getPlannedCover(coverPlan);
 
   const softSvg = plan && plan.kind === 'blanda' ? getSoftCoverSvg(plan) : null;

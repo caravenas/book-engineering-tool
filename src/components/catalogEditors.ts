@@ -1,7 +1,7 @@
-import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions, getAllGrammageOptions, getAllSubstrates } from '../store/useBookStore';
+import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions, getAllGrammageOptions, getAllSubstrates, getAllCovers } from '../store/useBookStore';
 import { getCatalogOrigin } from './CatalogOrigin';
 import { toNumber, type CatalogEditor, type FormValues } from './CatalogEntryForm';
-import type { Binding, GrammageOption, Press, Proportion, SheetSize, Substrate } from '../types';
+import type { Binding, Cover, GrammageOption, Press, Proportion, SheetSize, Substrate } from '../types';
 
 /**
  * What each catalog has that the others do not: the shape of an entry, and
@@ -271,6 +271,120 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
     remove: () => removeCustomProportion(label),
     hiddenCount: hiddenProportionLabels.length,
     restoreHidden: () => hiddenProportionLabels.forEach(item => showProportion(item)),
+  };
+}
+
+/**
+ * A cover is the one catalog entry made of another: it names the paper it is
+ * printed on and the weight of that paper, so its material is offered as a
+ * choice among the papers the tool actually has rather than typed.
+ *
+ * Its measurements depend on what it is. A soft cover has no boards and a
+ * hard one has no flaps, and the ones its kind forbids must be exactly zero
+ * or the engine draws a template nobody can cut â so the form does not offer
+ * them, and the editor supplies the zeros.
+ */
+export function useCoverEditor(): CatalogEditor<Cover> {
+  const {
+    catalog, coverId, customCovers, coverPatches, hiddenCoverIds, customCoverError,
+    customSubstrates, substratePatches, hiddenSubstrateIds,
+    addCustomCover, editCustomCover, removeCustomCover, patchCover, unpatchCover,
+    hideCover, showCover, clearCustomCoverError,
+  } = useBookStore();
+
+  const covers = catalog ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds) : customCovers;
+  const substrates = catalog
+    ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds)
+    : customSubstrates;
+
+  const isHard = (values: FormValues) => String(values.kind) === 'dura';
+  const readCover = (values: FormValues): Omit<Cover, 'id'> => {
+    const hard = isHard(values);
+    return {
+      name: String(values.name).trim(),
+      kind: hard ? 'dura' : 'blanda',
+      substrateId: String(values.substrateId),
+      grammage: toNumber(values.grammage),
+      flapWidth_mm: hard ? 0 : toNumber(values.flapWidth_mm),
+      squares_mm: hard ? toNumber(values.squares_mm) : 0,
+      hingeGap_mm: hard ? toNumber(values.hingeGap_mm) : 0,
+      turnIn_mm: hard ? toNumber(values.turnIn_mm) : 0,
+      boardThickness_mm: hard ? toNumber(values.boardThickness_mm) : 0,
+    };
+  };
+
+  return {
+    addLabel: '+ Nueva tapa',
+    addSubmitLabel: 'Añadir tapa',
+    hiddenLine: count => (count === 1
+      ? '1 tapa de fábrica oculta.'
+      : `${count} tapas de fábrica ocultas.`),
+    restoreLabel: 'Mostrar tapas ocultas',
+    fields: [
+      { key: 'name', label: 'Nombre', kind: 'text' },
+      {
+        key: 'kind',
+        label: 'Tipo',
+        kind: 'choice',
+        choices: [{ value: 'blanda', label: 'Blanda' }, { value: 'dura', label: 'Dura' }],
+      },
+      {
+        key: 'substrateId',
+        label: 'Papel de la tapa',
+        kind: 'choice',
+        choices: substrates.map(item => ({ value: item.id, label: item.name })),
+      },
+      { key: 'grammage', label: 'Gramaje de la tapa', kind: 'number' },
+      { key: 'flapWidth_mm', label: 'Ancho de solapa', kind: 'number', showWhen: values => !isHard(values) },
+      { key: 'squares_mm', label: 'Ceja', kind: 'number', showWhen: isHard },
+      { key: 'hingeGap_mm', label: 'Canal de bisagra', kind: 'number', showWhen: isHard },
+      { key: 'turnIn_mm', label: 'Doblez de forro', kind: 'number', showWhen: isHard },
+      { key: 'boardThickness_mm', label: 'Grosor de cartón', kind: 'number', showWhen: isHard },
+    ],
+    entry: covers.find(item => item.id === coverId) ?? null,
+    factory: catalog?.covers.find(item => item.id === coverId) ?? null,
+    origin: getCatalogOrigin(coverId, customCovers.map(item => item.id), coverPatches.map(patch => patch.id)),
+    error: customCoverError,
+    clearError: clearCustomCoverError,
+    read: cover => ({
+      name: cover.name,
+      kind: cover.kind,
+      substrateId: cover.substrateId,
+      grammage: String(cover.grammage),
+      flapWidth_mm: String(cover.flapWidth_mm),
+      squares_mm: String(cover.squares_mm),
+      hingeGap_mm: String(cover.hingeGap_mm),
+      turnIn_mm: String(cover.turnIn_mm),
+      boardThickness_mm: String(cover.boardThickness_mm),
+    }),
+    /*
+     * Changing the kind rewrites every measurement, not only the ones on
+     * screen: the four a soft cover forbids have to go to zero, and they are
+     * not shown to be diffed. So a kind change carries the whole shape.
+     */
+    toChanges: (values, changed) => {
+      const complete = readCover(values);
+      if (changed.has('kind')) {
+        const { name, ...shape } = complete;
+        return changed.has('name') ? complete : shape;
+      }
+      const changes: Record<string, unknown> = {};
+      if (changed.has('name')) changes.name = complete.name;
+      if (changed.has('substrateId')) changes.substrateId = complete.substrateId;
+      if (changed.has('grammage')) changes.grammage = complete.grammage;
+      for (const key of ['flapWidth_mm', 'squares_mm', 'hingeGap_mm', 'turnIn_mm', 'boardThickness_mm'] as const) {
+        if (changed.has(key)) changes[key] = complete[key];
+      }
+      return changes;
+    },
+    add: (values: FormValues) => addCustomCover(readCover(values)),
+    patch: changes => patchCover(coverId, changes),
+    editOwn: changes => editCustomCover(coverId, changes),
+    unpatch: () => unpatchCover(coverId),
+    hide: () => hideCover(coverId),
+    remove: () => removeCustomCover(coverId),
+    hiddenCount: hiddenCoverIds.length,
+    restoreHidden: () => hiddenCoverIds.forEach(id => showCover(id)),
   };
 }
 

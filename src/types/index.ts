@@ -325,6 +325,17 @@ export interface SubstratePatch {
   changes: Partial<Pick<Substrate, 'name' | 'description'>>;
 }
 
+/**
+ * A patch on a factory cover, identified by its id. Every field is patchable,
+ * including its kind: a soft cover and a hard one are the same record with
+ * different rules about which of its measurements may be non-zero. See
+ * {@link ProportionPatch}.
+ */
+export interface CoverPatch {
+  id: string;
+  changes: Partial<Omit<Cover, 'id'>>;
+}
+
 /** A patch on a factory sheet size, identified by its id. See {@link ProportionPatch}. */
 export interface SheetSizePatch {
   id: string;
@@ -360,18 +371,21 @@ export interface UserLayer {
   customProportions: Proportion[];
   customGrammages: CustomGrammageOption[];
   customSubstrates: Substrate[];
+  customCovers: Cover[];
   customSheetSizes: SheetSize[];
   customPresses: Press[];
   customBindings: Binding[];
 
   proportionPatches: ProportionPatch[];
   substratePatches: SubstratePatch[];
+  coverPatches: CoverPatch[];
   sheetSizePatches: SheetSizePatch[];
   pressPatches: PressPatch[];
   bindingPatches: BindingPatch[];
 
   hiddenProportionLabels: string[];
   hiddenSubstrateIds: string[];
+  hiddenCoverIds: string[];
   hiddenSheetSizeIds: string[];
   hiddenPressIds: string[];
   hiddenBindingIds: string[];
@@ -387,6 +401,8 @@ export interface UserLayer {
 export type OrphanedUserLayerEntryKind =
   | 'substratePatch'
   | 'hiddenSubstrate'
+  | 'coverPatch'
+  | 'hiddenCover'
   | 'proportionPatch' | 'sheetSizePatch' | 'pressPatch' | 'bindingPatch'
   | 'hiddenProportion' | 'hiddenSheetSize' | 'hiddenPress' | 'hiddenBinding';
 
@@ -445,6 +461,9 @@ export interface BookConfig {
 
   // Cover
   coverId: string;
+  customCovers: Cover[];      // User-added covers
+  coverPatches: CoverPatch[]; // Edits to factory covers, by id
+  hiddenCoverIds: string[];   // Factory covers hidden by the user
 }
 
 export interface BookStore extends BookConfig {
@@ -469,6 +488,7 @@ export interface BookStore extends BookConfig {
   coverError: string | null;
   customGrammageError: string | null;
   customSubstrateError: string | null;
+  customCoverError: string | null;
   customSheetSizeError: string | null;
   customPressError: string | null;
   customBindingError: string | null;
@@ -510,6 +530,14 @@ export interface BookStore extends BookConfig {
   hideSheetSize: (id: string) => void;
   showSheetSize: (id: string) => void;
   clearCustomSheetSizeError: () => void;
+  addCustomCover: (cover: Omit<Cover, 'id'>) => boolean;
+  editCustomCover: (id: string, changes: Partial<Omit<Cover, 'id'>>) => boolean;
+  removeCustomCover: (id: string) => void;
+  patchCover: (id: string, changes: Partial<Omit<Cover, 'id'>>) => boolean;
+  unpatchCover: (id: string) => void;
+  hideCover: (id: string) => void;
+  showCover: (id: string) => void;
+  clearCustomCoverError: () => void;
   addCustomSubstrate: (name: string, description: string, grammage: number, caliper: number) => boolean;
   editCustomSubstrate: (id: string, changes: Partial<Pick<Substrate, 'name' | 'description'>>) => boolean;
   removeCustomSubstrate: (id: string) => void;

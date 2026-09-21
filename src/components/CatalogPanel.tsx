@@ -8,10 +8,11 @@ import {
   getSelectedBindingInfo,
   getAllGrammageOptions,
   getAllSubstrates,
+  getAllCovers,
 } from '../store/useBookStore';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { CatalogEntryForm } from './CatalogEntryForm';
-import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor, useSubstrateEditor } from './catalogEditors';
+import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor, useSubstrateEditor, useCoverEditor } from './catalogEditors';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
@@ -81,6 +82,9 @@ function useCatalogs(): CatalogDescriptor[] {
     customSubstrates,
     substratePatches,
     hiddenSubstrateIds,
+    customCovers,
+    coverPatches,
+    hiddenCoverIds,
     customBindings,
     bindingPatches,
     hiddenBindingIds,
@@ -93,6 +97,7 @@ function useCatalogs(): CatalogDescriptor[] {
     const sheetSizes = getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds);
     const presses = getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds);
     const substrates = getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds);
+    const covers = getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds);
     const bindings = getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds);
 
     return [
@@ -197,18 +202,19 @@ function useCatalogs(): CatalogDescriptor[] {
         description: 'El tipo de tapa, con sus solapas, cejas y dobleces.',
         file: 'config/tapas.json',
         source: catalog.coversSource,
-        readOnly: true,
-        entries: catalog.covers.map(item => ({
+        readOnly: false,
+        entries: covers.map(item => ({
           key: item.id,
           name: item.name,
           detail: item.kind === 'dura' ? 'tapa dura' : 'tapa blanda',
-          origin: 'factory' as const,
+          origin: getCatalogOrigin(item.id, customCovers.map(entry => entry.id), coverPatches.map(patch => patch.id)),
         })),
       },
     ];
   }, [
     catalog, customProportions, proportionPatches, hiddenProportionLabels,
     customSubstrates, substratePatches, hiddenSubstrateIds,
+    customCovers, coverPatches, hiddenCoverIds,
     customSheetSizes, sheetSizePatches, hiddenSheetSizeIds,
     customPresses, pressPatches, hiddenPressIds,
     customBindings, bindingPatches, hiddenBindingIds,
@@ -235,8 +241,9 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const proportionEditor = useProportionEditor();
   const grammageEditor = useGrammageEditor();
   const substrateEditor = useSubstrateEditor();
+  const coverEditor = useCoverEditor();
   const {
-    bindingId, pressId, sheetSizeId, proportionId, substrateId, selectedGrammage, customGrammages,
+    bindingId, pressId, sheetSizeId, proportionId, substrateId, coverId, selectedGrammage, customGrammages,
     customSubstrates, substratePatches, hiddenSubstrateIds,
     catalog, customBindings, bindingPatches, hiddenBindingIds,
     userLayerStorageAvailable, userLayerWriteFailed,
@@ -381,6 +388,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                 {current.id === 'sheetSizes' && <CatalogEntryForm key={sheetSizeId} editor={sheetSizeEditor} />}
                 {current.id === 'bindings' && <CatalogEntryForm key={bindingId} editor={bindingEditor} />}
                 {current.id === 'proportions' && <CatalogEntryForm key={proportionId ?? 'manual'} editor={proportionEditor} />}
+                {current.id === 'covers' && <CatalogEntryForm key={coverId} editor={coverEditor} />}
 
                 {/*
                   * Grammages are not a catalog beside papers: they hang off
