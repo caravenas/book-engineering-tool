@@ -261,7 +261,13 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
     <CatalogPanelContext.Provider value={api}>
       {children}
 
-      <dialog ref={dialog} className="catalog-dialog" aria-label="Catálogo">
+      <dialog
+        ref={dialog}
+        className="catalog-dialog"
+        aria-label="Catálogo"
+        // Escape closes a dialog without going through anything of ours.
+        onClose={() => setIsOpen(false)}
+      >
         <div className="catalog-header">
           <h2 className="catalog-title">Catálogo</h2>
           <button

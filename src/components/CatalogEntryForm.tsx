@@ -78,6 +78,23 @@ function isUsable(kind: FieldKind, value: string | boolean): boolean {
   return kind !== 'number' || Number.isFinite(Number(text));
 }
 
+/**
+ * Whether a field still says what the factory entry says. Numbers are compared
+ * as numbers: "5.0" and "05" are the same 5, and comparing the text would have
+ * recorded a patch that changes nothing, leaving the entry marked as edited
+ * and refusing to unpatch itself.
+ */
+function sameValue(kind: FieldKind, a: string | boolean, b: string | boolean): boolean {
+  if (kind === 'boolean') return Boolean(a) === Boolean(b);
+  if (kind === 'text') return String(a).trim() === String(b).trim();
+  const left = Number(String(a).trim());
+  const right = Number(String(b).trim());
+  // Two NaNs are not equal to each other, but two empty boxes say the same
+  // thing, so fall back to the text when either side is not a number.
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return String(a).trim() === String(b).trim();
+  return left === right;
+}
+
 function emptyValues(fields: FieldSpec[]): FormValues {
   return Object.fromEntries(fields.map(field => [field.key, field.kind === 'boolean' ? false : '']));
 }
@@ -132,9 +149,7 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
     if (factoryValues) {
       for (const { key, kind, readOnly } of editor.fields) {
         if (readOnly) continue;
-        const now = kind === 'text' ? String(shown[key]).trim() : shown[key];
-        const before = kind === 'text' ? String(factoryValues[key]).trim() : factoryValues[key];
-        if (now !== before) changed.add(key);
+        if (!sameValue(kind, shown[key], factoryValues[key])) changed.add(key);
       }
     }
 

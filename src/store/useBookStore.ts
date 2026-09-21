@@ -1020,10 +1020,14 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
 
     set(state => {
       if (!state.catalog) return state;
-      const patch = withUpdatedCalculations(state, state.catalog, {
-        customSheetSizes: [...state.customSheetSizes, newSheet],
-        sheetSizeId: id,
-      });
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          customSheetSizes: [...state.customSheetSizes, newSheet],
+          sheetSizeId: id,
+        }),
+        // Whatever the last refusal complained about no longer applies.
+        customSheetSizeError: null,
+      };
       return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
     return true;

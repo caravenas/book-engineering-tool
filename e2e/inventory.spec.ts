@@ -247,7 +247,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Esquema de plegado': 1,
   'Manual': 1,
   'Número de páginas': 1,
-  'Ocultar proporción de fábrica': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
   'Sangrado (Bleed)': 1,
@@ -406,23 +405,37 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
  * the guarantee is now a size, and a size is what this measures. 40px is the
  * floor this app sets for a pointer target on a desktop layout.
  */
-test('every control in the catalog is big enough to hit', async ({ page }) => {
+/** Measures the controls a selector names, or the ones a container holds. */
+const MEASURE_TOO_SMALL = (selector: string) => Array
+  .from(document.querySelectorAll<HTMLElement>(selector))
+  .filter(control => control.getClientRects().length > 0)
+  // A checkbox is sized by its own rule and hit through its label, so it is
+  // measured by the label's box rather than its own.
+  .filter(control => !(control instanceof HTMLInputElement && control.type === 'checkbox'))
+  .filter(control => control.getBoundingClientRect().height < 40)
+  .map(control => `${control.textContent?.trim() || control.getAttribute('aria-label') || control.id} is ${Math.round(control.getBoundingClientRect().height)}px`);
+
+test('every control is big enough to hit, in the catalog and on the way to it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await expect(page.locator('.app-grid')).toBeVisible();
-  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
 
-  const catalogs = page.locator('.catalog-nav-item');
-  const count = await catalogs.count();
   const tooSmall: string[] = [];
-  for (let index = 0; index < count; index += 1) {
+
+  /*
+   * The catalog and the buttons that open it, which is what has been built to
+   * this rule so far. The controls still in the steps do not meet it — the
+   * segmented buttons are 23px, the fields 35, the grammage chips 21 — and
+   * that is the restyle's job, not something to assert before it is done. When
+   * that increment lands, this measures the steps too and has to stay green.
+   */
+  tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.step-options, .catalog-open'));
+
+  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+  const catalogs = page.locator('.catalog-nav-item');
+  for (let index = 0; index < await catalogs.count(); index += 1) {
     await catalogs.nth(index).click();
-    tooSmall.push(...await page.evaluate(() => Array
-      .from(document.querySelectorAll<HTMLElement>('.catalog-dialog button, .catalog-dialog input, .catalog-dialog select'))
-      .filter(control => control.getClientRects().length > 0)
-      .filter(control => !(control instanceof HTMLInputElement && control.type === 'checkbox'))
-      .filter(control => control.getBoundingClientRect().height < 40)
-      .map(control => `${control.textContent?.trim() || control.getAttribute('aria-label') || control.id} is ${Math.round(control.getBoundingClientRect().height)}px`)));
+    tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.catalog-dialog button, .catalog-dialog input, .catalog-dialog select'));
   }
 
   expect(tooSmall).toEqual([]);

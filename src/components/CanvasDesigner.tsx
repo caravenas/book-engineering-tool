@@ -18,7 +18,6 @@ export function CanvasDesigner() {
     bleed_mm, unitSystem, catalog,
     customProportions, proportionPatches, hiddenProportionLabels, userLayerStorageAvailable,
     setFormat, setProportion, setPageDimensions, setBleed,
-    removeCustomProportion, hideProportion,
   } = useBookStore();
 
 
@@ -30,7 +29,6 @@ export function CanvasDesigner() {
     .filter(prop => !customProportionLabels.has(prop.label))
     .slice(0, 3);
   const isSelectedProportionCustom = customProportions.some(prop => prop.label === proportionId);
-  const isSelectedProportionFactory = proportionId !== null && !isSelectedProportionCustom;
   const proportionOrigin = getCatalogOrigin(proportionId, customProportions.map(prop => prop.label), proportionPatches.map(patch => patch.label));
 
 
@@ -125,52 +123,6 @@ export function CanvasDesigner() {
               Manual
             </button>
           </div>
-          {isSelectedProportionCustom && (
-            <button
-              type="button"
-              className="remove-sheet-button"
-              onClick={() => removeCustomProportion(proportionId as string)}
-              title="Eliminar proporción personalizada"
-              aria-label="Eliminar proporción personalizada"
-              style={{
-                background: 'rgba(244, 63, 94, 0.15)',
-                color: 'var(--color-danger-foreground)',
-                border: '1px solid rgba(244, 63, 94, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                width: '42px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-              }}
-            >
-              ×
-            </button>
-          )}
-          {isSelectedProportionFactory && (
-            <button
-              type="button"
-              className="remove-sheet-button"
-              onClick={() => hideProportion(proportionId as string)}
-              title="Ocultar proporción de fábrica"
-              aria-label="Ocultar proporción de fábrica"
-              style={{
-                background: 'var(--color-bg-secondary)',
-                color: 'var(--color-text-secondary)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                width: '42px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-              }}
-            >
-              –
-            </button>
-          )}
         </div>
         {isSelectedProportionCustom && (
           <ConfigSourceNote text={userLayerStorageAvailable ? 'proporción personalizada' : 'proporción personalizada, guardada solo para esta sesión'} />
