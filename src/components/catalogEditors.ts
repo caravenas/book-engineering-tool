@@ -19,6 +19,7 @@ export function usePressEditor(): CatalogEditor<Press> {
     customPressError,
     addCustomPress,
     removeCustomPress,
+    editCustomPress,
     patchPress,
     unpatchPress,
     hidePress,
@@ -29,7 +30,6 @@ export function usePressEditor(): CatalogEditor<Press> {
   const presses = catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses;
 
   return {
-    ownNote: 'Una prensa tuya no se edita: elimínala y vuelve a añadirla con las medidas nuevas.',
     addLabel: '+ Nueva prensa',
     addSubmitLabel: 'Añadir prensa',
     hiddenLine: count => (count === 1
@@ -77,6 +77,7 @@ export function usePressEditor(): CatalogEditor<Press> {
       toNumber(values.gutter_mm)
     ),
     patch: changes => patchPress(pressId, changes),
+    editOwn: changes => editCustomPress(pressId, changes),
     unpatch: () => unpatchPress(pressId),
     hide: () => hidePress(pressId),
     remove: () => removeCustomPress(pressId),
@@ -88,14 +89,13 @@ export function usePressEditor(): CatalogEditor<Press> {
 export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
   const {
     catalog, sheetSizeId, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds, customSheetSizeError,
-    addCustomSheetSize, removeCustomSheetSize, patchSheetSize, unpatchSheetSize, hideSheetSize, showSheetSize,
+    addCustomSheetSize, removeCustomSheetSize, editCustomSheetSize, patchSheetSize, unpatchSheetSize, hideSheetSize, showSheetSize,
     clearCustomSheetSizeError,
   } = useBookStore();
 
   const sheets = catalog ? getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds) : customSheetSizes;
 
   return {
-    ownNote: 'Un pliego tuyo no se edita: elimínalo y vuelve a añadirlo con las medidas nuevas.',
     addLabel: '+ Nuevo pliego',
     addSubmitLabel: 'Añadir pliego',
     hiddenLine: count => (count === 1
@@ -124,6 +124,7 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
       String(values.name).trim(), toNumber(values.width_mm), toNumber(values.height_mm)
     ),
     patch: changes => patchSheetSize(sheetSizeId, changes),
+    editOwn: changes => editCustomSheetSize(sheetSizeId, changes),
     unpatch: () => unpatchSheetSize(sheetSizeId),
     hide: () => hideSheetSize(sheetSizeId),
     remove: () => removeCustomSheetSize(sheetSizeId),
@@ -135,14 +136,13 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
 export function useBindingEditor(): CatalogEditor<Binding> {
   const {
     catalog, bindingId, customBindings, bindingPatches, hiddenBindingIds, customBindingError,
-    addCustomBinding, removeCustomBinding, patchBinding, unpatchBinding, hideBinding, showBinding,
+    addCustomBinding, removeCustomBinding, editCustomBinding, patchBinding, unpatchBinding, hideBinding, showBinding,
     clearCustomBindingError,
   } = useBookStore();
 
   const bindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
 
   return {
-    ownNote: 'Una encuadernación tuya no se edita: elimínala y vuelve a añadirla con los valores nuevos.',
     addLabel: '+ Nueva encuadernación',
     addSubmitLabel: 'Añadir encuadernación',
     hiddenLine: count => (count === 1
@@ -193,6 +193,7 @@ export function useBindingEditor(): CatalogEditor<Binding> {
       Boolean(values.requiresSignatureMultiple)
     ),
     patch: changes => patchBinding(bindingId, changes),
+    editOwn: changes => editCustomBinding(bindingId, changes),
     unpatch: () => unpatchBinding(bindingId),
     hide: () => hideBinding(bindingId),
     remove: () => removeCustomBinding(bindingId),
@@ -202,14 +203,16 @@ export function useBindingEditor(): CatalogEditor<Binding> {
 }
 
 /**
- * A proportion is keyed by its own label, so renaming one is not a patch it
- * can carry: the store patches only its ratio and its description, and the
- * label is left out of the fields for that reason rather than by oversight.
+ * A proportion is keyed by its own label. A factory one cannot be renamed,
+ * because a patch records a difference against a key and renaming would move
+ * the key itself — so the label is shown and not offered. One of your own is
+ * replaced rather than patched, so there the label is yours to change, and
+ * the store carries the selection across to the new one.
  */
 export function useProportionEditor(): CatalogEditor<Proportion> {
   const {
     catalog, proportionId, customProportions, proportionPatches, hiddenProportionLabels, customProportionError,
-    addCustomProportion, removeCustomProportion, patchProportion, unpatchProportion, hideProportion, showProportion,
+    addCustomProportion, removeCustomProportion, editCustomProportion, patchProportion, unpatchProportion, hideProportion, showProportion,
     clearCustomProportionError,
   } = useBookStore();
 
@@ -217,9 +220,9 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
     ? getAllProportions(catalog, customProportions, proportionPatches, hiddenProportionLabels)
     : customProportions;
   const label = proportionId ?? '';
+  const origin = getCatalogOrigin(label, customProportions.map(item => item.label), proportionPatches.map(patch => patch.label));
 
   return {
-    ownNote: 'Una proporción tuya no se edita: elimínala y vuelve a añadirla con la razón nueva.',
     addLabel: '+ Nueva proporción',
     addSubmitLabel: 'Añadir proporción',
     hiddenLine: count => (count === 1
@@ -227,14 +230,14 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
       : `${count} proporciones de fábrica ocultas.`),
     restoreLabel: 'Mostrar proporciones ocultas',
     fields: [
-      { key: 'label', label: 'Etiqueta', kind: 'text', readOnly: true },
+      { key: 'label', label: 'Etiqueta', kind: 'text', readOnly: origin !== 'own' },
       { key: 'ratioWidth', label: 'Ancho de la razón', kind: 'number' },
       { key: 'ratioHeight', label: 'Alto de la razón', kind: 'number' },
       { key: 'description', label: 'Descripción', kind: 'text' },
     ],
     entry: proportions.find(item => item.label === label) ?? null,
     factory: catalog?.proportions.find(item => item.label === label) ?? null,
-    origin: getCatalogOrigin(label, customProportions.map(item => item.label), proportionPatches.map(patch => patch.label)),
+    origin,
     error: customProportionError,
     clearError: clearCustomProportionError,
     read: proportion => ({
@@ -250,6 +253,9 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
         changes.ratio = [toNumber(values.ratioWidth), toNumber(values.ratioHeight)];
       }
       if (changed.has('description')) changes.description = String(values.description).trim();
+      // Only ever present for an entry of your own: the field is read-only
+      // otherwise, and a read-only field is never counted as changed.
+      if (changed.has('label')) changes.label = String(values.label).trim();
       return changes;
     },
     add: (values: FormValues) => addCustomProportion(
@@ -259,6 +265,7 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
       String(values.description).trim()
     ),
     patch: changes => patchProportion(label, changes),
+    editOwn: changes => editCustomProportion(label, changes),
     unpatch: () => unpatchProportion(label),
     hide: () => hideProportion(label),
     remove: () => removeCustomProportion(label),
@@ -283,7 +290,7 @@ export function useGrammageEditor(): CatalogEditor<GrammageOption> {
   const isOwn = customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === selectedGrammage);
 
   return {
-    ownNote: 'Los gramajes no se editan ni se ocultan: puedes añadir los tuyos y quitarlos.',
+    readOnlyNote: 'Los gramajes no se editan ni se ocultan: puedes añadir los tuyos y quitarlos.',
     addLabel: '+ Nuevo gramaje',
     addSubmitLabel: 'Añadir gramaje',
     hiddenLine: () => '',

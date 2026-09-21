@@ -1013,7 +1013,13 @@ describe('Focus visibility and delete-button tap targets (UX-3)', () => {
 });
 
 describe('Editing a press in the catalog (R-4a)', () => {
-  it('does not offer to save a press of your own, which the store cannot patch', () => {
+  /**
+   * R-8: a press of your own used to be added and then frozen — correcting a
+   * mistyped gripper meant deleting it and typing all seven fields again.
+   * This drives the whole correction through the interface, because the store
+   * action existing is not the same as the form reaching it.
+   */
+  it('saves a correction to a press of your own, through the form', () => {
     render(<ImpositionVisualizerScreen />);
     openPressCatalog();
     fireEvent.click(screen.getByRole('button', { name: '+ Nueva prensa' }));
@@ -1026,12 +1032,45 @@ describe('Editing a press in the catalog (R-4a)', () => {
     }
     fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
     expect(useBookStore.getState().customPresses).toHaveLength(1);
+    const { id } = useBookStore.getState().customPresses[0];
 
-    // There is no action that edits a custom press, so a save button here
-    // would be a button that quietly does nothing.
-    expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull();
-    expect((screen.getByLabelText('Nombre') as HTMLInputElement).readOnly).toBe(true);
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).readOnly).toBe(false);
+    fireEvent.change(screen.getByLabelText('Pinza'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa mía, corregida' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    // Replaced, not duplicated, and the fields nobody touched survive.
+    expect(useBookStore.getState().customPresses).toHaveLength(1);
+    expect(useBookStore.getState().customPresses[0]).toMatchObject({
+      id, name: 'Prensa mía, corregida', gripperMargin_mm: 12, maxSheetWidth_mm: 500, gutter_mm: 4,
+    });
     expect(screen.getByRole('button', { name: 'Eliminar' })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps a rejected correction on screen with the store\u2019s reason, and changes nothing', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva prensa' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Prensa mía' } });
+    for (const [label, value] of [
+      ['Pliego máximo · ancho', '500'], ['Pliego máximo · alto', '700'],
+      ['Pinza', '10'], ['Cola', '5'], ['Lateral', '5'], ['Calle', '4'],
+    ]) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir prensa' }));
+
+    // A gripper and a tail that swallow the sheet leave no printable area,
+    // which is the invariant maquinas.json is validated against.
+    fireEvent.change(screen.getByLabelText('Pinza'), { target: { value: '400' } });
+    fireEvent.change(screen.getByLabelText('Cola'), { target: { value: '400' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(useBookStore.getState().customPresses[0].gripperMargin_mm).toBe(10);
+    expect(screen.getByRole('alert').textContent).toContain('inválidos');
+    // The typed values stay, so the correction can be corrected.
+    expect((screen.getByLabelText('Pinza') as HTMLInputElement).value).toBe('400');
   });
 
   it('drops the patch when every field is put back to its factory value', () => {
@@ -1173,5 +1212,72 @@ describe('Custom proportion quick-add (UX-4)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customProportions).toHaveLength(0);
     expect(useBookStore.getState().proportionId).not.toBe('4:5');
+  });
+});
+
+/**
+ * A proportion is keyed by its label, so a factory one cannot be renamed: a
+ * patch is a difference recorded against a key, and renaming would move the
+ * key. One of your own is replaced outright, so there the label is yours.
+ */
+describe('Renaming a proportion of your own (R-8)', () => {
+  it('offers the label for editing only when the proportion is yours', () => {
+    render(<CanvasDesignerScreen />);
+    openCatalogFor('proporción');
+
+    // The default selection is a factory proportion.
+    expect((screen.getByLabelText('Etiqueta') as HTMLInputElement).readOnly).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva proporción' }));
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '4:5' } });
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Formato de prueba.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
+
+    expect((screen.getByLabelText('Etiqueta') as HTMLInputElement).readOnly).toBe(false);
+  });
+
+  it('carries the selection to the new label, and applies the new ratio to the page', () => {
+    render(<CanvasDesignerScreen />);
+    openCatalogFor('proporción');
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva proporción' }));
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '4:5' } });
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Formato de prueba.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
+    expect(useBookStore.getState().proportionId).toBe('4:5');
+
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: 'Panorámico' } });
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '16' } });
+    fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '9' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    const state = useBookStore.getState();
+    expect(state.customProportions).toHaveLength(1);
+    expect(state.customProportions[0].label).toBe('Panorámico');
+    // Not left pointing at a label that no longer exists.
+    expect(state.proportionId).toBe('Panorámico');
+    expect(state.pageHeight_mm).toBeCloseTo(state.pageWidth_mm * 9 / 16, 6);
+    expect(screen.getByRole('button', { name: 'Panorámico' })).toBeTruthy();
+  });
+
+  it('refuses a rename onto a factory label and keeps the entry as it was', () => {
+    render(<CanvasDesignerScreen />);
+    openCatalogFor('proporción');
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva proporción' }));
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '4:5' } });
+    fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Alto de la razón'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Formato de prueba.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir proporción' }));
+
+    fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: '2:3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(useBookStore.getState().customProportions[0].label).toBe('4:5');
+    expect(useBookStore.getState().proportionId).toBe('4:5');
+    expect(screen.getByRole('alert').textContent).toContain('Ya existe');
   });
 });

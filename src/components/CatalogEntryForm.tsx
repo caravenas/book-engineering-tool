@@ -31,11 +31,13 @@ export type FormValues = Record<string, string | boolean>;
 
 export interface CatalogEditor<Entry> {
   /**
-   * What the form says about an entry of your own, written out per catalog
-   * rather than assembled from a noun: Spanish will not glue "tuyo" and
-   * "quitarlas" onto the same sentence and stay grammatical for five genders.
+   * Why this catalog cannot be edited here, for the ones that cannot: only
+   * grammages, which hang off a paper and are keyed by their own value, so
+   * there is nothing to patch and nothing to replace — you add yours and you
+   * remove it again. Absent where every entry can be edited, so the form has
+   * no sentence to print that is no longer true.
    */
-  ownNote: string;
+  readOnlyNote?: string;
   /** What the add button offers: "+ Nueva prensa". */
   addLabel: string;
   /** What the add button's submit says: "Añadir prensa". */
@@ -63,6 +65,12 @@ export interface CatalogEditor<Entry> {
    * removing it again. The form shows what that catalog can do and no more.
    */
   patch?: (changes: Record<string, unknown>) => boolean;
+  /**
+   * Replacing an entry of your own. Separate from `patch` because a patch is
+   * a difference from a factory entry and an entry of your own has none: it
+   * is not a smaller edit of the same kind, it is a different operation.
+   */
+  editOwn?: (changes: Record<string, unknown>) => boolean;
   unpatch?: () => void;
   hide?: () => void;
   remove: () => void;
@@ -118,12 +126,12 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
   const shown = adding ? draft : (edit ?? values);
 
   /*
-   * An entry of your own has no factory entry to differ from, and the store
-   * has no action that edits one: it can be added and removed, nothing else.
-   * So its fields are shown as they are and there is nothing to save, rather
-   * than a save button that quietly does nothing.
+   * An entry of your own is replaced rather than patched, so it is editable
+   * exactly when the store offers that replacement. A catalog that offers
+   * neither shows its fields as they are and no save button, rather than one
+   * that quietly does nothing.
    */
-  const editable = adding || (editor.origin !== 'own' && Boolean(editor.patch));
+  const editable = adding || (editor.origin === 'own' ? Boolean(editor.editOwn) : Boolean(editor.patch));
   const factoryValues = editor.factory ? editor.read(editor.factory) : null;
 
   const setField = (key: string, value: string | boolean) => {
@@ -149,17 +157,19 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
     }
 
     /*
-     * A patch is a difference from the factory entry, and saving one replaces
-     * the one before it rather than merging into it. So the fields to record
-     * are the ones that differ from FACTORY, not the ones touched since the
-     * form opened: diffing against the effective entry would drop every
-     * earlier edit the moment a second one was saved.
+     * What to diff against depends on what saving does. A patch is a
+     * difference from the FACTORY entry and replaces the patch before it
+     * rather than merging into it, so diffing a patch against the effective
+     * entry would drop every earlier edit the moment a second one was saved.
+     * An entry of your own has no factory behind it and is replaced outright,
+     * so there the baseline is the entry as it stands.
      */
+    const baseline = editor.origin === 'own' ? values : factoryValues;
     const changed = new Set<string>();
-    if (factoryValues) {
+    if (baseline) {
       for (const { key, kind, readOnly } of editor.fields) {
         if (readOnly) continue;
-        if (!sameValue(kind, shown[key], factoryValues[key])) changed.add(key);
+        if (!sameValue(kind, shown[key], baseline[key])) changed.add(key);
       }
     }
 
@@ -172,7 +182,9 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
       return;
     }
 
-    if (editor.patch?.(editor.toChanges(shown, changed))) setEdit(null);
+    const changes = editor.toChanges(shown, changed);
+    const saved = editor.origin === 'own' ? editor.editOwn?.(changes) : editor.patch?.(changes);
+    if (saved) setEdit(null);
   };
 
   return (
@@ -241,8 +253,8 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
           <p className="calculation-error" role="alert" id="catalog-entry-error">{editor.error}</p>
         )}
 
-        {!editable && (
-          <p className="calculation-note">{editor.ownNote}</p>
+        {!editable && editor.readOnlyNote && (
+          <p className="calculation-note">{editor.readOnlyNote}</p>
         )}
 
         <div className="catalog-actions">

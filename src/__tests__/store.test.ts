@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getAllGrammageOptions, useBookStore } from '../store/useBookStore';
-import { emptyUserLayer } from '../config/userLayer';
+import { createBookStore, getAllGrammageOptions, useBookStore } from '../store/useBookStore';
+import { emptyUserLayer, readUserLayer } from '../config/userLayer';
 import { loadShippedCatalog } from './testCatalog';
+import { FakeStorage } from './fakeStorage';
 
 const initialState = useBookStore.getState();
 const catalog = loadShippedCatalog();
@@ -816,5 +817,147 @@ describe('totalPagesInput', () => {
 
   it('sets totalPagesInput to the catalog default total pages after initialize', () => {
     expect(useBookStore.getState().totalPagesInput).toBe(String(catalog.defaults.totalPages));
+  });
+});
+
+/**
+ * An entry of your own has no factory entry behind it, so it cannot be
+ * patched and could only be deleted and added again. These are the actions
+ * that let a print shop correct a machine it typed wrong instead of starting
+ * over, which is the point of being able to add one at all.
+ */
+describe('Editing an entry of your own (R-8)', () => {
+  it('replaces the press in place, keeps it selected, and reaches the imposition engine', () => {
+    expect(useBookStore.getState().addCustomPress('Heidelberg SM 74', 740, 1050, 12, 10, 10, 5)).toBe(true);
+    const id = useBookStore.getState().pressId;
+    const before = useBookStore.getState().signaturePlan?.selected;
+    expect(before).toBeTruthy();
+
+    expect(useBookStore.getState().editCustomPress(id, { name: '  Heidelberg SM 102  ', maxSheetWidth_mm: 320, maxSheetHeight_mm: 450 })).toBe(true);
+
+    const [press] = useBookStore.getState().customPresses;
+    expect(useBookStore.getState().customPresses).toHaveLength(1);
+    expect(press.id).toBe(id);
+    // Trimmed, like the adder trims, and the untouched fields survive.
+    expect(press.name).toBe('Heidelberg SM 102');
+    expect(press.maxSheetWidth_mm).toBe(320);
+    expect(press.gripperMargin_mm).toBe(12);
+    expect(useBookStore.getState().pressId).toBe(id);
+    expect(useBookStore.getState().customPressError).toBeNull();
+
+    /*
+     * Not just stored. The shipped sheet is 700x1000, so an SRA3-sized press
+     * cannot hold it and no folding scheme fits: the plan goes from a
+     * selection to none. A weaker edit passed this assertion while proving
+     * nothing, because the engine happened to pick the same plan either way.
+     */
+    expect(useBookStore.getState().signaturePlan?.selected ?? null).toBeNull();
+  });
+
+  it('refuses changes that would leave no printable area, and changes nothing', () => {
+    expect(useBookStore.getState().addCustomPress('Prensa propia', 700, 1000, 12, 10, 10, 5)).toBe(true);
+    const id = useBookStore.getState().pressId;
+
+    // Gripper plus tail swallowing the sheet is the invariant maquinas.json
+    // is validated against; the same one has to hold for an edit.
+    expect(useBookStore.getState().editCustomPress(id, { gripperMargin_mm: 600, tailMargin_mm: 500 })).toBe(false);
+    expect(useBookStore.getState().customPresses[0].gripperMargin_mm).toBe(12);
+    expect(useBookStore.getState().customPressError).toContain('inválidos');
+  });
+
+  it('refuses a rename onto another press but allows an entry to keep its own name', () => {
+    expect(useBookStore.getState().addCustomPress('Prensa propia', 700, 1000, 12, 10, 10, 5)).toBe(true);
+    const id = useBookStore.getState().pressId;
+
+    expect(useBookStore.getState().editCustomPress(id, { name: '  prensa formato sra3 ' })).toBe(false);
+    expect(useBookStore.getState().customPresses[0].name).toBe('Prensa propia');
+    expect(useBookStore.getState().customPressError).toContain('Ya existe');
+
+    // Editing a number without touching the name must not read as a clash
+    // with the entry being edited.
+    expect(useBookStore.getState().editCustomPress(id, { gutter_mm: 8 })).toBe(true);
+    expect(useBookStore.getState().customPresses[0].gutter_mm).toBe(8);
+  });
+
+  it('refuses to edit a factory press through this action: a factory entry is patched, not replaced', () => {
+    expect(useBookStore.getState().editCustomPress('prensa_sra3', { name: 'Otra cosa' })).toBe(false);
+    expect(useBookStore.getState().customPressError).toContain('no es una de las tuyas');
+    expect(useBookStore.getState().pressPatches).toHaveLength(0);
+  });
+
+  it('edits a sheet size of your own and recalculates with it', () => {
+    expect(useBookStore.getState().addCustomSheetSize('Pliego propio', 500, 700)).toBe(true);
+    const id = useBookStore.getState().sheetSizeId;
+
+    expect(useBookStore.getState().editCustomSheetSize(id, { width_mm: 640, height_mm: 880 })).toBe(true);
+    expect(useBookStore.getState().customSheetSizes[0]).toMatchObject({ id, name: 'Pliego propio', width_mm: 640, height_mm: 880 });
+
+    expect(useBookStore.getState().editCustomSheetSize(id, { width_mm: 0 })).toBe(false);
+    expect(useBookStore.getState().customSheetSizes[0].width_mm).toBe(640);
+  });
+
+  it('edits a binding of your own, and refuses a page range that inverts itself', () => {
+    expect(useBookStore.getState().addCustomBinding('Cosido propio', 4, 16, 400, 1.5, false, false)).toBe(true);
+    const id = useBookStore.getState().bindingId;
+
+    expect(useBookStore.getState().editCustomBinding(id, { spineAllowance_mm: 2.5, maxPages: 500 })).toBe(true);
+    expect(useBookStore.getState().customBindings[0]).toMatchObject({ id, spineAllowance_mm: 2.5, maxPages: 500, minPages: 16 });
+
+    expect(useBookStore.getState().editCustomBinding(id, { minPages: 600 })).toBe(false);
+    expect(useBookStore.getState().customBindings[0].minPages).toBe(16);
+    expect(useBookStore.getState().customBindingError).toContain('inválidos');
+  });
+
+  /**
+   * A proportion is keyed by its label, so renaming one moves the key. The
+   * selection has to move with it, or the app points at a label that is no
+   * longer there and silently falls back to a different proportion.
+   */
+  it('renames a proportion of your own and carries the selection to the new label', () => {
+    expect(useBookStore.getState().addCustomProportion('4:5', 4, 5, 'Formato de prueba.')).toBe(true);
+    expect(useBookStore.getState().proportionId).toBe('4:5');
+    const width = useBookStore.getState().pageWidth_mm;
+
+    expect(useBookStore.getState().editCustomProportion('4:5', { label: 'Panorámico', ratio: [16, 9] })).toBe(true);
+
+    expect(useBookStore.getState().customProportions).toHaveLength(1);
+    expect(useBookStore.getState().customProportions[0].label).toBe('Panorámico');
+    expect(useBookStore.getState().proportionId).toBe('Panorámico');
+    // The new ratio is applied, not just stored.
+    expect(useBookStore.getState().pageHeight_mm).toBeCloseTo(width * 9 / 16, 6);
+  });
+
+  it('leaves the selection alone when the proportion renamed is not the one selected', () => {
+    expect(useBookStore.getState().addCustomProportion('4:5', 4, 5, 'Formato de prueba.')).toBe(true);
+    useBookStore.getState().setProportion('2:3');
+
+    expect(useBookStore.getState().editCustomProportion('4:5', { label: '5:4' })).toBe(true);
+    expect(useBookStore.getState().proportionId).toBe('2:3');
+  });
+
+  it('refuses to rename a proportion of your own onto a factory label', () => {
+    expect(useBookStore.getState().addCustomProportion('4:5', 4, 5, 'Formato de prueba.')).toBe(true);
+
+    expect(useBookStore.getState().editCustomProportion('4:5', { label: ' 2:3 ' })).toBe(false);
+    expect(useBookStore.getState().customProportions[0].label).toBe('4:5');
+    expect(useBookStore.getState().customProportionError).toContain('Ya existe');
+  });
+
+  it('writes the edit through to storage, so a reload reads the corrected entry', () => {
+    const storage = new FakeStorage();
+
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+    expect(firstMount.getState().addCustomPress('Prensa propia', 700, 1000, 12, 10, 10, 5)).toBe(true);
+    const id = firstMount.getState().pressId;
+    expect(firstMount.getState().editCustomPress(id, { name: 'Prensa corregida', gutter_mm: 8 })).toBe(true);
+
+    // A fresh store instance, reading what the first one wrote: the edit has
+    // to be in storage and not only in the state that made it.
+    const secondMount = createBookStore(storage);
+    secondMount.getState().initialize(catalog, readUserLayer(storage));
+
+    expect(secondMount.getState().customPresses).toHaveLength(1);
+    expect(secondMount.getState().customPresses[0]).toMatchObject({ id, name: 'Prensa corregida', gutter_mm: 8 });
   });
 });

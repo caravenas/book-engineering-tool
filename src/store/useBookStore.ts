@@ -214,6 +214,39 @@ function namesMatch(a: string, b: string): boolean {
 }
 
 /**
+ * The checks that are the same for editing any entry of your own, in one
+ * place: the result has to be a valid entry of its kind, and its name has to
+ * stay distinct from every other entry the dropdown will show — itself
+ * excepted, or renaming nothing would collide with the entry being renamed.
+ *
+ * Written once rather than four times because the four adders and the four
+ * patchers already drifted: every `addCustomX` refuses a duplicate name and
+ * no `patchX` does, so a factory entry can still be renamed onto another and
+ * leave two rows reading the same.
+ *
+ * `keyOf` rather than `id` because a proportion is keyed by its label, which
+ * is also the name being checked and the thing a rename changes.
+ */
+function editedOwnEntries<Entry>(
+  own: Entry[],
+  effective: Entry[],
+  key: string,
+  keyOf: (entry: Entry) => string,
+  nameOf: (entry: Entry) => string,
+  candidate: Entry,
+  isValid: (value: unknown) => value is Entry,
+  messages: { invalid: string; duplicate: (name: string) => string }
+): { entries: Entry[] } | { error: string } {
+  if (!isValid(candidate)) return { error: messages.invalid };
+
+  const name = nameOf(candidate);
+  const collides = effective.some(entry => keyOf(entry) !== key && namesMatch(nameOf(entry), name));
+  if (collides) return { error: messages.duplicate(name.trim()) };
+
+  return { entries: own.map(entry => (keyOf(entry) === key ? candidate : entry)) };
+}
+
+/**
  * Merge a persisted user layer into a freshly loaded catalog for `initialize`.
  * Only `customGrammages` references another catalog by id (`substrateId`):
  * an entry whose substrate no longer exists is dropped instead of breaking
@@ -1056,6 +1089,46 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
     });
   },
 
+  /** Editing an entry of your own replaces it; see `editCustomPress`. */
+  editCustomSheetSize: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customSheetSizes.find(sheet => sheet.id === id);
+    if (!existing) {
+      set({ customSheetSizeError: `El pliego "${id}" no es uno de los tuyos, así que no se puede editar.` });
+      return false;
+    }
+
+    const result = editedOwnEntries<SheetSize>(
+      state.customSheetSizes,
+      getAllSheetSizes(state.catalog, state.customSheetSizes, state.sheetSizePatches, state.hiddenSheetSizeIds),
+      id,
+      sheet => sheet.id,
+      sheet => sheet.name,
+      { ...existing, ...changes, name: (changes.name ?? existing.name).trim() },
+      isValidSheetSize,
+      {
+        invalid: 'Los cambios dejarían el pliego con datos inválidos: el ancho y el alto como números finitos mayores que cero.',
+        duplicate: name => `Ya existe un pliego llamado "${name}". Introduce otro nombre o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customSheetSizeError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, { customSheetSizes: result.entries }),
+        customSheetSizeError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
   patchSheetSize: (id, changes) => {
     const state = get();
     if (!state.catalog) return false;
@@ -1315,6 +1388,51 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
     });
   },
 
+  /*
+   * An entry of your own has no factory entry behind it, so there is nothing
+   * to diff against and nothing to revert to: editing one replaces it. That
+   * is why this is a separate action from `patchPress` rather than a flag on
+   * it — a patch is a difference, and this is not.
+   */
+  editCustomPress: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customPresses.find(press => press.id === id);
+    if (!existing) {
+      set({ customPressError: `La prensa "${id}" no es una de las tuyas, así que no se puede editar.` });
+      return false;
+    }
+
+    const result = editedOwnEntries<Press>(
+      state.customPresses,
+      getAllPresses(state.catalog, state.customPresses, state.pressPatches, state.hiddenPressIds),
+      id,
+      press => press.id,
+      press => press.name,
+      { ...existing, ...changes, name: (changes.name ?? existing.name).trim() },
+      isValidPress,
+      {
+        invalid: 'Los cambios dejarían la prensa con datos inválidos: el ancho y el alto máximo de pliego mayores que cero, los márgenes y la calle no negativos, y ambos dejando área imprimible.',
+        duplicate: name => `Ya existe una prensa llamada "${name}". Introduce otro nombre o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customPressError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, { customPresses: result.entries }),
+        customPressError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
   patchPress: (id, changes) => {
     const state = get();
     if (!state.catalog) return false;
@@ -1493,6 +1611,46 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
     });
   },
 
+  /** Editing an entry of your own replaces it; see `editCustomPress`. */
+  editCustomBinding: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customBindings.find(binding => binding.id === id);
+    if (!existing) {
+      set({ customBindingError: `La encuadernación "${id}" no es una de las tuyas, así que no se puede editar.` });
+      return false;
+    }
+
+    const result = editedOwnEntries<Binding>(
+      state.customBindings,
+      getAllBindings(state.catalog, state.customBindings, state.bindingPatches, state.hiddenBindingIds),
+      id,
+      binding => binding.id,
+      binding => binding.name,
+      { ...existing, ...changes, name: (changes.name ?? existing.name).trim() },
+      isValidBinding,
+      {
+        invalid: 'Los cambios dejarían la encuadernación con datos inválidos: el múltiplo y los límites de páginas como enteros mayores que cero, el mínimo no mayor que el máximo, y el aporte al lomo no negativo.',
+        duplicate: name => `Ya existe una encuadernación llamada "${name}". Introduce otro nombre o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customBindingError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, { customBindings: result.entries }),
+        customBindingError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
   patchBinding: (id, changes) => {
     const state = get();
     if (!state.catalog) return false;
@@ -1656,6 +1814,64 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       };
       return withPersistedCatalogPatch(storage, state.catalog, state, patch);
     });
+  },
+
+  /*
+   * A proportion is keyed by its label, so renaming one of your own moves the
+   * key: the selection has to follow it, or the app would be pointing at a
+   * label that no longer exists and fall back to a different proportion.
+   * See `editCustomPress` for why this is not a patch.
+   */
+  editCustomProportion: (label, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customProportions.find(proportion => proportion.label === label);
+    if (!existing) {
+      set({ customProportionError: `La proporción "${label}" no es una de las tuyas, así que no se puede editar.` });
+      return false;
+    }
+
+    const candidate: Proportion = { ...existing, ...changes, label: (changes.label ?? existing.label).trim() };
+    const result = editedOwnEntries<Proportion>(
+      state.customProportions,
+      getAllProportions(state.catalog, state.customProportions, state.proportionPatches, state.hiddenProportionLabels),
+      label,
+      proportion => proportion.label,
+      proportion => proportion.label,
+      candidate,
+      isValidProportion,
+      {
+        invalid: 'Los cambios dejarían la proporción con datos inválidos: una etiqueta y una descripción no vacías, y las dos medidas de la razón como números finitos mayores que cero.',
+        duplicate: name => `Ya existe la proporción "${name}". Introduce otra etiqueta o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customProportionError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const inputPatch: Partial<BookConfig> = { customProportions: result.entries };
+
+      if (currentState.proportionId === label) {
+        const effective = getAllProportions(
+          currentState.catalog, result.entries, currentState.proportionPatches, currentState.hiddenProportionLabels
+        );
+        const dimensions = dimensionsFromProportion(effective, candidate.label, currentState.format, currentState.pageWidth_mm);
+        inputPatch.proportionId = candidate.label;
+        inputPatch.pageWidth_mm = dimensions.width;
+        inputPatch.pageHeight_mm = dimensions.height;
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, inputPatch),
+        customProportionError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
   },
 
   patchProportion: (label, changes) => {

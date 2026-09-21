@@ -484,6 +484,7 @@ export interface BookStore extends BookConfig {
   setCover: (coverId: string) => void;
   addCustomSheetSize: (name: string, width_mm: number, height_mm: number) => boolean;
   removeCustomSheetSize: (id: string) => void;
+  editCustomSheetSize: (id: string, changes: Partial<Pick<SheetSize, 'name' | 'width_mm' | 'height_mm'>>) => boolean;
   patchSheetSize: (id: string, changes: Partial<Pick<SheetSize, 'name' | 'width_mm' | 'height_mm'>>) => boolean;
   unpatchSheetSize: (id: string) => void;
   hideSheetSize: (id: string) => void;
@@ -502,6 +503,7 @@ export interface BookStore extends BookConfig {
     gutter_mm: number
   ) => boolean;
   removeCustomPress: (id: string) => void;
+  editCustomPress: (id: string, changes: Partial<Omit<Press, 'id'>>) => boolean;
   patchPress: (id: string, changes: Partial<Omit<Press, 'id'>>) => boolean;
   unpatchPress: (id: string) => void;
   hidePress: (id: string) => void;
@@ -517,6 +519,7 @@ export interface BookStore extends BookConfig {
     requiresSignatureMultiple: boolean
   ) => boolean;
   removeCustomBinding: (id: string) => void;
+  editCustomBinding: (id: string, changes: Partial<Omit<Binding, 'id'>>) => boolean;
   patchBinding: (id: string, changes: Partial<Omit<Binding, 'id'>>) => boolean;
   unpatchBinding: (id: string) => void;
   hideBinding: (id: string) => void;
@@ -524,6 +527,7 @@ export interface BookStore extends BookConfig {
   clearCustomBindingError: () => void;
   addCustomProportion: (label: string, ratioWidth: number, ratioHeight: number, description: string) => boolean;
   removeCustomProportion: (label: string) => void;
+  editCustomProportion: (label: string, changes: Partial<Omit<Proportion, 'label'>> & { label?: string }) => boolean;
   patchProportion: (label: string, changes: Partial<Pick<Proportion, 'ratio' | 'description'>>) => boolean;
   unpatchProportion: (label: string) => void;
   hideProportion: (label: string) => void;
