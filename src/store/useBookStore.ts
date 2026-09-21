@@ -22,6 +22,8 @@ import type {
   SignaturePlanResult,
   SoftCoverResult,
   SpineResult,
+  Substrate,
+  SubstratePatch,
   UserLayer,
 } from '../types';
 import { calculateImposition } from '../engine/imposition';
@@ -38,6 +40,7 @@ import {
   isValidPress,
   isValidProportion,
   isValidSheetSize,
+  isValidSubstrate,
   writeUserLayer,
 } from '../config/userLayer';
 
@@ -95,11 +98,11 @@ function getAllSheetSizes(
  * comment in `src/types/index.ts`); this stays exactly as UX-5 left it.
  */
 function getAllGrammageOptions(
-  catalog: Catalog,
+  substrates: Substrate[],
   substrateId: string,
   customGrammages: CustomGrammageOption[]
 ): GrammageOption[] {
-  const substrate = catalog.substrates.find(s => s.id === substrateId);
+  const substrate = substrates.find(s => s.id === substrateId);
   const builtIn = substrate ? substrate.options : [];
   const custom = customGrammages.filter(option => option.substrateId === substrateId);
   return [...builtIn, ...custom];
@@ -108,15 +111,15 @@ function getAllGrammageOptions(
 /**
  * Get the caliper for a given substrate + grammage combination.
  */
-function getCaliper(
-  catalog: Catalog,
-  substrateId: string,
-  grammage: number,
-  customGrammages: CustomGrammageOption[]
-): number {
-  const allOptions = getAllGrammageOptions(catalog, substrateId, customGrammages);
-  const option = allOptions.find(o => o.grammage === grammage);
-  return option ? option.caliper : 0;
+function getCaliper(catalog: Catalog, state: BookConfig): number {
+  // The effective catalog, not the factory one: a paper a print shop added
+  // carries its own weights, and looking only at what shipped would report no
+  // caliper for it and leave the spine, the weight and the creep unbuilt.
+  const substrates = getAllSubstrates(
+    catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+  );
+  const options = getAllGrammageOptions(substrates, state.substrateId, state.customGrammages);
+  return options.find(option => option.grammage === state.selectedGrammage)?.caliper ?? 0;
 }
 
 /**
@@ -137,6 +140,45 @@ function getSheetDimensions(
 /**
  * Get all presses (factory, patched and with hidden ones excluded, + custom).
  */
+/**
+ * Every paper the tool offers: factory, with patches applied and hidden ones
+ * dropped, plus the ones a print shop added.
+ *
+ * A paper of your own carries its own grammages; `customGrammages` only ever
+ * attaches one to a paper that came from the catalog, which is why the two
+ * lists are separate and not merged here.
+ */
+/**
+ * A grammage the chosen paper actually sells: the preferred one when it has
+ * it, its first otherwise. A paper with no weights cannot be selected — the
+ * user layer refuses to hold one — so the fallback only fires for a factory
+ * paper whose options the catalog validator already guarantees.
+ */
+function resolveGrammage(
+  substrates: Substrate[],
+  substrateId: string,
+  customGrammages: CustomGrammageOption[],
+  preferred: number
+): number {
+  const options = getAllGrammageOptions(substrates, substrateId, customGrammages);
+  if (options.some(option => option.grammage === preferred)) return preferred;
+  return options[0]?.grammage ?? preferred;
+}
+
+function getAllSubstrates(
+  catalog: Catalog,
+  customSubstrates: Substrate[],
+  substratePatches: SubstratePatch[],
+  hiddenSubstrateIds: readonly string[]
+): Substrate[] {
+  return mergeCatalogWithPatches(
+    catalog.substrates, substrate => substrate.id,
+    substratePatches, patch => patch.id,
+    hiddenSubstrateIds,
+    customSubstrates
+  );
+}
+
 function getAllPresses(
   catalog: Catalog,
   customPresses: Press[],
@@ -257,7 +299,12 @@ function editedOwnEntries<Entry>(
  * `computeOrphanedUserLayerEntries`) rather than dropped here.
  */
 function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Omit<UserLayer, 'customGrammages'> & Pick<UserLayer, 'customGrammages'> {
-  const knownSubstrateIds = new Set(catalog.substrates.map(s => s.id));
+  // A paper of your own counts as known: dropping grammages attached to it
+  // would empty the papers a print shop added the moment they reloaded.
+  const knownSubstrateIds = new Set([
+    ...catalog.substrates.map(s => s.id),
+    ...userLayer.customSubstrates.map(s => s.id),
+  ]);
   return {
     ...userLayer,
     customGrammages: userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId)),
@@ -269,14 +316,17 @@ function extractUserLayer(state: BookConfig): UserLayer {
   return {
     customProportions: state.customProportions,
     customGrammages: state.customGrammages,
+    customSubstrates: state.customSubstrates,
     customSheetSizes: state.customSheetSizes,
     customPresses: state.customPresses,
     customBindings: state.customBindings,
     proportionPatches: state.proportionPatches,
+    substratePatches: state.substratePatches,
     sheetSizePatches: state.sheetSizePatches,
     pressPatches: state.pressPatches,
     bindingPatches: state.bindingPatches,
     hiddenProportionLabels: state.hiddenProportionLabels,
+    hiddenSubstrateIds: state.hiddenSubstrateIds,
     hiddenSheetSizeIds: state.hiddenSheetSizeIds,
     hiddenPressIds: state.hiddenPressIds,
     hiddenBindingIds: state.hiddenBindingIds,
@@ -292,6 +342,7 @@ function extractUserLayer(state: BookConfig): UserLayer {
  */
 function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer): OrphanedUserLayerEntry[] {
   const knownProportionLabels = new Set(catalog.proportions.map(p => p.label));
+  const knownSubstrateIds = new Set(catalog.substrates.map(s => s.id));
   const knownSheetSizeIds = new Set(catalog.sheetSizes.map(s => s.id));
   const knownPressIds = new Set(catalog.presses.map(p => p.id));
   const knownBindingIds = new Set(catalog.bindings.map(b => b.id));
@@ -299,6 +350,9 @@ function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer)
   const orphans: OrphanedUserLayerEntry[] = [];
   for (const patch of userLayer.proportionPatches) {
     if (!knownProportionLabels.has(patch.label)) orphans.push({ kind: 'proportionPatch', targetId: patch.label });
+  }
+  for (const patch of userLayer.substratePatches) {
+    if (!knownSubstrateIds.has(patch.id)) orphans.push({ kind: 'substratePatch', targetId: patch.id });
   }
   for (const patch of userLayer.sheetSizePatches) {
     if (!knownSheetSizeIds.has(patch.id)) orphans.push({ kind: 'sheetSizePatch', targetId: patch.id });
@@ -311,6 +365,9 @@ function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer)
   }
   for (const label of userLayer.hiddenProportionLabels) {
     if (!knownProportionLabels.has(label)) orphans.push({ kind: 'hiddenProportion', targetId: label });
+  }
+  for (const id of userLayer.hiddenSubstrateIds) {
+    if (!knownSubstrateIds.has(id)) orphans.push({ kind: 'hiddenSubstrate', targetId: id });
   }
   for (const id of userLayer.hiddenSheetSizeIds) {
     if (!knownSheetSizeIds.has(id)) orphans.push({ kind: 'hiddenSheetSize', targetId: id });
@@ -491,7 +548,7 @@ function calculateBindingResults(
 
   let bindingCreep: BindingResults['bindingCreep'] = null;
   try {
-    const caliper = getCaliper(catalog, state.substrateId, state.selectedGrammage, state.customGrammages);
+    const caliper = getCaliper(catalog, state);
     bindingCreep = creepCompensation(binding, state.totalPages, caliper);
   } catch {
     bindingCreep = null;
@@ -601,12 +658,7 @@ function calculateResults(state: BookStore, catalog: Catalog): CalculationResult
   }
 
   try {
-    const caliper = getCaliper(
-      catalog,
-      state.substrateId,
-      state.selectedGrammage,
-      state.customGrammages
-    );
+    const caliper = getCaliper(catalog, state);
     spineResult = calculateSpineAndWeight(
       state.pageWidth_mm,
       state.pageHeight_mm,
@@ -743,6 +795,7 @@ function resolveVisibleId<T extends { id: string }>(effective: T[], selectedId: 
 
 let customSheetCounter = 0;
 let customPressCounter = 0;
+let customSubstrateCounter = 0;
 let customBindingCounter = 0;
 
 /**
@@ -772,6 +825,9 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   substrateId: '',
   selectedGrammage: 0,
   customGrammages: [],
+  customSubstrates: [],
+  substratePatches: [],
+  hiddenSubstrateIds: [],
 
   // Imposition
   sheetSizeId: '',
@@ -813,6 +869,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
   coverPlan: null,
   coverError: null,
   customGrammageError: null,
+  customSubstrateError: null,
   customSheetSizeError: null,
   customPressError: null,
   customBindingError: null,
@@ -835,6 +892,9 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       // selected after a reload just because it is still factory's default.
       const effectiveProportions = getAllProportions(
         catalog, merged.customProportions, merged.proportionPatches, merged.hiddenProportionLabels
+      );
+      const effectiveSubstrates = getAllSubstrates(
+        catalog, merged.customSubstrates, merged.substratePatches, merged.hiddenSubstrateIds
       );
       const effectiveSheetSizes = getAllSheetSizes(
         catalog, merged.customSheetSizes, merged.sheetSizePatches, merged.hiddenSheetSizeIds
@@ -862,8 +922,16 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
         pageWidth_mm: dimensions.width,
         pageHeight_mm: dimensions.height,
         bleed_mm: defaults.bleed_mm,
-        substrateId: defaults.substrateId,
-        selectedGrammage: defaults.grammage,
+        substrateId: resolveVisibleId(effectiveSubstrates, defaults.substrateId),
+        // The grammage has to follow the paper: the default weight belongs to
+        // the default paper, and landing on another one because that paper was
+        // hidden would select a weight it does not sell.
+        selectedGrammage: resolveGrammage(
+          effectiveSubstrates,
+          resolveVisibleId(effectiveSubstrates, defaults.substrateId),
+          merged.customGrammages,
+          defaults.grammage
+        ),
         sheetSizeId: resolveVisibleId(effectiveSheetSizes, defaults.sheetSizeId),
         pressId: resolveVisibleId(effectivePresses, defaults.pressId),
         foldingSchemeId: null,
@@ -959,9 +1027,12 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
     set(state => {
       if (!state.catalog) return state;
 
-      const substrate = state.catalog.substrates.find(s => s.id === substrateId);
-      const inputPatch: Partial<BookConfig> = substrate && substrate.options.length > 0
-        ? { substrateId, selectedGrammage: substrate.options[0].grammage }
+      const substrates = getAllSubstrates(
+        state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+      );
+      const options = getAllGrammageOptions(substrates, substrateId, state.customGrammages);
+      const inputPatch: Partial<BookConfig> = options.length > 0
+        ? { substrateId, selectedGrammage: options[0].grammage }
         : { substrateId };
 
       return {
@@ -1208,14 +1279,237 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
     set(state => (state.catalog ? { customSheetSizeError: null } : state));
   },
 
+  // ─── Custom Substrates ───────────────────────────────────────────
+
+  /*
+   * A paper is added with the one weight it is bought in, because a paper
+   * nobody can buy in any weight is not a paper: selecting it would leave the
+   * tool with no caliper to compute a spine from. Further weights are added
+   * afterwards, through the grammage list that hangs off it, which is the
+   * same list a factory paper already has.
+   */
+  addCustomSubstrate: (name, description, grammage, caliper) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      set({ customSubstrateError: 'El nombre del papel debe ser un texto no vacío.' });
+      return false;
+    }
+    if (!description.trim()) {
+      set({ customSubstrateError: 'La descripción del papel debe ser un texto no vacío.' });
+      return false;
+    }
+    if (!Number.isFinite(grammage) || grammage <= 0 || !Number.isFinite(caliper) || caliper <= 0) {
+      set({ customSubstrateError: 'Introduce gramaje y calibre como números finitos mayores que cero.' });
+      return false;
+    }
+
+    const substrates = getAllSubstrates(
+      state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+    );
+    if (substrates.some(item => namesMatch(item.name, trimmedName))) {
+      set({ customSubstrateError: `Ya existe un papel llamado "${trimmedName}". Introduce otro nombre o cancela.` });
+      return false;
+    }
+
+    const id = `custom_substrate_${++customSubstrateCounter}_${Date.now()}`;
+    // `type` is required by the catalog schema and read by nothing; the seven
+    // shipped papers all set it to their own id, so a paper of yours does too.
+    const substrate: Substrate = {
+      id, name: trimmedName, type: id, description: description.trim(), options: [{ grammage, caliper }],
+    };
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          customSubstrates: [...currentState.customSubstrates, substrate],
+          substrateId: id,
+          selectedGrammage: grammage,
+        }),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  /** Editing an entry of your own replaces it; see `editCustomPress`. */
+  editCustomSubstrate: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const existing = state.customSubstrates.find(item => item.id === id);
+    if (!existing) {
+      set({ customSubstrateError: `El papel "${id}" no es uno de los tuyos, así que no se puede editar.` });
+      return false;
+    }
+
+    const result = editedOwnEntries<Substrate>(
+      state.customSubstrates,
+      getAllSubstrates(state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds),
+      id,
+      item => item.id,
+      item => item.name,
+      { ...existing, ...changes, name: (changes.name ?? existing.name).trim() },
+      isValidSubstrate,
+      {
+        invalid: 'Los cambios dejarían el papel con datos inválidos: un nombre y una descripción no vacíos.',
+        duplicate: name => `Ya existe un papel llamado "${name}". Introduce otro nombre o cancela.`,
+      }
+    );
+    if ('error' in result) {
+      set({ customSubstrateError: result.error });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, { customSubstrates: result.entries }),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  removeCustomSubstrate: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.customSubstrates.some(item => item.id === id)) return state;
+
+      const remaining = state.customSubstrates.filter(item => item.id !== id);
+      // The weights added to it go with it: they name a paper that no longer
+      // exists, and keeping them would leave orphans nothing can reach.
+      const remainingGrammages = state.customGrammages.filter(option => option.substrateId !== id);
+      const inputPatch: Partial<BookConfig> = {
+        customSubstrates: remaining,
+        customGrammages: remainingGrammages,
+      };
+
+      if (state.substrateId === id) {
+        const effective = getAllSubstrates(state.catalog, remaining, state.substratePatches, state.hiddenSubstrateIds);
+        const fallback = effective[0] ?? state.catalog.substrates[0];
+        inputPatch.substrateId = fallback.id;
+        inputPatch.selectedGrammage = resolveGrammage(effective, fallback.id, remainingGrammages, state.selectedGrammage);
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  patchSubstrate: (id, changes) => {
+    const state = get();
+    if (!state.catalog) return false;
+
+    const factoryEntry = state.catalog.substrates.find(item => item.id === id);
+    if (!factoryEntry) {
+      set({ customSubstrateError: `El papel "${id}" no existe en la configuración de fábrica.` });
+      return false;
+    }
+
+    const candidate: Substrate = { ...factoryEntry, ...changes };
+    if (!isValidSubstrate(candidate)) {
+      set({ customSubstrateError: 'Los cambios dejarían el papel con datos inválidos.' });
+      return false;
+    }
+
+    set(currentState => {
+      if (!currentState.catalog) return currentState;
+      const remainingPatches = currentState.substratePatches.filter(patch => patch.id !== id);
+      const patch = {
+        ...withUpdatedCalculations(currentState, currentState.catalog, {
+          substratePatches: [...remainingPatches, { id, changes }],
+        }),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, currentState.catalog, currentState, patch);
+    });
+    return true;
+  },
+
+  unpatchSubstrate: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.substratePatches.some(patch => patch.id === id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          substratePatches: state.substratePatches.filter(item => item.id !== id),
+        }),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  hideSubstrate: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.catalog.substrates.some(item => item.id === id)) return state;
+      if (state.hiddenSubstrateIds.includes(id)) return state;
+
+      const hidden = [...state.hiddenSubstrateIds, id];
+      const effective = getAllSubstrates(state.catalog, state.customSubstrates, state.substratePatches, hidden);
+      const inputPatch: Partial<BookConfig> = { hiddenSubstrateIds: hidden };
+
+      /*
+       * Hiding every paper is allowed, and then there is nothing to fall back
+       * to: the selection stays where it was rather than becoming undefined,
+       * the same way a proportion behaves when all of them are hidden.
+       */
+      if (state.substrateId === id && effective.length > 0) {
+        inputPatch.substrateId = effective[0].id;
+        inputPatch.selectedGrammage = resolveGrammage(
+          effective, effective[0].id, state.customGrammages, state.selectedGrammage
+        );
+      }
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, inputPatch),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  showSubstrate: (id) => {
+    set(state => {
+      if (!state.catalog) return state;
+      if (!state.hiddenSubstrateIds.includes(id)) return state;
+
+      const patch = {
+        ...withUpdatedCalculations(state, state.catalog, {
+          hiddenSubstrateIds: state.hiddenSubstrateIds.filter(item => item !== id),
+        }),
+        customSubstrateError: null,
+      };
+      return withPersistedCatalogPatch(storage, state.catalog, state, patch);
+    });
+  },
+
+  clearCustomSubstrateError: () => {
+    set(state => (state.catalog ? { customSubstrateError: null } : state));
+  },
+
   // ─── Custom Grammages ────────────────────────────────────────────
 
   addCustomGrammage: (substrateId, grammage, caliper) => {
     const state = get();
     if (!state.catalog) return false;
 
-    const substrate = state.catalog.substrates.find(s => s.id === substrateId);
+    const substrates = getAllSubstrates(
+      state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+    );
 
+    const substrate = substrates.find(item => item.id === substrateId);
     if (!substrate) {
       set({ customGrammageError: 'Selecciona un sustrato válido y vuelve a intentarlo.' });
       return false;
@@ -1228,7 +1522,7 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return false;
     }
 
-    const duplicate = getAllGrammageOptions(state.catalog, substrateId, state.customGrammages)
+    const duplicate = getAllGrammageOptions(substrates, substrateId, state.customGrammages)
       .some(option => option.grammage === grammage);
     if (duplicate) {
       set({
@@ -1275,10 +1569,11 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       };
 
       if (state.substrateId === substrateId && state.selectedGrammage === grammage) {
-        const substrate = state.catalog.substrates.find(s => s.id === substrateId);
-        if (substrate && substrate.options.length > 0) {
-          inputPatch.selectedGrammage = substrate.options[0].grammage;
-        }
+        const substrates = getAllSubstrates(
+          state.catalog, state.customSubstrates, state.substratePatches, state.hiddenSubstrateIds
+        );
+        const remaining = getAllGrammageOptions(substrates, substrateId, inputPatch.customGrammages!);
+        if (remaining.length > 0) inputPatch.selectedGrammage = remaining[0].grammage;
       }
 
       const patch = {
@@ -1992,4 +2287,4 @@ export const useBookStore = createBookStore(userLayerStorage);
 
 // ─── Exported helpers for components ─────────────────────────────────────
 
-export { getAllSheetSizes, getAllGrammageOptions, getAllPresses, getAllBindings, getAllProportions };
+export { getAllSheetSizes, getAllGrammageOptions, getAllSubstrates, getAllPresses, getAllBindings, getAllProportions };

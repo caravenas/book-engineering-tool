@@ -7,10 +7,11 @@ import {
   getAllBindings,
   getSelectedBindingInfo,
   getAllGrammageOptions,
+  getAllSubstrates,
 } from '../store/useBookStore';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { CatalogEntryForm } from './CatalogEntryForm';
-import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor } from './catalogEditors';
+import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor, useSubstrateEditor } from './catalogEditors';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
@@ -77,6 +78,9 @@ function useCatalogs(): CatalogDescriptor[] {
     customPresses,
     pressPatches,
     hiddenPressIds,
+    customSubstrates,
+    substratePatches,
+    hiddenSubstrateIds,
     customBindings,
     bindingPatches,
     hiddenBindingIds,
@@ -88,6 +92,7 @@ function useCatalogs(): CatalogDescriptor[] {
     const proportions = getAllProportions(catalog, customProportions, proportionPatches, hiddenProportionLabels);
     const sheetSizes = getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds);
     const presses = getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds);
+    const substrates = getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds);
     const bindings = getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds);
 
     return [
@@ -117,12 +122,12 @@ function useCatalogs(): CatalogDescriptor[] {
         description: 'Los papeles del interior, con los gramajes que cada uno ofrece.',
         file: 'config/sustratos.json',
         source: catalog.substratesSource,
-        readOnly: true,
-        entries: catalog.substrates.map(item => ({
+        readOnly: false,
+        entries: substrates.map(item => ({
           key: item.id,
           name: item.name,
           detail: `${item.options.length} gramajes`,
-          origin: 'factory' as const,
+          origin: getCatalogOrigin(item.id, customSubstrates.map(entry => entry.id), substratePatches.map(patch => patch.id)),
         })),
       },
       {
@@ -203,6 +208,7 @@ function useCatalogs(): CatalogDescriptor[] {
     ];
   }, [
     catalog, customProportions, proportionPatches, hiddenProportionLabels,
+    customSubstrates, substratePatches, hiddenSubstrateIds,
     customSheetSizes, sheetSizePatches, hiddenSheetSizeIds,
     customPresses, pressPatches, hiddenPressIds,
     customBindings, bindingPatches, hiddenBindingIds,
@@ -228,8 +234,10 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const bindingEditor = useBindingEditor();
   const proportionEditor = useProportionEditor();
   const grammageEditor = useGrammageEditor();
+  const substrateEditor = useSubstrateEditor();
   const {
     bindingId, pressId, sheetSizeId, proportionId, substrateId, selectedGrammage, customGrammages,
+    customSubstrates, substratePatches, hiddenSubstrateIds,
     catalog, customBindings, bindingPatches, hiddenBindingIds,
     userLayerStorageAvailable, userLayerWriteFailed,
   } = useBookStore();
@@ -381,11 +389,16 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   */}
                 {current.id === 'substrates' && (
                   <>
+                    <CatalogEntryForm key={substrateId} editor={substrateEditor} />
                     <h4 className="catalog-content-title">
-                      Gramajes de {catalog?.substrates.find(item => item.id === substrateId)?.name ?? 'el papel elegido'}
+                      Gramajes de {current.entries.find(item => item.key === substrateId)?.name ?? 'el papel elegido'}
                     </h4>
                     <ul className="catalog-list">
-                      {(catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : []).map(option => (
+                      {(catalog ? getAllGrammageOptions(
+                        getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds),
+                        substrateId,
+                        customGrammages
+                      ) : []).map(option => (
                         <li key={option.grammage} className="catalog-list-item">
                           <span className="catalog-list-name">{option.grammage} g/m²</span>
                           <span className="catalog-list-detail">calibre {option.caliper} µm</span>
@@ -401,15 +414,14 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   </>
                 )}
 
-                {current.readOnly && current.id !== 'substrates' && (
+                {current.readOnly && (
                   <p className="calculation-note">
                     Este catálogo solo se lee. Para cambiarlo, edita <span className="catalog-file">{current.file}</span> y recarga.
                   </p>
                 )}
                 {current.id === 'substrates' && (
                   <p className="calculation-note">
-                    Los papeles solo se leen desde <span className="catalog-file">{current.file}</span>.
-                    Sus gramajes sí admiten los tuyos, aunque no editar ni ocultar los de fábrica.
+                    Los gramajes admiten los tuyos, pero los de fábrica no se editan ni se ocultan: cuelgan del papel y no tienen identidad propia.
                   </p>
                 )}
                 {current.id === 'bindings' && !hasFlatSpine && (

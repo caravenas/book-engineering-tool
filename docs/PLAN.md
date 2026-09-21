@@ -552,12 +552,12 @@ La forma en que se guarda ya está lista para un backend: `UserLayer` es un obje
 
 | Catálogo | Añadir | Editar de fábrica | Editar la tuya | Ocultar | Eliminar |
 | --- | --- | --- | --- | --- | --- |
-| Proporciones | sí | sí | **no** | sí | sí |
-| Pliegos | sí | sí | **no** | sí | sí |
-| Prensas | sí | sí | **no** | sí | sí |
-| Encuadernaciones | sí | sí | **no** | sí | sí |
+| Proporciones | sí | sí | sí *(R-8)* | sí | sí |
+| Pliegos | sí | sí | sí *(R-8)* | sí | sí |
+| Prensas | sí | sí | sí *(R-8)* | sí | sí |
+| Encuadernaciones | sí | sí | sí *(R-8)* | sí | sí |
 | Gramajes de un papel | sí | — | — | — | sí |
-| **Papeles** | **no** | **no** | — | **no** | — |
+| Papeles | sí | sí | sí | sí | sí | *(R-10)*
 | **Tapas** | **no** | **no** | — | **no** | — |
 | **Esquemas de plegado** | **no** | **no** | — | **no** | — |
 
@@ -571,10 +571,25 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
   Exige una acción de store por catálogo, construida sobre los validadores que ya existen (`isValidPress` y compañía), con la misma comprobación de nombre duplicado que hace el alta.
 - **R-9 — Elegir en la lista qué entrada editar.**
   Hoy el formulario edita la entrada **seleccionada en la app**, y la lista de arriba no deja elegir otra ni marca cuál es.
-- **R-10 — Los papeles, catálogo completo.**
+- **R-10 — Los papeles, catálogo completo. Cerrado el 2026-09-21.**
   Añadir, editar, ocultar y eliminar un papel, con sus gramajes dentro.
   Es el que cierra «materiales».
+  Un papel se da de alta con el único gramaje con el que se compra, porque un papel que no se vende en ningún gramaje no es un papel: seleccionarlo dejaría al lomo sin calibre del que salir.
+  Los demás gramajes se añaden después, por la lista que cuelga del papel, que es la misma que ya tenía un papel de fábrica.
+  Dos campos del formulario se piden solo al dar de alta (`onlyWhenAdding`), porque ofrecerlos al editar sugeriría editar esa lista desde el sitio equivocado.
+  Al borrar un papel tuyo se van con él sus gramajes: sueltos nombrarían un papel que ya no existe.
+  `type` se rellena con el id del propio papel, que es lo que hacen los siete de fábrica: el esquema del catálogo lo exige y no lo lee nadie.
 - **R-11 — Las tapas, catálogo completo.**
+
+
+### Lo que R-10 arregló de paso
+
+- **El calibre se buscaba solo en el catálogo de fábrica.**
+  `getCaliper` miraba `catalog.substrates`, así que un papel añadido por el taller habría devuelto calibre 0 y dejado sin construir el lomo, el peso y el corrimiento.
+  No era un fallo visible antes, porque hasta R-10 no había papeles que no fueran de fábrica; lo era en cuanto los hubiera.
+- El papel por defecto no se resolvía contra el catálogo efectivo en `initialize`, así que un papel oculto habría vuelto seleccionado tras recargar.
+  Ahora se resuelve, y el gramaje va detrás del papel: caer en otro papel con un gramaje que ese papel no vende era el fallo siguiente.
+- La nota del panel decía que los papeles solo se leen. Ya no es cierto y se ha reescrito con lo que sigue siéndolo: los gramajes de fábrica no se editan ni se ocultan.
 
 ### Lo que estos incrementos no tocan
 

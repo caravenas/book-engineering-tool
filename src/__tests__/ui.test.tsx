@@ -1281,3 +1281,86 @@ describe('Renaming a proportion of your own (R-8)', () => {
     expect(screen.getByRole('alert').textContent).toContain('Ya existe');
   });
 });
+
+/**
+ * The half of "machines or materials" that was missing: until R-10 a print
+ * shop that bought a paper the catalog does not list had to edit
+ * `public/config/sustratos.json`. This drives the whole flow through the
+ * catalog panel, because the store action existing is not the same as the
+ * interface reaching it.
+ */
+describe('Adding a paper from the catalog (R-10)', () => {
+  function openPaperCatalog() {
+    fireEvent.click(screen.getByRole('button', { name: 'Opciones de gramaje' }));
+  }
+
+  it('adds a paper with its first weight, and the step offers it', () => {
+    render(<SubstrateSelectorScreen />);
+    openPaperCatalog();
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo papel' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Verjurado del taller' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Lo compramos a granel.' } });
+    fireEvent.change(screen.getByLabelText('Primer gramaje'), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText('Calibre de ese gramaje'), { target: { value: '160' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir papel' }));
+
+    expect(useBookStore.getState().customSubstrates).toHaveLength(1);
+    expect(useBookStore.getState().selectedGrammage).toBe(120);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
+    const select = screen.getByLabelText('Tipo de papel') as HTMLSelectElement;
+    expect(Array.from(select.options).map(option => option.textContent)).toContain('Verjurado del taller');
+    expect(select.value).toBe(useBookStore.getState().customSubstrates[0].id);
+  });
+
+  /**
+   * The two weight fields are asked for once, when the paper is created. A
+   * paper with no weights cannot be selected, so it has to have one; offering
+   * them again in the edit form would suggest editing the weight list from
+   * the wrong place, since that list is right below.
+   */
+  it('asks for the first weight only while adding', () => {
+    render(<SubstrateSelectorScreen />);
+    openPaperCatalog();
+
+    expect(screen.queryByLabelText('Primer gramaje')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo papel' }));
+    expect(screen.getByLabelText('Primer gramaje')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByLabelText('Primer gramaje')).toBeNull();
+  });
+
+  it('keeps a rejected paper on screen with the store’s reason', () => {
+    render(<SubstrateSelectorScreen />);
+    openPaperCatalog();
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo papel' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Bond' } });
+    fireEvent.change(screen.getByLabelText('Descripción'), { target: { value: 'Duplicado.' } });
+    fireEvent.change(screen.getByLabelText('Primer gramaje'), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText('Calibre de ese gramaje'), { target: { value: '160' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir papel' }));
+
+    expect(useBookStore.getState().customSubstrates).toHaveLength(0);
+    expect(screen.getByRole('alert').textContent).toContain('Ya existe');
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Bond');
+  });
+
+  it('edits a factory paper as a patch and offers to put it back', () => {
+    render(<SubstrateSelectorScreen />);
+    openPaperCatalog();
+
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Couché de la casa' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(useBookStore.getState().substratePatches).toEqual([
+      { id: 'couche_matte', changes: { name: 'Couché de la casa' } },
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
+    expect(useBookStore.getState().substratePatches).toHaveLength(0);
+  });
+});

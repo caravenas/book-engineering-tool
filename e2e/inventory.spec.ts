@@ -190,7 +190,7 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Cerrar catálogo': 1,
   'Opciones de prensa': 1,
   'Proporciones, 5 entradas': 1,
-  'Papeles, 7 entradas, solo lectura': 1,
+  'Papeles, 7 entradas': 1,
   'Encuadernaciones, 4 entradas': 1,
   'Prensas, 2 entradas': 1,
   'Pliegos, 6 entradas': 1,
@@ -204,11 +204,14 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Gramaje': 1,
   'Calibre declarado': 1,
 
-  // One form serves the four editable catalogs, so the controls it always
+  // One form serves the five editable catalogs, so the controls it always
   // carries appear once per catalog, and each catalog adds its own fields.
-  'Nombre': 3,
-  'Ocultar': 4,
-  'Guardar cambios': 4,
+  // Papers joined them in R-10: a print shop that buys a paper the catalog
+  // does not list can now add it instead of editing a file.
+  'Nombre': 4,
+  'Ocultar': 5,
+  'Guardar cambios': 5,
+  '+ Nuevo papel': 1,
   '+ Nueva prensa': 1,
   '+ Nuevo pliego': 1,
   '+ Nueva encuadernación': 1,
@@ -230,7 +233,7 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Etiqueta': 1,
   'Ancho de la razón': 1,
   'Alto de la razón': 1,
-  'Descripción': 1,
+  'Descripción': 2,
 
   // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,

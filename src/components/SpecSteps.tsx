@@ -1,4 +1,4 @@
-import { useBookStore, getAllBindings, getAllPresses, parsePositiveSafeInteger } from '../store/useBookStore';
+import { useBookStore, getAllBindings, getAllPresses, getAllSubstrates, parsePositiveSafeInteger } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
 import { CanvasDesigner } from './CanvasDesigner';
 import { SubstrateSelector } from './SubstrateSelector';
@@ -29,6 +29,9 @@ function useStepSummaries(): string[] {
     unitSystem,
     proportionId,
     substrateId,
+    customSubstrates,
+    substratePatches,
+    hiddenSubstrateIds,
     selectedGrammage,
     totalPagesInput,
     bindingId,
@@ -47,7 +50,8 @@ function useStepSummaries(): string[] {
   // step reading " ×  mm" and looking like a rendering fault instead of a
   // dimension waiting to be fixed.
   const hasDimensions = displayW !== '' && displayH !== '';
-  const substrate = catalog?.substrates.find(item => item.id === substrateId) ?? null;
+  const substrate = (catalog ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds) : customSubstrates)
+    .find(item => item.id === substrateId) ?? null;
   const binding = (catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings)
     .find(item => item.id === bindingId) ?? null;
   const press = (catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses)

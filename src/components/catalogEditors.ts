@@ -1,7 +1,7 @@
-import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions, getAllGrammageOptions } from '../store/useBookStore';
+import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions, getAllGrammageOptions, getAllSubstrates } from '../store/useBookStore';
 import { getCatalogOrigin } from './CatalogOrigin';
 import { toNumber, type CatalogEditor, type FormValues } from './CatalogEntryForm';
-import type { Binding, GrammageOption, Press, Proportion, SheetSize } from '../types';
+import type { Binding, GrammageOption, Press, Proportion, SheetSize, Substrate } from '../types';
 
 /**
  * What each catalog has that the others do not: the shape of an entry, and
@@ -274,6 +274,65 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
   };
 }
 
+export function useSubstrateEditor(): CatalogEditor<Substrate> {
+  const {
+    catalog, substrateId, customSubstrates, substratePatches, hiddenSubstrateIds, customSubstrateError,
+    addCustomSubstrate, editCustomSubstrate, removeCustomSubstrate, patchSubstrate, unpatchSubstrate,
+    hideSubstrate, showSubstrate, clearCustomSubstrateError,
+  } = useBookStore();
+
+  const substrates = catalog
+    ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds)
+    : customSubstrates;
+
+  return {
+    addLabel: '+ Nuevo papel',
+    addSubmitLabel: 'Añadir papel',
+    hiddenLine: count => (count === 1
+      ? '1 papel de fábrica oculto.'
+      : `${count} papeles de fábrica ocultos.`),
+    restoreLabel: 'Mostrar papeles ocultos',
+    fields: [
+      { key: 'name', label: 'Nombre', kind: 'text' },
+      { key: 'description', label: 'Descripción', kind: 'text' },
+      // A paper needs one weight to exist at all; the rest are added below,
+      // in the grammage list that hangs off it.
+      { key: 'grammage', label: 'Primer gramaje', kind: 'number', onlyWhenAdding: true },
+      { key: 'caliper', label: 'Calibre de ese gramaje', kind: 'number', onlyWhenAdding: true },
+    ],
+    entry: substrates.find(item => item.id === substrateId) ?? null,
+    factory: catalog?.substrates.find(item => item.id === substrateId) ?? null,
+    origin: getCatalogOrigin(substrateId, customSubstrates.map(item => item.id), substratePatches.map(patch => patch.id)),
+    error: customSubstrateError,
+    clearError: clearCustomSubstrateError,
+    read: substrate => ({
+      name: substrate.name,
+      description: substrate.description,
+      grammage: String(substrate.options[0]?.grammage ?? ''),
+      caliper: String(substrate.options[0]?.caliper ?? ''),
+    }),
+    toChanges: (values, changed) => {
+      const changes: Record<string, unknown> = {};
+      if (changed.has('name')) changes.name = String(values.name).trim();
+      if (changed.has('description')) changes.description = String(values.description).trim();
+      return changes;
+    },
+    add: (values: FormValues) => addCustomSubstrate(
+      String(values.name).trim(),
+      String(values.description).trim(),
+      toNumber(values.grammage),
+      toNumber(values.caliper)
+    ),
+    patch: changes => patchSubstrate(substrateId, changes),
+    editOwn: changes => editCustomSubstrate(substrateId, changes),
+    unpatch: () => unpatchSubstrate(substrateId),
+    hide: () => hideSubstrate(substrateId),
+    remove: () => removeCustomSubstrate(substrateId),
+    hiddenCount: hiddenSubstrateIds.length,
+    restoreHidden: () => hiddenSubstrateIds.forEach(id => showSubstrate(id)),
+  };
+}
+
 /**
  * A grammage hangs off a paper and is keyed by its own value, so it has no id
  * to patch and nothing to hide: you add yours and you remove it again. The
@@ -283,10 +342,17 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
 export function useGrammageEditor(): CatalogEditor<GrammageOption> {
   const {
     catalog, substrateId, selectedGrammage, customGrammages, customGrammageError,
+    customSubstrates, substratePatches, hiddenSubstrateIds,
     addCustomGrammage, removeCustomGrammage, clearCustomGrammageError,
   } = useBookStore();
 
-  const options = catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : [];
+  const options = catalog
+    ? getAllGrammageOptions(
+        getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds),
+        substrateId,
+        customGrammages
+      )
+    : [];
   const isOwn = customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === selectedGrammage);
 
   return {

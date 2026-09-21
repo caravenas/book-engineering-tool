@@ -314,6 +314,17 @@ export interface ProportionPatch {
   changes: Partial<Pick<Proportion, 'ratio' | 'description'>>;
 }
 
+/**
+ * A patch on a factory substrate, identified by its id. Its grammages are not
+ * patchable: they hang off the paper as their own list, with their own alta
+ * and their own removal, exactly as they did before papers became editable.
+ * See {@link ProportionPatch}.
+ */
+export interface SubstratePatch {
+  id: string;
+  changes: Partial<Pick<Substrate, 'name' | 'description'>>;
+}
+
 /** A patch on a factory sheet size, identified by its id. See {@link ProportionPatch}. */
 export interface SheetSizePatch {
   id: string;
@@ -348,16 +359,19 @@ export interface BindingPatch {
 export interface UserLayer {
   customProportions: Proportion[];
   customGrammages: CustomGrammageOption[];
+  customSubstrates: Substrate[];
   customSheetSizes: SheetSize[];
   customPresses: Press[];
   customBindings: Binding[];
 
   proportionPatches: ProportionPatch[];
+  substratePatches: SubstratePatch[];
   sheetSizePatches: SheetSizePatch[];
   pressPatches: PressPatch[];
   bindingPatches: BindingPatch[];
 
   hiddenProportionLabels: string[];
+  hiddenSubstrateIds: string[];
   hiddenSheetSizeIds: string[];
   hiddenPressIds: string[];
   hiddenBindingIds: string[];
@@ -371,6 +385,8 @@ export interface UserLayer {
  * later catalog update.
  */
 export type OrphanedUserLayerEntryKind =
+  | 'substratePatch'
+  | 'hiddenSubstrate'
   | 'proportionPatch' | 'sheetSizePatch' | 'pressPatch' | 'bindingPatch'
   | 'hiddenProportion' | 'hiddenSheetSize' | 'hiddenPress' | 'hiddenBinding';
 
@@ -401,6 +417,9 @@ export interface BookConfig {
   substrateId: string;
   selectedGrammage: number;      // g/m² (selecciona de las opciones del sustrato)
   customGrammages: CustomGrammageOption[];  // User-added grammage options per substrate
+  customSubstrates: Substrate[];      // User-added papers
+  substratePatches: SubstratePatch[]; // Edits to factory papers, by id
+  hiddenSubstrateIds: string[];       // Factory papers hidden by the user
 
   // Imposition
   sheetSizeId: string;
@@ -449,6 +468,7 @@ export interface BookStore extends BookConfig {
   coverPlan: CoverPlanResult | null;
   coverError: string | null;
   customGrammageError: string | null;
+  customSubstrateError: string | null;
   customSheetSizeError: string | null;
   customPressError: string | null;
   customBindingError: string | null;
@@ -490,6 +510,14 @@ export interface BookStore extends BookConfig {
   hideSheetSize: (id: string) => void;
   showSheetSize: (id: string) => void;
   clearCustomSheetSizeError: () => void;
+  addCustomSubstrate: (name: string, description: string, grammage: number, caliper: number) => boolean;
+  editCustomSubstrate: (id: string, changes: Partial<Pick<Substrate, 'name' | 'description'>>) => boolean;
+  removeCustomSubstrate: (id: string) => void;
+  patchSubstrate: (id: string, changes: Partial<Pick<Substrate, 'name' | 'description'>>) => boolean;
+  unpatchSubstrate: (id: string) => void;
+  hideSubstrate: (id: string) => void;
+  showSubstrate: (id: string) => void;
+  clearCustomSubstrateError: () => void;
   addCustomGrammage: (substrateId: string, grammage: number, caliper: number) => boolean;
   removeCustomGrammage: (substrateId: string, grammage: number) => void;
   clearCustomGrammageError: () => void;

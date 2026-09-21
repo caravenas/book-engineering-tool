@@ -14,6 +14,15 @@ function sampleLayer(): UserLayer {
   return {
     customProportions: [{ label: 'Panorámico', ratio: [21, 9], description: 'Formato ancho para álbumes.' }],
     customGrammages: [{ substrateId: 'bond', grammage: 100, caliper: 130 }],
+    customSubstrates: [{
+      id: 'custom_substrate_1',
+      name: 'Verjurado del taller',
+      type: 'custom_substrate_1',
+      description: 'Papel verjurado que compramos a granel.',
+      options: [{ grammage: 120, caliper: 160 }],
+    }],
+    substratePatches: [{ id: 'bond', changes: { name: 'Bond de la casa' } }],
+    hiddenSubstrateIds: ['opalina'],
     customSheetSizes: [{ id: 'custom_sheet_1', name: 'Pliego especial', width_mm: 700, height_mm: 1000 }],
     customPresses: [{
       id: 'custom_press_1',

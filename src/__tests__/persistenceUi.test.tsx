@@ -141,14 +141,14 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
     expect(notice.textContent).toContain('No se pudo guardar la configuración personalizada');
     expect(notice.textContent).toContain('se perderán al recargar');
 
-    // Every quick-add stays usable, and all five live in the catalog now.
+    // Every quick-add stays usable, and all six live in the catalog now.
     fireEvent.click(screen.getByRole('button', { name: 'Catálogo' }));
     for (const [catalogName, addName] of [
       ['Prensas, 2 entradas', '+ Nueva prensa'],
       ['Pliegos, 6 entradas', '+ Nuevo pliego'],
       ['Encuadernaciones, 4 entradas', '+ Nueva encuadernación'],
       ['Proporciones, 5 entradas', '+ Nueva proporción'],
-      ['Papeles, 7 entradas, solo lectura', '+ Nuevo gramaje'],
+      ['Papeles, 7 entradas', '+ Nuevo papel'],
     ]) {
       fireEvent.click(screen.getByRole('button', { name: catalogName }));
       expect((screen.getByRole('button', { name: addName }) as HTMLButtonElement).disabled).toBe(false);

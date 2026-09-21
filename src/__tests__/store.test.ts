@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createBookStore, getAllGrammageOptions, useBookStore } from '../store/useBookStore';
+import { createBookStore, getAllGrammageOptions, getAllSubstrates, useBookStore } from '../store/useBookStore';
 import { emptyUserLayer, readUserLayer } from '../config/userLayer';
 import { loadShippedCatalog } from './testCatalog';
 import { FakeStorage } from './fakeStorage';
@@ -421,11 +421,11 @@ describe('Custom grammages', () => {
     expect(useBookStore.getState().addCustomGrammage('couche_matte', 160, 130)).toBe(true);
 
     useBookStore.getState().setSubstrate('bond');
-    expect(getAllGrammageOptions(catalog, 'bond', useBookStore.getState().customGrammages))
+    expect(getAllGrammageOptions(catalog.substrates, 'bond', useBookStore.getState().customGrammages))
       .toContainEqual({ substrateId: 'bond', grammage: 160, caliper: 205 });
 
     useBookStore.getState().setSubstrate('couche_matte');
-    expect(getAllGrammageOptions(catalog, 'couche_matte', useBookStore.getState().customGrammages))
+    expect(getAllGrammageOptions(catalog.substrates, 'couche_matte', useBookStore.getState().customGrammages))
       .toContainEqual({ substrateId: 'couche_matte', grammage: 160, caliper: 130 });
     expect(useBookStore.getState().customGrammages).toHaveLength(2);
   });
@@ -959,5 +959,180 @@ describe('Editing an entry of your own (R-8)', () => {
 
     expect(secondMount.getState().customPresses).toHaveLength(1);
     expect(secondMount.getState().customPresses[0]).toMatchObject({ id, name: 'Prensa corregida', gutter_mm: 8 });
+  });
+});
+
+/**
+ * Until R-10 a print shop could add its press but not its paper: papers were
+ * read only, so buying a stock the catalog does not list meant editing
+ * `public/config/sustratos.json` by hand. This is the half of "machines or
+ * materials" that was missing.
+ */
+describe('Papers a print shop adds (R-10)', () => {
+  it('adds a paper with the weight it is bought in, selects it, and computes with it', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Verjurado del taller', 'Lo compramos a granel.', 120, 160)).toBe(true);
+
+    const [paper] = useBookStore.getState().customSubstrates;
+    expect(useBookStore.getState().customSubstrates).toHaveLength(1);
+    expect(paper).toMatchObject({ name: 'Verjurado del taller', description: 'Lo compramos a granel.' });
+    expect(paper.options).toEqual([{ grammage: 120, caliper: 160 }]);
+    // `type` is required by the catalog schema and read by nothing; a paper of
+    // your own carries its own id there, like all seven shipped papers do.
+    expect(paper.type).toBe(paper.id);
+
+    expect(useBookStore.getState().substrateId).toBe(paper.id);
+    expect(useBookStore.getState().selectedGrammage).toBe(120);
+    // Not just stored: the caliper it declares has to reach the spine.
+    const spine = useBookStore.getState().spineResult;
+    expect(spine).not.toBeNull();
+    expect(spine!.thickness_mm).toBeCloseTo(Math.ceil(useBookStore.getState().totalPages / 2) * 160 / 1000, 6);
+  });
+
+  it('refuses a paper with no name, no description, or a weight that is not a number', () => {
+    expect(useBookStore.getState().addCustomSubstrate('  ', 'Descripción.', 120, 160)).toBe(false);
+    expect(useBookStore.getState().customSubstrateError).toContain('nombre');
+
+    expect(useBookStore.getState().addCustomSubstrate('Papel', '  ', 120, 160)).toBe(false);
+    expect(useBookStore.getState().customSubstrateError).toContain('descripción');
+
+    expect(useBookStore.getState().addCustomSubstrate('Papel', 'Descripción.', 0, 160)).toBe(false);
+    expect(useBookStore.getState().addCustomSubstrate('Papel', 'Descripción.', 120, Number.NaN)).toBe(false);
+    expect(useBookStore.getState().customSubstrates).toHaveLength(0);
+  });
+
+  it('refuses a name that duplicates a catalog or custom paper, ignoring case and spaces', () => {
+    expect(useBookStore.getState().addCustomSubstrate('  bond ', 'Descripción.', 120, 160)).toBe(false);
+    expect(useBookStore.getState().customSubstrateError).toContain('Ya existe');
+
+    expect(useBookStore.getState().addCustomSubstrate('Verjurado', 'Descripción.', 120, 160)).toBe(true);
+    expect(useBookStore.getState().addCustomSubstrate(' VERJURADO ', 'Otra.', 90, 110)).toBe(false);
+    expect(useBookStore.getState().customSubstrates).toHaveLength(1);
+  });
+
+  it('adds further weights to a paper of your own, through the same list a factory paper has', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Verjurado', 'Descripción.', 120, 160)).toBe(true);
+    const { id } = useBookStore.getState().customSubstrates[0];
+
+    expect(useBookStore.getState().addCustomGrammage(id, 200, 250)).toBe(true);
+    const substrates = getAllSubstrates(
+      catalog,
+      useBookStore.getState().customSubstrates,
+      useBookStore.getState().substratePatches,
+      useBookStore.getState().hiddenSubstrateIds
+    );
+    expect(getAllGrammageOptions(substrates, id, useBookStore.getState().customGrammages)).toEqual([
+      { grammage: 120, caliper: 160 },
+      { substrateId: id, grammage: 200, caliper: 250 },
+    ]);
+
+    useBookStore.getState().setGrammage(200);
+    expect(useBookStore.getState().selectedGrammage).toBe(200);
+  });
+
+  it('edits a paper of your own and patches a factory one, each the way its kind allows', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Verjurado', 'Descripción.', 120, 160)).toBe(true);
+    const { id } = useBookStore.getState().customSubstrates[0];
+
+    expect(useBookStore.getState().editCustomSubstrate(id, { name: 'Verjurado corregido' })).toBe(true);
+    expect(useBookStore.getState().customSubstrates[0]).toMatchObject({
+      id, name: 'Verjurado corregido', description: 'Descripción.',
+    });
+    // The weight it was created with survives an edit of its name.
+    expect(useBookStore.getState().customSubstrates[0].options).toEqual([{ grammage: 120, caliper: 160 }]);
+
+    expect(useBookStore.getState().patchSubstrate('bond', { name: 'Bond de la casa' })).toBe(true);
+    const substrates = getAllSubstrates(
+      catalog,
+      useBookStore.getState().customSubstrates,
+      useBookStore.getState().substratePatches,
+      useBookStore.getState().hiddenSubstrateIds
+    );
+    expect(substrates.find(item => item.id === 'bond')?.name).toBe('Bond de la casa');
+    // A patch never touches the weights the paper ships with.
+    expect(substrates.find(item => item.id === 'bond')?.options.length).toBeGreaterThan(0);
+
+    useBookStore.getState().unpatchSubstrate('bond');
+    expect(useBookStore.getState().substratePatches).toHaveLength(0);
+  });
+
+  it('takes the weights with it when a paper of your own is deleted', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Verjurado', 'Descripción.', 120, 160)).toBe(true);
+    const { id } = useBookStore.getState().customSubstrates[0];
+    expect(useBookStore.getState().addCustomGrammage(id, 200, 250)).toBe(true);
+
+    useBookStore.getState().removeCustomSubstrate(id);
+
+    expect(useBookStore.getState().customSubstrates).toHaveLength(0);
+    // Left behind, they would name a paper that no longer exists.
+    expect(useBookStore.getState().customGrammages).toHaveLength(0);
+    // And the selection lands somewhere real, with a weight that paper sells.
+    const substrateId = useBookStore.getState().substrateId;
+    expect(substrateId).not.toBe(id);
+    const paper = catalog.substrates.find(item => item.id === substrateId)!;
+    expect(paper.options.some(option => option.grammage === useBookStore.getState().selectedGrammage)).toBe(true);
+  });
+
+  it('hides a factory paper, moves off it, and brings it back', () => {
+    useBookStore.getState().setSubstrate('bond');
+    useBookStore.getState().hideSubstrate('bond');
+
+    expect(useBookStore.getState().hiddenSubstrateIds).toEqual(['bond']);
+    expect(useBookStore.getState().substrateId).not.toBe('bond');
+    const substrates = getAllSubstrates(
+      catalog, [], [], useBookStore.getState().hiddenSubstrateIds
+    );
+    expect(substrates.some(item => item.id === 'bond')).toBe(false);
+    // The weight follows the paper: it has to be one the new paper sells.
+    const landed = substrates.find(item => item.id === useBookStore.getState().substrateId)!;
+    expect(landed.options.some(option => option.grammage === useBookStore.getState().selectedGrammage)).toBe(true);
+
+    useBookStore.getState().showSubstrate('bond');
+    expect(useBookStore.getState().hiddenSubstrateIds).toEqual([]);
+  });
+
+  it('survives a reload: the paper, its extra weight and the patch all come back', () => {
+    const storage = new FakeStorage();
+
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+    expect(firstMount.getState().addCustomSubstrate('Verjurado', 'Descripción.', 120, 160)).toBe(true);
+    const { id } = firstMount.getState().customSubstrates[0];
+    expect(firstMount.getState().addCustomGrammage(id, 200, 250)).toBe(true);
+    expect(firstMount.getState().patchSubstrate('bond', { name: 'Bond de la casa' })).toBe(true);
+    firstMount.getState().hideSubstrate('opalina');
+
+    const secondMount = createBookStore(storage);
+    secondMount.getState().initialize(catalog, readUserLayer(storage));
+
+    const state = secondMount.getState();
+    expect(state.customSubstrates.map(item => item.name)).toEqual(['Verjurado']);
+    // The grammage attached to a paper of your own is not dropped as an
+    // unknown substrate, which is what happened before papers could be added.
+    expect(state.customGrammages).toEqual([{ substrateId: id, grammage: 200, caliper: 250 }]);
+    expect(state.substratePatches).toEqual([{ id: 'bond', changes: { name: 'Bond de la casa' } }]);
+    expect(state.hiddenSubstrateIds).toEqual(['opalina']);
+    expect(state.orphanedUserLayerEntries).toEqual([]);
+  });
+
+  it('reports a patch and a hide for a paper the catalog no longer has, without dropping them', () => {
+    const storage = new FakeStorage();
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+    expect(firstMount.getState().patchSubstrate('bond', { name: 'Bond de la casa' })).toBe(true);
+    firstMount.getState().hideSubstrate('opalina');
+
+    const withoutThem = {
+      ...catalog,
+      substrates: catalog.substrates.filter(item => item.id !== 'bond' && item.id !== 'opalina'),
+    };
+    const secondMount = createBookStore(storage);
+    secondMount.getState().initialize(withoutThem, readUserLayer(storage));
+
+    expect(secondMount.getState().orphanedUserLayerEntries).toEqual([
+      { kind: 'substratePatch', targetId: 'bond' },
+      { kind: 'hiddenSubstrate', targetId: 'opalina' },
+    ]);
+    // Kept, not dropped: the paper may come back in a later catalog.
+    expect(secondMount.getState().substratePatches).toHaveLength(1);
   });
 });

@@ -1,5 +1,5 @@
 import { useCatalogPanel } from './CatalogPanel';
-import { useBookStore, getAllGrammageOptions } from '../store/useBookStore';
+import { useBookStore, getAllGrammageOptions, getAllSubstrates } from '../store/useBookStore';
 import { OriginBadge } from './CatalogOrigin';
 
 export function SubstrateSelector() {
@@ -8,6 +8,9 @@ export function SubstrateSelector() {
     substrateId,
     selectedGrammage,
     customGrammages,
+    customSubstrates,
+    substratePatches,
+    hiddenSubstrateIds,
     catalog,
     userLayerStorageAvailable,
     setSubstrate,
@@ -15,9 +18,11 @@ export function SubstrateSelector() {
   } = useBookStore();
 
 
-  const substrates = catalog ? catalog.substrates : [];
+  const substrates = catalog
+    ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds)
+    : customSubstrates;
   const currentSubstrate = substrates.find(substrate => substrate.id === substrateId);
-  const allOptions = catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : [];
+  const allOptions = getAllGrammageOptions(substrates, substrateId, customGrammages);
   const currentOption = allOptions.find(option => option.grammage === selectedGrammage);
   const isSelectedGrammageCustom = customGrammages.some(custom => (
     custom.substrateId === substrateId && custom.grammage === selectedGrammage

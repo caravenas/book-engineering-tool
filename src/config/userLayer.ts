@@ -8,6 +8,8 @@ import type {
   ProportionPatch,
   SheetSize,
   SheetSizePatch,
+  Substrate,
+  SubstratePatch,
   UserLayer,
 } from '../types';
 import { MAX_BINDING_PAGES } from './validateCatalog';
@@ -34,14 +36,17 @@ export function emptyUserLayer(): UserLayer {
   return {
     customProportions: [],
     customGrammages: [],
+    customSubstrates: [],
     customSheetSizes: [],
     customPresses: [],
     customBindings: [],
     proportionPatches: [],
+    substratePatches: [],
     sheetSizePatches: [],
     pressPatches: [],
     bindingPatches: [],
     hiddenProportionLabels: [],
+    hiddenSubstrateIds: [],
     hiddenSheetSizeIds: [],
     hiddenPressIds: [],
     hiddenBindingIds: [],
@@ -190,6 +195,43 @@ function isValidProportionPatch(value: unknown): value is ProportionPatch {
   return true;
 }
 
+/**
+ * A paper of your own. Its grammages travel inside it rather than in
+ * `customGrammages`, which only ever attaches a grammage to a paper that came
+ * from the catalog, and it must have at least one: a paper nobody can buy in
+ * any weight is not a paper, and selecting one would leave the tool with no
+ * caliper to compute a spine from.
+ *
+ * `type` is carried because the catalog schema requires it and is never read
+ * by anything; a paper of your own gets its id there, which is what all seven
+ * shipped papers do.
+ */
+export function isValidSubstrate(value: unknown): value is Substrate {
+  if (!isPlainObject(value)) return false;
+  const { id, name, type, description, options } = value;
+  if (!isNonEmptyString(id) || !isNonEmptyString(name) || !isNonEmptyString(type)) return false;
+  if (!isNonEmptyString(description)) return false;
+  if (!Array.isArray(options) || options.length === 0) return false;
+  return options.every(option => {
+    if (!isPlainObject(option)) return false;
+    return isFiniteNumber(option.grammage) && option.grammage > 0
+      && isFiniteNumber(option.caliper) && option.caliper > 0;
+  });
+}
+
+const SUBSTRATE_PATCH_KEYS = new Set(['name', 'description']);
+
+function isValidSubstratePatch(value: unknown): value is SubstratePatch {
+  if (!isPlainObject(value)) return false;
+  const { id, changes } = value;
+  if (!isNonEmptyString(id)) return false;
+  if (!isPlainObject(changes) || !hasOnlyAllowedKeys(changes, SUBSTRATE_PATCH_KEYS)) return false;
+
+  if ('name' in changes && !isNonEmptyString(changes.name)) return false;
+  if ('description' in changes && !isNonEmptyString(changes.description)) return false;
+  return true;
+}
+
 const SHEET_SIZE_PATCH_KEYS = new Set(['name', 'width_mm', 'height_mm']);
 
 function isValidSheetSizePatch(value: unknown): value is SheetSizePatch {
@@ -257,6 +299,7 @@ function readAltaLists(parsed: Record<string, unknown>) {
   return {
     customProportions: filterValid(parsed.customProportions, isValidProportion),
     customGrammages: filterValid(parsed.customGrammages, isValidCustomGrammageOption),
+    customSubstrates: filterValid(parsed.customSubstrates, isValidSubstrate),
     customSheetSizes: filterValid(parsed.customSheetSizes, isValidSheetSize),
     customPresses: filterValid(parsed.customPresses, isValidPress),
     customBindings: filterValid(parsed.customBindings, isValidBinding),
@@ -300,10 +343,12 @@ export function readUserLayer(storage: Storage | null = getDefaultUserLayerStora
     return {
       ...readAltaLists(parsed),
       proportionPatches: [],
+      substratePatches: [],
       sheetSizePatches: [],
       pressPatches: [],
       bindingPatches: [],
       hiddenProportionLabels: [],
+      hiddenSubstrateIds: [],
       hiddenSheetSizeIds: [],
       hiddenPressIds: [],
       hiddenBindingIds: [],
@@ -317,10 +362,12 @@ export function readUserLayer(storage: Storage | null = getDefaultUserLayerStora
   return {
     ...readAltaLists(parsed),
     proportionPatches: filterValid(parsed.proportionPatches, isValidProportionPatch),
+    substratePatches: filterValid(parsed.substratePatches, isValidSubstratePatch),
     sheetSizePatches: filterValid(parsed.sheetSizePatches, isValidSheetSizePatch),
     pressPatches: filterValid(parsed.pressPatches, isValidPressPatch),
     bindingPatches: filterValid(parsed.bindingPatches, isValidBindingPatch),
     hiddenProportionLabels: filterValid(parsed.hiddenProportionLabels, isNonEmptyString),
+    hiddenSubstrateIds: filterValid(parsed.hiddenSubstrateIds, isNonEmptyString),
     hiddenSheetSizeIds: filterValid(parsed.hiddenSheetSizeIds, isNonEmptyString),
     hiddenPressIds: filterValid(parsed.hiddenPressIds, isNonEmptyString),
     hiddenBindingIds: filterValid(parsed.hiddenBindingIds, isNonEmptyString),

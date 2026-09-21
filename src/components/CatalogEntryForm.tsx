@@ -25,6 +25,15 @@ export interface FieldSpec {
    * an edit and do nothing.
    */
   readOnly?: boolean;
+  /**
+   * A field the form asks for once, when the entry is created, and never
+   * offers again. A paper is added with the one weight it is bought in,
+   * because a paper with no weights cannot be selected; its further weights
+   * are added afterwards through the list that hangs off it, so showing the
+   * first one here again would suggest editing that list from the wrong
+   * place.
+   */
+  onlyWhenAdding?: boolean;
 }
 
 export type FormValues = Record<string, string | boolean>;
@@ -167,8 +176,8 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
     const baseline = editor.origin === 'own' ? values : factoryValues;
     const changed = new Set<string>();
     if (baseline) {
-      for (const { key, kind, readOnly } of editor.fields) {
-        if (readOnly) continue;
+      for (const { key, kind, readOnly, onlyWhenAdding } of editor.fields) {
+        if (readOnly || onlyWhenAdding) continue;
         if (!sameValue(kind, shown[key], baseline[key])) changed.add(key);
       }
     }
@@ -223,7 +232,7 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
         </div>
 
         <div className="catalog-field-grid">
-          {editor.fields.map(({ key, label, kind, readOnly }) => (
+          {editor.fields.filter(field => adding || !field.onlyWhenAdding).map(({ key, label, kind, readOnly }) => (
             <label key={key} className={`catalog-field catalog-field-${kind}`}>
               <span className="form-label">{label}</span>
               {kind === 'boolean' ? (
