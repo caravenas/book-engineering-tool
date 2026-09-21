@@ -430,12 +430,15 @@ Los cuatro primeros los cierra R-6; el quinto sigue siendo una decisión de Chri
 
 ### Lo que el catálogo dejó abierto
 
+Verificado contra el código el 2026-09-21: los cuatro primeros siguen abiertos.
+
 - Una entrada propia no se edita, solo se elimina y se vuelve a añadir; exige una acción de store que no existe.
 - El formulario edita la entrada **seleccionada**, y la lista de arriba no deja elegir otra para editarla ni marca cuál es.
 - La prueba de reconciliación del guardián perdió fuerza con el modal: al barrer el documento con el panel cerrado, los catálogos no visitados están desmontados.
 - El recorrido no abre los formularios de alta, así que sus campos en modo alta siguen fuera del inventario.
-- El test de tamaños mide el catálogo y los botones que lo abren, no los controles que quedan en los pasos: los segmentos miden 23 px, los campos 35 y las fichas de gramaje 21.
-  Eso es trabajo del restyle, y ese incremento tiene que ampliar el test y dejarlo en verde.
+- El test de tamaños mide el catálogo y los botones que lo abren, no los controles que quedan en los pasos.
+  Medidos de nuevo el 2026-09-21, después de R-5: los segmentos siguen en 23–25 px y los campos en 35, contra los 40 que pide la propuesta y los 44 que pide en móvil.
+  Chris dejó esa regla fuera el 2026-09-21, así que es un punto aplazado y no una deuda del restyle.
 
 Dos decisiones ya tomadas, de `docs/UI-REDESIGN.md`:
 una entrada de fábrica ofrece «Volver a fábrica» y «Ocultar», y una entrada tuya ofrece «Eliminar» en su lugar, porque no tiene fábrica a la que volver;
@@ -445,26 +448,20 @@ El panel se construye sobre `<dialog>` y `showModal()`, por la misma razón que 
 
 Exportar e importar siguen sin sitio, y siguen anotados: cuando UX-8 se retome, su lugar es la cabecera de este panel.
 
-### Puntos abiertos tras R-4a
-
-- Una entrada propia no se edita, solo se elimina y se vuelve a añadir.
-  Exige una acción de store que hoy no existe.
-- El formulario edita la prensa **seleccionada**, y la lista de arriba no deja elegir otra para editarla ni marca cuál es.
-  Funciona, pero no es lo que el canvas dibuja.
-- La prueba de reconciliación del guardián perdió fuerza con el modal: al barrer el documento con el panel cerrado, seis de los siete catálogos están desmontados, así que ese barrido ya no puede delatar un control que el recorrido no visite.
-- El recorrido tampoco abre los formularios condicionales que quedan en los pasos, así que sus campos siguen fuera del inventario.
-
 ### Puntos abiertos tras R-3
 
-- Los resultados de tapa dura, nueve etiquetas, no los comprueba ningún test: el guardián audita el estado por defecto, que es tapa blanda.
-- Los formularios condicionales de alta y edición, unos veinticinco campos, quedan fuera del inventario: el recorrido no los abre.
-  Nunca estuvieron dentro, pero conviene saberlo antes de fiarse del número 36.
-- Las tarjetas de resultado no comparten estilo: unas llevan borde y otras no.
-  Vivían en paneles distintos y ahora están una debajo de otra.
+Revisados contra el código el 2026-09-21; los que ya no valen se marcan en vez de borrarse, para que no vuelvan a abrirse por inercia.
+
+- ~~Los resultados de tapa dura no los comprueba ningún test.~~
+  Cerrado en R-3: `e2e/inventory.spec.ts` cambia a `hotmelt` y `dura_estandar` y fija las nueve etiquetas.
+- Los formularios condicionales de alta quedan fuera del inventario: el recorrido no los abre.
+  Nunca estuvieron dentro, pero conviene saberlo antes de fiarse del recuento.
+- ~~Las tarjetas de resultado no comparten estilo.~~
+  Cerrado en R-5: las dibuja `ResultList`.
 - Dos preguntas de accesibilidad sin respuesta verificada: si un `<h2>` dentro de un `<summary>` se anuncia bien, y si `aria-pressed` es lo correcto para un selector de una sola opción frente a un grupo de radio con flechas.
   Ambas exigen probar con un lector de pantalla real, que es lo único que las contesta.
-- La etiqueta «NÚMERO DE PÁGINAS» sigue en mayúsculas en el JSX y no por CSS, así que el nombre accesible va en mayúsculas.
-  Los títulos de los pasos sí lo hacen bien, con `text-transform`.
+- ~~La etiqueta «NÚMERO DE PÁGINAS» está en mayúsculas en el JSX.~~
+  Ya no: el JSX dice «Número de páginas» y las versalitas las pone `.form-label` con `text-transform`.
 
 ### Cómo evolucionó la red, que es lo que hizo posible R-3
 
@@ -569,8 +566,7 @@ Con el tope de 1440 px, una pantalla ancha dibujaba la herramienta como una losa
 - 2026-09-17, decisión de alcance de UX-5: se persisten los cinco catálogos personalizados, no la selección actual.
   Tras recargar, una prensa personalizada sigue en el desplegable pero no queda seleccionada, así que quien trabaje siempre con su propia prensa vuelve a elegirla en cada sesión.
   Persistir preferencias fue un no objetivo explícito del incremento 1; cambiarlo es otra decisión.
-- 2026-09-17, pendiente de verificar en un navegador: el área táctil ampliada del botón de eliminar gramaje personalizado se extiende 12 px hacia la derecha, hacia su vecino, el botón de añadir.
-  Si la invade, un clic dirigido a añadir borraría un gramaje.
-  No se pudo medir porque exige un gramaje personalizado en pantalla y el flujo de alta no se completó; el equivalente para pliegos usa 2 px y no corre ese riesgo.
+- ~~2026-09-17: el área táctil del botón de eliminar gramaje personalizado invadía a su vecino.~~
+  Sin objeto desde R-4b: ese botón ya no está en el paso, y eliminar un gramaje se hace desde el Catálogo como cualquier otra entrada.
 - Los esquemas de plegado entregados son ejemplos construidos a mano: su emparejamiento de páginas está verificado, pero su convención de plegado debe confirmarse contra un pliego doblado real.
 - El motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego, lo que desaprovecha pliegos grandes con páginas pequeñas; es candidato a un incremento posterior.

@@ -264,11 +264,6 @@ body::before {
   margin-top: var(--space-2);
 }
 
-.config-source-file {
-  display: block;
-  font-family: var(--font-mono);
-  color: var(--color-text-secondary);
-}
 
 
 /* One claim about the whole catalog, beside the name of the tool it applies
