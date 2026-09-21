@@ -1,5 +1,6 @@
 import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { formatRoundedValue } from '../engine/units';
+import { ResultList, ResultRow } from './ResultList';
 
 /**
  * The binding panel's spine stat cards, read straight from the store instead
@@ -15,27 +16,12 @@ export function BindingSpineResults() {
   if (!bindingSpine) return null;
 
   return (
-    <div className="stat-grid spine-stat-grid" style={{ gap: '8px', marginTop: 'var(--space-4)' }}>
-      <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-        <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-          {formatRoundedValue(bindingSpine.interior_mm, 2)}
-        </div>
-        <div className="stat-label">Lomo del papel interior (mm)</div>
-      </div>
-      <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-        <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-          {formatRoundedValue(bindingSpine.allowance_mm, 2)}
-        </div>
-        <div className="stat-label">Aporte de la encuadernación (mm)</div>
-      </div>
-      <div className="stat-card" style={{ borderRadius: '12px', padding: '10px 4px' }}>
-        <div className="stat-value" style={{ fontSize: '1.25rem', color: 'var(--color-text-primary)' }}>
-          {formatRoundedValue(bindingSpine.total_mm, 2)}
-        </div>
-        <div className="stat-label">
-          {hasFlatSpine ? 'Lomo final con encuadernación (mm)' : 'Grosor del papel en el pliegue (mm)'}
-        </div>
-      </div>
-    </div>
+    <ResultList>
+      <ResultRow label="Lomo del papel interior (mm)">{formatRoundedValue(bindingSpine.interior_mm, 2)}</ResultRow>
+      <ResultRow label="Aporte de la encuadernación (mm)">{formatRoundedValue(bindingSpine.allowance_mm, 2)}</ResultRow>
+      <ResultRow label={hasFlatSpine ? 'Lomo final con encuadernación (mm)' : 'Grosor del papel en el pliegue (mm)'}>
+        {formatRoundedValue(bindingSpine.total_mm, 2)}
+      </ResultRow>
+    </ResultList>
   );
 }

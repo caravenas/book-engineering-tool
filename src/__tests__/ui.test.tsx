@@ -344,8 +344,7 @@ describe('Honest and recoverable UI', () => {
     expect(pagesInput.getAttribute('aria-invalid')).toBe('false');
     expect(screen.queryByRole('alert')).toBeNull();
 
-    const sheetsCard = screen.getByRole('group', { name: 'Hojas de papel (interior)' });
-    expect(within(sheetsCard).getByText('17')).toBeTruthy();
+    expect(screen.getByText('Hojas de papel (interior)').nextSibling?.textContent).toBe('17');
     const formulaCopy = screen.getByText((_, element) => (
       element?.tagName === 'P'
       && element.textContent?.includes('Hojas físicas = ⌈33 ÷ 2⌉ = 17 hojas') === true
@@ -392,12 +391,12 @@ describe('Binding selector', () => {
       'cosido', 'grapa', 'hotmelt', 'pur',
     ]);
     expect(select.value).toBe('grapa');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('0');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('0');
 
     fireEvent.change(select, { target: { value: 'hotmelt' } });
 
     expect(useBookStore.getState().bindingId).toBe('hotmelt');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('2');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('2');
   });
 
   it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
@@ -413,9 +412,9 @@ describe('Binding selector', () => {
     render(<BindingPanelScreen />);
 
     // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
-    expect(screen.getByText('Lomo del papel interior (mm)').previousSibling?.textContent).toBe('1.92');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').previousSibling?.textContent).toBe('0');
-    expect(screen.getByText('Grosor del papel en el pliegue (mm)').previousSibling?.textContent).toBe('1.92');
+    expect(screen.getByText('Lomo del papel interior (mm)').nextSibling?.textContent).toBe('1.92');
+    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('0');
+    expect(screen.getByText('Grosor del papel en el pliegue (mm)').nextSibling?.textContent).toBe('1.92');
   });
 
   it('shows the creep block for grapa and hides it for a method that declares no creep', () => {
@@ -849,12 +848,12 @@ describe('Cover panel', () => {
     expect(select.value).toBe('blanda_simple');
     // grapa (the shipped default binding) has no flat spine, so blanda_simple's
     // sheet is 2*0 + 2*140 + 0 + 2*3 = 286.
-    expect(screen.getByText('Ancho del pliego de tapa (mm)').previousSibling?.textContent).toBe('286');
+    expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).toBe('286');
 
     fireEvent.change(select, { target: { value: 'blanda_solapas' } });
 
     expect(useBookStore.getState().coverId).toBe('blanda_solapas');
-    expect(screen.getByText('Ancho del pliego de tapa (mm)').previousSibling?.textContent).not.toBe('286');
+    expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).not.toBe('286');
   });
 
   it('offers all three covers as selectable with a flat-spine binding', () => {

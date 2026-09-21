@@ -606,48 +606,51 @@ select.form-input {
 
 /* ─── Stat Display ──────────────────────────────────────────────────── */
 
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
+
+/* ─── Results ───────────────────────────────────────────────────────── */
+
+.result-list {
+  margin: 0;
+  border-top: 1px solid var(--color-border);
 }
 
-.stat-card {
-  background: transparent;
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  text-align: center;
-  border: 1px solid var(--color-text-primary);
+.result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.result-row .stat-label {
+  min-width: 0;
+}
+
+.result-row .stat-value {
+  margin: 0;
+  flex-shrink: 0;
+  color: var(--color-text-primary);
+  /* Figures line up in a column when their digits are the same width. */
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-value {
   font-family: var(--font-heading);
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: 600;
   line-height: 1.2;
 }
 
-.stat-value.amber {
-  color: var(--color-amber-400);
-}
 
-.stat-value.emerald {
-  color: var(--color-emerald-400);
-}
 
-.stat-value.sky {
-  color: var(--color-sky-400);
-}
 
-.stat-value.rose {
-  color: var(--color-rose-400);
-}
 
 .stat-label {
-  font-size: 10px;
-  color: var(--color-text-primary);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
   font-weight: 500;
 }
 
@@ -1034,12 +1037,8 @@ select.form-input {
 }
 
 @media (max-width: 1024px) {
-  .stat-grid {
-    grid-template-columns: 1fr 1fr;
-  }
 
   .canvas-dimension-grid,
-  .spine-stat-grid,
   .input-row {
     grid-template-columns: 1fr;
   }
