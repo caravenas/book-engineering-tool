@@ -569,8 +569,14 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
 - **R-8 — Editar una entrada tuya.**
   Hoy se elimina y se vuelve a añadir, y el formulario ofrece los campos en gris.
   Exige una acción de store por catálogo, construida sobre los validadores que ya existen (`isValidPress` y compañía), con la misma comprobación de nombre duplicado que hace el alta.
-- **R-9 — Elegir en la lista qué entrada editar.**
-  Hoy el formulario edita la entrada **seleccionada en la app**, y la lista de arriba no deja elegir otra ni marca cuál es.
+- **R-9 — Elegir en la lista qué entrada editar. Cerrado el 2026-09-21.**
+  Cada fila del catálogo es un control: elegirla apunta el formulario a esa entrada.
+  **La decisión, que es lo que este incremento realmente zanja: elegir en el catálogo no cambia de qué está hecho el libro.**
+  Abrir el catálogo para corregir una errata en una prensa que nadie usa no debe reimprimir el libro en ella.
+  Mientras no se elija nada, el formulario está sobre la entrada del libro, que es donde el catálogo abre.
+  La fila sobre la que está el formulario va marcada con un filete a la izquierda, presente en todas las filas como hueco para que elegir una no desplace su nombre.
+  La elección se deshace al cambiar de catálogo o al volver a abrir el panel, y una entrada que se oculta o se elimina deja de ser elegible, con lo que el formulario vuelve a la del libro en vez de quedarse sobre algo que ya no está.
+  Los gramajes van detrás: la lista de abajo y su formulario cuelgan del papel que se está editando, no del que usa el libro.
 - **R-10 — Los papeles, catálogo completo. Cerrado el 2026-09-21.**
   Añadir, editar, ocultar y eliminar un papel, con sus gramajes dentro.
   Es el que cierra «materiales».
@@ -611,6 +617,13 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
   Nunca la tuvo porque las tapas eran de solo lectura; en cuanto dejaron de serlo, era el único paso sin puerta de entrada.
 - El botón del paso de papel se llamaba «Opciones de gramaje» y abre un catálogo que desde R-10 contiene el papel entero.
   Ahora se llama «Opciones de papel» y está junto a «Tipo de papel», que es donde se busca.
+
+
+### Lo que R-9 dejó anotado
+
+- Las 34 filas de los catálogos son controles nuevos, y el guardián las inventaría por su nombre accesible.
+  Ese nombre lleva los datos del catálogo entregado, así que la lista cambia cuando cambie `public/config/`, que es algo de lo que conviene enterarse.
+- Cada fila se nombra con sus tres celdas separadas por comas, igual que los elementos de navegación: pegadas, un lector de pantalla anuncia «Bond3 gramajesde fábrica».
 
 ### Lo que estos incrementos no tocan
 

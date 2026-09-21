@@ -8,8 +8,14 @@ import type { Binding, Cover, GrammageOption, Press, Proportion, SheetSize, Subs
  * how its fields map onto the arguments the store adds with and the changes
  * it patches with. Everything else about editing a catalog entry is the same
  * everywhere and lives in CatalogEntryForm.
+ *
+ * `target` is the entry the catalog is pointed at, which since R-9 is chosen
+ * in the catalog's own list and is not the same thing as the entry the book
+ * is made of: opening the catalog to fix a typo in a press nobody is using
+ * must not quietly reprint the book on it. It falls back to the book's
+ * selection, which is what the catalog opens on.
  */
-export function usePressEditor(): CatalogEditor<Press> {
+export function usePressEditor(target?: string | null): CatalogEditor<Press> {
   const {
     catalog,
     pressId,
@@ -28,6 +34,7 @@ export function usePressEditor(): CatalogEditor<Press> {
   } = useBookStore();
 
   const presses = catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses;
+  const id = target ?? pressId;
 
   return {
     addLabel: '+ Nueva prensa',
@@ -45,9 +52,9 @@ export function usePressEditor(): CatalogEditor<Press> {
       { key: 'tailMargin_mm', label: 'Cola', kind: 'number' },
       { key: 'gutter_mm', label: 'Calle', kind: 'number' },
     ],
-    entry: presses.find(item => item.id === pressId) ?? null,
-    factory: catalog?.presses.find(item => item.id === pressId) ?? null,
-    origin: getCatalogOrigin(pressId, customPresses.map(item => item.id), pressPatches.map(patch => patch.id)),
+    entry: presses.find(item => item.id === id) ?? null,
+    factory: catalog?.presses.find(item => item.id === id) ?? null,
+    origin: getCatalogOrigin(id, customPresses.map(item => item.id), pressPatches.map(patch => patch.id)),
     error: customPressError,
     clearError: clearCustomPressError,
     read: press => ({
@@ -76,17 +83,17 @@ export function usePressEditor(): CatalogEditor<Press> {
       toNumber(values.tailMargin_mm),
       toNumber(values.gutter_mm)
     ),
-    patch: changes => patchPress(pressId, changes),
-    editOwn: changes => editCustomPress(pressId, changes),
-    unpatch: () => unpatchPress(pressId),
-    hide: () => hidePress(pressId),
-    remove: () => removeCustomPress(pressId),
+    patch: changes => patchPress(id, changes),
+    editOwn: changes => editCustomPress(id, changes),
+    unpatch: () => unpatchPress(id),
+    hide: () => hidePress(id),
+    remove: () => removeCustomPress(id),
     hiddenCount: hiddenPressIds.length,
     restoreHidden: () => hiddenPressIds.forEach(id => showPress(id)),
   };
 }
 
-export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
+export function useSheetSizeEditor(target?: string | null): CatalogEditor<SheetSize> {
   const {
     catalog, sheetSizeId, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds, customSheetSizeError,
     addCustomSheetSize, removeCustomSheetSize, editCustomSheetSize, patchSheetSize, unpatchSheetSize, hideSheetSize, showSheetSize,
@@ -95,6 +102,7 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
 
   const sheets = catalog ? getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds) : customSheetSizes;
 
+  const id = target ?? sheetSizeId;
   return {
     addLabel: '+ Nuevo pliego',
     addSubmitLabel: 'Añadir pliego',
@@ -107,9 +115,9 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
       { key: 'width_mm', label: 'Ancho', kind: 'number' },
       { key: 'height_mm', label: 'Alto', kind: 'number' },
     ],
-    entry: sheets.find(item => item.id === sheetSizeId) ?? null,
-    factory: catalog?.sheetSizes.find(item => item.id === sheetSizeId) ?? null,
-    origin: getCatalogOrigin(sheetSizeId, customSheetSizes.map(item => item.id), sheetSizePatches.map(patch => patch.id)),
+    entry: sheets.find(item => item.id === id) ?? null,
+    factory: catalog?.sheetSizes.find(item => item.id === id) ?? null,
+    origin: getCatalogOrigin(id, customSheetSizes.map(item => item.id), sheetSizePatches.map(patch => patch.id)),
     error: customSheetSizeError,
     clearError: clearCustomSheetSizeError,
     read: sheet => ({ name: sheet.name, width_mm: String(sheet.width_mm), height_mm: String(sheet.height_mm) }),
@@ -123,17 +131,17 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
     add: (values: FormValues) => addCustomSheetSize(
       String(values.name).trim(), toNumber(values.width_mm), toNumber(values.height_mm)
     ),
-    patch: changes => patchSheetSize(sheetSizeId, changes),
-    editOwn: changes => editCustomSheetSize(sheetSizeId, changes),
-    unpatch: () => unpatchSheetSize(sheetSizeId),
-    hide: () => hideSheetSize(sheetSizeId),
-    remove: () => removeCustomSheetSize(sheetSizeId),
+    patch: changes => patchSheetSize(id, changes),
+    editOwn: changes => editCustomSheetSize(id, changes),
+    unpatch: () => unpatchSheetSize(id),
+    hide: () => hideSheetSize(id),
+    remove: () => removeCustomSheetSize(id),
     hiddenCount: hiddenSheetSizeIds.length,
     restoreHidden: () => hiddenSheetSizeIds.forEach(id => showSheetSize(id)),
   };
 }
 
-export function useBindingEditor(): CatalogEditor<Binding> {
+export function useBindingEditor(target?: string | null): CatalogEditor<Binding> {
   const {
     catalog, bindingId, customBindings, bindingPatches, hiddenBindingIds, customBindingError,
     addCustomBinding, removeCustomBinding, editCustomBinding, patchBinding, unpatchBinding, hideBinding, showBinding,
@@ -142,6 +150,7 @@ export function useBindingEditor(): CatalogEditor<Binding> {
 
   const bindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
 
+  const id = target ?? bindingId;
   return {
     addLabel: '+ Nueva encuadernación',
     addSubmitLabel: 'Añadir encuadernación',
@@ -158,9 +167,9 @@ export function useBindingEditor(): CatalogEditor<Binding> {
       { key: 'nests', label: 'Anida los pliegos', kind: 'boolean' },
       { key: 'requiresSignatureMultiple', label: 'Exige múltiplo de firma', kind: 'boolean' },
     ],
-    entry: bindings.find(item => item.id === bindingId) ?? null,
-    factory: catalog?.bindings.find(item => item.id === bindingId) ?? null,
-    origin: getCatalogOrigin(bindingId, customBindings.map(item => item.id), bindingPatches.map(patch => patch.id)),
+    entry: bindings.find(item => item.id === id) ?? null,
+    factory: catalog?.bindings.find(item => item.id === id) ?? null,
+    origin: getCatalogOrigin(id, customBindings.map(item => item.id), bindingPatches.map(patch => patch.id)),
     error: customBindingError,
     clearError: clearCustomBindingError,
     read: binding => ({
@@ -192,11 +201,11 @@ export function useBindingEditor(): CatalogEditor<Binding> {
       Boolean(values.nests),
       Boolean(values.requiresSignatureMultiple)
     ),
-    patch: changes => patchBinding(bindingId, changes),
-    editOwn: changes => editCustomBinding(bindingId, changes),
-    unpatch: () => unpatchBinding(bindingId),
-    hide: () => hideBinding(bindingId),
-    remove: () => removeCustomBinding(bindingId),
+    patch: changes => patchBinding(id, changes),
+    editOwn: changes => editCustomBinding(id, changes),
+    unpatch: () => unpatchBinding(id),
+    hide: () => hideBinding(id),
+    remove: () => removeCustomBinding(id),
     hiddenCount: hiddenBindingIds.length,
     restoreHidden: () => hiddenBindingIds.forEach(id => showBinding(id)),
   };
@@ -209,7 +218,7 @@ export function useBindingEditor(): CatalogEditor<Binding> {
  * replaced rather than patched, so there the label is yours to change, and
  * the store carries the selection across to the new one.
  */
-export function useProportionEditor(): CatalogEditor<Proportion> {
+export function useProportionEditor(target?: string | null): CatalogEditor<Proportion> {
   const {
     catalog, proportionId, customProportions, proportionPatches, hiddenProportionLabels, customProportionError,
     addCustomProportion, removeCustomProportion, editCustomProportion, patchProportion, unpatchProportion, hideProportion, showProportion,
@@ -219,7 +228,7 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
   const proportions = catalog
     ? getAllProportions(catalog, customProportions, proportionPatches, hiddenProportionLabels)
     : customProportions;
-  const label = proportionId ?? '';
+  const label = target ?? proportionId ?? '';
   const origin = getCatalogOrigin(label, customProportions.map(item => item.label), proportionPatches.map(patch => patch.label));
 
   return {
@@ -284,7 +293,7 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
  * or the engine draws a template nobody can cut â so the form does not offer
  * them, and the editor supplies the zeros.
  */
-export function useCoverEditor(): CatalogEditor<Cover> {
+export function useCoverEditor(target?: string | null): CatalogEditor<Cover> {
   const {
     catalog, coverId, customCovers, coverPatches, hiddenCoverIds, customCoverError,
     customSubstrates, substratePatches, hiddenSubstrateIds,
@@ -313,6 +322,7 @@ export function useCoverEditor(): CatalogEditor<Cover> {
     };
   };
 
+  const id = target ?? coverId;
   return {
     addLabel: '+ Nueva tapa',
     addSubmitLabel: 'Añadir tapa',
@@ -341,9 +351,9 @@ export function useCoverEditor(): CatalogEditor<Cover> {
       { key: 'turnIn_mm', label: 'Doblez de forro', kind: 'number', showWhen: isHard },
       { key: 'boardThickness_mm', label: 'Grosor de cartón', kind: 'number', showWhen: isHard },
     ],
-    entry: covers.find(item => item.id === coverId) ?? null,
-    factory: catalog?.covers.find(item => item.id === coverId) ?? null,
-    origin: getCatalogOrigin(coverId, customCovers.map(item => item.id), coverPatches.map(patch => patch.id)),
+    entry: covers.find(item => item.id === id) ?? null,
+    factory: catalog?.covers.find(item => item.id === id) ?? null,
+    origin: getCatalogOrigin(id, customCovers.map(item => item.id), coverPatches.map(patch => patch.id)),
     error: customCoverError,
     clearError: clearCustomCoverError,
     read: cover => ({
@@ -378,17 +388,17 @@ export function useCoverEditor(): CatalogEditor<Cover> {
       return changes;
     },
     add: (values: FormValues) => addCustomCover(readCover(values)),
-    patch: changes => patchCover(coverId, changes),
-    editOwn: changes => editCustomCover(coverId, changes),
-    unpatch: () => unpatchCover(coverId),
-    hide: () => hideCover(coverId),
-    remove: () => removeCustomCover(coverId),
+    patch: changes => patchCover(id, changes),
+    editOwn: changes => editCustomCover(id, changes),
+    unpatch: () => unpatchCover(id),
+    hide: () => hideCover(id),
+    remove: () => removeCustomCover(id),
     hiddenCount: hiddenCoverIds.length,
     restoreHidden: () => hiddenCoverIds.forEach(id => showCover(id)),
   };
 }
 
-export function useSubstrateEditor(): CatalogEditor<Substrate> {
+export function useSubstrateEditor(target?: string | null): CatalogEditor<Substrate> {
   const {
     catalog, substrateId, customSubstrates, substratePatches, hiddenSubstrateIds, customSubstrateError,
     addCustomSubstrate, editCustomSubstrate, removeCustomSubstrate, patchSubstrate, unpatchSubstrate,
@@ -399,6 +409,7 @@ export function useSubstrateEditor(): CatalogEditor<Substrate> {
     ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds)
     : customSubstrates;
 
+  const id = target ?? substrateId;
   return {
     addLabel: '+ Nuevo papel',
     addSubmitLabel: 'Añadir papel',
@@ -414,9 +425,9 @@ export function useSubstrateEditor(): CatalogEditor<Substrate> {
       { key: 'grammage', label: 'Primer gramaje', kind: 'number', onlyWhenAdding: true },
       { key: 'caliper', label: 'Calibre de ese gramaje', kind: 'number', onlyWhenAdding: true },
     ],
-    entry: substrates.find(item => item.id === substrateId) ?? null,
-    factory: catalog?.substrates.find(item => item.id === substrateId) ?? null,
-    origin: getCatalogOrigin(substrateId, customSubstrates.map(item => item.id), substratePatches.map(patch => patch.id)),
+    entry: substrates.find(item => item.id === id) ?? null,
+    factory: catalog?.substrates.find(item => item.id === id) ?? null,
+    origin: getCatalogOrigin(id, customSubstrates.map(item => item.id), substratePatches.map(patch => patch.id)),
     error: customSubstrateError,
     clearError: clearCustomSubstrateError,
     read: substrate => ({
@@ -437,11 +448,11 @@ export function useSubstrateEditor(): CatalogEditor<Substrate> {
       toNumber(values.grammage),
       toNumber(values.caliper)
     ),
-    patch: changes => patchSubstrate(substrateId, changes),
-    editOwn: changes => editCustomSubstrate(substrateId, changes),
-    unpatch: () => unpatchSubstrate(substrateId),
-    hide: () => hideSubstrate(substrateId),
-    remove: () => removeCustomSubstrate(substrateId),
+    patch: changes => patchSubstrate(id, changes),
+    editOwn: changes => editCustomSubstrate(id, changes),
+    unpatch: () => unpatchSubstrate(id),
+    hide: () => hideSubstrate(id),
+    remove: () => removeCustomSubstrate(id),
     hiddenCount: hiddenSubstrateIds.length,
     restoreHidden: () => hiddenSubstrateIds.forEach(id => showSubstrate(id)),
   };
@@ -453,21 +464,27 @@ export function useSubstrateEditor(): CatalogEditor<Substrate> {
  * editor says so by leaving `patch`, `unpatch` and `hide` out, and the form
  * shows only what the catalog can actually do.
  */
-export function useGrammageEditor(): CatalogEditor<GrammageOption> {
+export function useGrammageEditor(paper?: string | null, target?: number | null): CatalogEditor<GrammageOption> {
   const {
     catalog, substrateId, selectedGrammage, customGrammages, customGrammageError,
     customSubstrates, substratePatches, hiddenSubstrateIds,
     addCustomGrammage, removeCustomGrammage, clearCustomGrammageError,
   } = useBookStore();
 
+  // The weights shown belong to the paper the catalog is pointed at, which
+  // since R-9 need not be the paper the book is made of.
+  const paperId = paper ?? substrateId;
   const options = catalog
     ? getAllGrammageOptions(
         getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds),
-        substrateId,
+        paperId,
         customGrammages
       )
     : [];
-  const isOwn = customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === selectedGrammage);
+  const grammage = target ?? (options.some(option => option.grammage === selectedGrammage)
+    ? selectedGrammage
+    : options[0]?.grammage ?? selectedGrammage);
+  const isOwn = customGrammages.some(custom => custom.substrateId === paperId && custom.grammage === grammage);
 
   return {
     readOnlyNote: 'Los gramajes no se editan ni se ocultan: puedes añadir los tuyos y quitarlos.',
@@ -479,15 +496,15 @@ export function useGrammageEditor(): CatalogEditor<GrammageOption> {
       { key: 'grammage', label: 'Gramaje', kind: 'number' },
       { key: 'caliper', label: 'Calibre declarado', kind: 'number' },
     ],
-    entry: options.find(option => option.grammage === selectedGrammage) ?? null,
+    entry: options.find(option => option.grammage === grammage) ?? null,
     factory: null,
     origin: isOwn ? 'own' : 'factory',
     error: customGrammageError,
     clearError: clearCustomGrammageError,
     read: option => ({ grammage: String(option.grammage), caliper: String(option.caliper) }),
     toChanges: () => ({}),
-    add: (values: FormValues) => addCustomGrammage(substrateId, toNumber(values.grammage), toNumber(values.caliper)),
-    remove: () => removeCustomGrammage(substrateId, selectedGrammage),
+    add: (values: FormValues) => addCustomGrammage(paperId, toNumber(values.grammage), toNumber(values.caliper)),
+    remove: () => removeCustomGrammage(paperId, grammage),
     hiddenCount: 0,
     restoreHidden: () => {},
   };

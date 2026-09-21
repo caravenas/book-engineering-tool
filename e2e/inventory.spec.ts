@@ -244,6 +244,50 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Alto de la razón': 1,
   'Descripción': 2,
 
+  /*
+   * R-9: every row of every catalog list is a control now, because choosing
+   * which entry the form edits is what a row does. Named by its three cells,
+   * the way the navigation items are, or a screen reader runs them together
+   * into "Bond3 gramajesde fábrica".
+   *
+   * They carry the shipped catalog's own data, so this list changes when
+   * public/config/ changes — which is a thing worth being told about.
+   */
+  '115 g/m², calibre 90 µm': 1,
+  '150 g/m², calibre 120 µm': 1,
+  '1:1, 1 : 1, de fábrica': 1,
+  '1:√2 (ISO), 1 : 1.4142, de fábrica': 1,
+  '200 g/m², calibre 160 µm': 1,
+  '2:3, 2 : 3, de fábrica': 1,
+  '300 g/m², calibre 250 µm': 1,
+  '3:4, 3 : 4, de fábrica': 1,
+  '3:5 (Áurea), 3 : 5, de fábrica': 1,
+  '90 g/m², calibre 75 µm': 1,
+  'Bond, 3 gramajes, de fábrica': 1,
+  'Carta (Letter), 216 × 279 mm, de fábrica': 1,
+  'Cartulina C1S, 2 gramajes, de fábrica': 1,
+  'Cartulina C2S, 2 gramajes, de fábrica': 1,
+  'Cartulina Sulfato, 3 gramajes, de fábrica': 1,
+  'Cosido a hilo, 32–1200 págs, múltiplo de 4, de fábrica': 1,
+  'Couché Brillo, 5 gramajes, de fábrica': 1,
+  'Couché Mate, 5 gramajes, de fábrica': 1,
+  'Doble Carta (Tabloid), 432 × 279 mm, de fábrica': 1,
+  'Firma de 16 páginas (pliego doblado 3 veces), 16 págs, 2 × 4, de fábrica': 1,
+  'Firma de 8 páginas (pliego doblado 2 veces), 8 págs, 2 × 2, de fábrica': 1,
+  'Grapa (caballete), 8–64 págs, múltiplo de 4, de fábrica': 1,
+  'Hotmelt (adhesivo termofusible), 32–600 págs, múltiplo de 2, de fábrica': 1,
+  'Oficio (Legal), 216 × 356 mm, de fábrica': 1,
+  'Opalina, 3 gramajes, de fábrica': 1,
+  'PUR (adhesivo de poliuretano), 32–800 págs, múltiplo de 2, de fábrica': 1,
+  'Pliego 70×100cm, 700 × 1000 mm, de fábrica': 1,
+  'Pliego 77×110cm, 770 × 1100 mm, de fábrica': 1,
+  'Prensa formato 70×100, 720 × 1020 mm, de fábrica': 1,
+  'Prensa formato SRA3, 330 × 460 mm, de fábrica': 1,
+  'SRA3 (320×450mm), 320 × 450 mm, de fábrica': 1,
+  'Tapa blanda con solapas, tapa blanda, de fábrica': 1,
+  'Tapa blanda sin solapas, tapa blanda, de fábrica': 1,
+  'Tapa dura estándar, tapa dura, de fábrica': 1,
+
   // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,
   '150 g/m²': 1,

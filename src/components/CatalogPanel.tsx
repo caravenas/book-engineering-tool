@@ -234,14 +234,30 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [selected, setSelected] = useState<CatalogId>('presses');
   const [isOpen, setIsOpen] = useState(false);
+  /*
+   * Which entry the form is pointed at. Deliberately not the book's own
+   * selection: opening the catalog to fix a typo in a press nobody is using
+   * must not quietly reprint the book on it. Null means "whatever the book
+   * is made of", which is what the catalog opens on.
+   */
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editingGrammage, setEditingGrammage] = useState<number | null>(null);
   const catalogs = useCatalogs();
-  const pressEditor = usePressEditor();
-  const sheetSizeEditor = useSheetSizeEditor();
-  const bindingEditor = useBindingEditor();
-  const proportionEditor = useProportionEditor();
-  const grammageEditor = useGrammageEditor();
-  const substrateEditor = useSubstrateEditor();
-  const coverEditor = useCoverEditor();
+  const current = catalogs.find(item => item.id === selected) ?? null;
+  /*
+   * A key survives only while its entry does: deleting or hiding the entry
+   * being edited leaves the form pointed at nothing, so it falls back to the
+   * book's selection rather than showing an empty form.
+   */
+  const target = current?.entries.some(entry => entry.key === editingKey) ? editingKey : null;
+  const pressEditor = usePressEditor(target);
+  const sheetSizeEditor = useSheetSizeEditor(target);
+  const bindingEditor = useBindingEditor(target);
+  const proportionEditor = useProportionEditor(target);
+  const substrateEditor = useSubstrateEditor(target);
+  const coverEditor = useCoverEditor(target);
+  const editingPaper = selected === 'substrates' ? target : null;
+  const grammageEditor = useGrammageEditor(editingPaper, editingGrammage);
   const {
     bindingId, pressId, sheetSizeId, proportionId, substrateId, coverId, selectedGrammage, customGrammages,
     customSubstrates, substratePatches, hiddenSubstrateIds,
@@ -253,8 +269,29 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
     ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingId)
     : { hasFlatSpine: true };
 
+  /*
+   * The key the form is on, per catalog: the chosen one when there is one,
+   * and the book's own entry when there is not. Read from the editors rather
+   * than recomputed, so the mark on the list cannot drift from the form.
+   */
+  const currentKey = (id: CatalogId): string | null => {
+    switch (id) {
+      case 'presses': return pressEditor.entry?.id ?? null;
+      case 'sheetSizes': return sheetSizeEditor.entry?.id ?? null;
+      case 'bindings': return bindingEditor.entry?.id ?? null;
+      case 'proportions': return proportionEditor.entry?.label ?? null;
+      case 'substrates': return substrateEditor.entry?.id ?? null;
+      case 'covers': return coverEditor.entry?.id ?? null;
+      // The folding schemes have no user layer and no form, so nothing is
+      // under one: the list marks nothing rather than marking the first row.
+      case 'foldingSchemes': return null;
+    }
+  };
+
   const open = useCallback((id: CatalogId) => {
     setSelected(id);
+    setEditingKey(null);
+    setEditingGrammage(null);
     const element = dialog.current;
     if (!element) return;
     /*
@@ -289,8 +326,6 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
       if (element && typeof element.close === 'function' && element.open) element.close();
     };
   }, []);
-
-  const current = catalogs.find(item => item.id === selected) ?? null;
 
   return (
     <CatalogPanelContext.Provider value={api}>
@@ -349,7 +384,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                       item.readOnly ? 'solo lectura' : null,
                     ].filter(Boolean).join(', ')}
                     aria-current={item.id === selected ? 'page' : undefined}
-                    onClick={() => setSelected(item.id)}
+                    onClick={() => { setSelected(item.id); setEditingKey(null); setEditingGrammage(null); }}
                   >
                     <span className="catalog-nav-name">{item.title}</span>
                     {item.readOnly && <LockIcon />}
@@ -371,12 +406,28 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                 <p className="catalog-file">{current.file}</p>
                 {current.source && <p className="catalog-source">{current.source}</p>}
 
+                {/*
+                  * Choosing here points the form at an entry; it does not
+                  * change what the book is made of. The one the form is on
+                  * is marked, because a form that edits "the selected entry"
+                  * without saying which is the state R-9 set out to fix.
+                  */}
                 <ul className="catalog-list">
                   {current.entries.map(entry => (
-                    <li key={entry.key} className="catalog-list-item">
-                      <span className="catalog-list-name">{entry.name}</span>
-                      <span className="catalog-list-detail">{entry.detail}</span>
-                      <span className="catalog-list-origin">{ORIGIN_LABEL[entry.origin]}</span>
+                    <li key={entry.key}>
+                      <button
+                        type="button"
+                        className="catalog-list-item"
+                        // Three cells run together otherwise, the way the nav
+                        // items did: "Bond3 gramajesde fábrica".
+                        aria-label={[entry.name, entry.detail, ORIGIN_LABEL[entry.origin]].join(', ')}
+                        aria-current={entry.key === currentKey(current.id) ? 'true' : undefined}
+                        onClick={() => { setEditingKey(entry.key); setEditingGrammage(null); }}
+                      >
+                        <span className="catalog-list-name">{entry.name}</span>
+                        <span className="catalog-list-detail">{entry.detail}</span>
+                        <span className="catalog-list-origin">{ORIGIN_LABEL[entry.origin]}</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -397,28 +448,39 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   */}
                 {current.id === 'substrates' && (
                   <>
-                    <CatalogEntryForm key={substrateId} editor={substrateEditor} />
+                    <CatalogEntryForm key={substrateEditor.entry?.id ?? substrateId} editor={substrateEditor} />
                     <h4 className="catalog-content-title">
-                      Gramajes de {current.entries.find(item => item.key === substrateId)?.name ?? 'el papel elegido'}
+                      Gramajes de {substrateEditor.entry?.name ?? 'el papel elegido'}
                     </h4>
                     <ul className="catalog-list">
                       {(catalog ? getAllGrammageOptions(
                         getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds),
-                        substrateId,
+                        substrateEditor.entry?.id ?? substrateId,
                         customGrammages
                       ) : []).map(option => (
-                        <li key={option.grammage} className="catalog-list-item">
-                          <span className="catalog-list-name">{option.grammage} g/m²</span>
-                          <span className="catalog-list-detail">calibre {option.caliper} µm</span>
-                          <span className="catalog-list-origin">
-                            {customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === option.grammage)
-                              ? ORIGIN_LABEL.own
-                              : ORIGIN_LABEL.factory}
-                          </span>
+                        <li key={option.grammage}>
+                          <button
+                            type="button"
+                            className="catalog-list-item"
+                            aria-label={`${option.grammage} g/m², calibre ${option.caliper} µm`}
+                            aria-current={option.grammage === (grammageEditor.entry?.grammage ?? null) ? 'true' : undefined}
+                            onClick={() => setEditingGrammage(option.grammage)}
+                          >
+                            <span className="catalog-list-name">{option.grammage} g/m²</span>
+                            <span className="catalog-list-detail">calibre {option.caliper} µm</span>
+                            <span className="catalog-list-origin">
+                              {customGrammages.some(custom => custom.substrateId === (substrateEditor.entry?.id ?? substrateId) && custom.grammage === option.grammage)
+                                ? ORIGIN_LABEL.own
+                                : ORIGIN_LABEL.factory}
+                            </span>
+                          </button>
                         </li>
                       ))}
                     </ul>
-                    <CatalogEntryForm key={`${substrateId}-${selectedGrammage}`} editor={grammageEditor} />
+                    <CatalogEntryForm
+                      key={`${substrateEditor.entry?.id ?? substrateId}-${grammageEditor.entry?.grammage ?? selectedGrammage}`}
+                      editor={grammageEditor}
+                    />
                   </>
                 )}
 

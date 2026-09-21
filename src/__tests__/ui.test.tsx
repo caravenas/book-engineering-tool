@@ -1435,3 +1435,98 @@ describe('Adding a cover from the catalog (R-11)', () => {
     expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Imposible');
   });
 });
+
+/**
+ * Until R-9 the form edited whatever the book was made of, and the list above
+ * it neither let you pick another nor said which one you were looking at. The
+ * decision this settles: choosing in the catalog points the form at an entry
+ * and leaves the book alone. Opening the catalog to fix a typo in a press
+ * nobody is using must not quietly reprint the book on it.
+ */
+describe('Choosing which entry the catalog edits (R-9)', () => {
+  it('points the form at the chosen press without changing the one the book uses', () => {
+    render(<ImpositionVisualizerScreen />);
+    const usedBefore = useBookStore.getState().pressId;
+    openPressCatalog();
+
+    const other = screen.getByRole('button', { name: /^Prensa formato SRA3, / });
+    fireEvent.click(other);
+
+    // The form follows.
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato SRA3');
+    // The book does not.
+    expect(useBookStore.getState().pressId).toBe(usedBefore);
+    expect((screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement).value).toBe(usedBefore);
+  });
+
+  it('marks the row the form is on, and moves the mark when another is chosen', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+
+    const used = screen.getByRole('button', { name: /^Prensa formato 70×100, / });
+    const other = screen.getByRole('button', { name: /^Prensa formato SRA3, / });
+    // It opens on the entry the book is made of, so that one is marked.
+    expect(used.getAttribute('aria-current')).toBe('true');
+    expect(other.getAttribute('aria-current')).toBeNull();
+
+    fireEvent.click(other);
+
+    expect(other.getAttribute('aria-current')).toBe('true');
+    expect(used.getAttribute('aria-current')).toBeNull();
+  });
+
+  it('edits the chosen entry, not the one in use', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: /^Prensa formato SRA3, / }));
+
+    fireEvent.change(screen.getByLabelText('Pinza'), { target: { value: '15' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(useBookStore.getState().pressPatches).toEqual([
+      { id: 'prensa_sra3', changes: { gripperMargin_mm: 15 } },
+    ]);
+  });
+
+  it('goes back to the book’s entry when the catalog changes', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: /^Prensa formato SRA3, / }));
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato SRA3');
+
+    fireEvent.click(screen.getByRole('button', { name: /^Pliegos, / }));
+    fireEvent.click(screen.getByRole('button', { name: /^Prensas, / }));
+
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato 70×100');
+  });
+
+  /**
+   * A key outlives nothing: hiding the entry the form is on takes it out of
+   * the list, and the form falls back to the book's entry rather than sitting
+   * on something that is no longer there.
+   */
+  it('falls back to the book’s entry when the one being edited is hidden', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+    fireEvent.click(screen.getByRole('button', { name: /^Prensa formato SRA3, / }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
+
+    expect(useBookStore.getState().hiddenPressIds).toEqual(['prensa_sra3']);
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato 70×100');
+  });
+
+  it('shows the weights of the paper being edited, not of the one in use', () => {
+    render(<SubstrateSelectorScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
+
+    // Couché Mate, the default, sells five weights; Bond sells three.
+    expect(screen.getByRole('heading', { name: /^Gramajes de Couché Mate/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Bond, 3 gramajes/ }));
+
+    expect(screen.getByRole('heading', { name: /^Gramajes de Bond/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^75 g\/m²/ })).toBeTruthy();
+    // And the book is still made of the paper it was made of.
+    expect(useBookStore.getState().substrateId).toBe('couche_matte');
+  });
+});

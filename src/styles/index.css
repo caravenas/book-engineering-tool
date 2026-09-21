@@ -1315,11 +1315,33 @@ select.form-input {
 }
 
 .catalog-list-item {
+  /* A row is a button now: it chooses which entry the form edits. It keeps
+     reading as a row of a list, because that is what it is. */
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-height: 48px;
+  /* Room for the rule that marks the chosen row, kept on every row so
+     choosing one does not shove its name sideways. */
+  padding-left: var(--space-3);
   border-bottom: 1px solid var(--color-border);
+}
+
+/* The one the form is on. A rule rather than a fill, so a long list does not
+   turn into a band of colour. */
+.catalog-list-item[aria-current="true"] {
+  box-shadow: inset 2px 0 0 var(--color-text-primary);
+}
+
+.catalog-list-item:hover {
+  background: var(--color-bg-card-hover);
 }
 
 .catalog-list-name {
