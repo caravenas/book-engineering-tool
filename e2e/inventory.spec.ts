@@ -199,6 +199,10 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Opciones de pliego': 1,
   'Opciones de encuadernación': 1,
   'Opciones de proporción': 1,
+  'Opciones de gramaje': 1,
+  '+ Nuevo gramaje': 1,
+  'Gramaje': 1,
+  'Calibre declarado': 1,
 
   // One form serves the four editable catalogs, so the controls it always
   // carries appear once per catalog, and each catalog adds its own fields.
@@ -240,7 +244,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Alto (Cerrado)': 1,
   'Ancho (Cerrado)': 1,
   'Apaisado': 1,
-  'Añadir gramaje personalizado': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
   'Encuadernación seleccionada': 1,

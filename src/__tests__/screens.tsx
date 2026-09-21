@@ -11,6 +11,7 @@ import { SheetPreview } from '../components/SheetPreview';
 import { CoverPanel } from '../components/CoverPanel';
 import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
+import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
 
 /**
@@ -76,6 +77,14 @@ export function CoverPanelScreen() {
       <CoverPanel />
       <CoverPreview />
       <CoverResults />
+    </CatalogPanelProvider>
+  );
+}
+
+export function SubstrateSelectorScreen() {
+  return (
+    <CatalogPanelProvider>
+      <SubstrateSelector />
     </CatalogPanelProvider>
   );
 }

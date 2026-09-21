@@ -1132,6 +1132,27 @@ select.form-input {
   font-weight: 600;
 }
 
+.catalog-persistence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.catalog-persistence::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #15803D;
+}
+
+.catalog-persistence-warning::before {
+  background: #B45309;
+}
+
 .catalog-close {
   width: 44px;
   height: 44px;

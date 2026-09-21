@@ -1,6 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { SubstrateSelector } from '../components/SubstrateSelector';
 import { SpecSteps } from '../components/SpecSteps';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
 
@@ -12,12 +11,18 @@ function openCatalogFor(what: 'prensa' | 'pliego' | 'encuadernación' | 'proporc
 function openPressCatalog() {
   openCatalogFor('prensa');
 }
+
+/** Grammages live inside their paper in the catalog since R-4c. */
+function openGrammageCatalog() {
+  fireEvent.click(screen.getByRole('button', { name: 'Opciones de gramaje' }));
+}
 import {
   CanvasDesignerScreen,
   SpineCalculatorScreen,
   BindingPanelScreen,
   ImpositionVisualizerScreen,
   CoverPanelScreen,
+  SubstrateSelectorScreen,
 } from './screens';
 import { useBookStore } from '../store/useBookStore';
 import { loadShippedCatalog } from './testCatalog';
@@ -167,12 +172,14 @@ describe('Honest and recoverable UI', () => {
     expect(screen.getByLabelText('Sangrado (Bleed)')).toBeTruthy();
     canvas.unmount();
 
-    render(<SubstrateSelector />);
+    render(<SubstrateSelectorScreen />);
     const grammageGroup = screen.getByRole('group', { name: 'Gramaje' });
     expect(within(grammageGroup).getByRole('button', { name: '150 g/m²' }).getAttribute('aria-pressed')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: 'Añadir gramaje personalizado' }));
-    expect(screen.getByLabelText('Gramaje personalizado (g/m²)')).toBeTruthy();
-    expect(screen.getByLabelText('Calibre personalizado')).toBeTruthy();
+    openGrammageCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo gramaje' }));
+    const form = document.getElementById('custom-entry-form') as HTMLElement;
+    expect(within(form).getByLabelText('Gramaje')).toBeTruthy();
+    expect(within(form).getByLabelText('Calibre declarado')).toBeTruthy();
   });
 
   it('keeps every selector in the imposition step named, and names the way out to the catalog', () => {
@@ -200,24 +207,22 @@ describe('Honest and recoverable UI', () => {
   });
 
   it('announces the custom grammage disclosure state and controlled form', () => {
-    render(<SubstrateSelector />);
+    render(<SubstrateSelectorScreen />);
 
-    const customGrammageToggle = screen.getByRole('button', {
-      name: 'Añadir gramaje personalizado',
-    });
+    openGrammageCatalog();
+    const customGrammageToggle = screen.getByRole('button', { name: '+ Nuevo gramaje' });
     expect(customGrammageToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(customGrammageToggle.getAttribute('aria-controls')).toBe('custom-grammage-form');
-    expect(document.getElementById('custom-grammage-form')).toBeNull();
+    expect(document.getElementById('custom-entry-form')).toBeNull();
 
     fireEvent.click(customGrammageToggle);
 
     expect(customGrammageToggle.getAttribute('aria-expanded')).toBe('true');
-    expect(document.getElementById('custom-grammage-form')).not.toBeNull();
+    expect(document.getElementById('custom-entry-form')).not.toBeNull();
 
     fireEvent.click(customGrammageToggle);
 
     expect(customGrammageToggle.getAttribute('aria-expanded')).toBe('false');
-    expect(document.getElementById('custom-grammage-form')).toBeNull();
+    expect(document.getElementById('custom-entry-form')).toBeNull();
   });
 
   it('shows a duplicate error and removes a custom grammage through its accessible button', () => {
@@ -228,20 +233,19 @@ describe('Honest and recoverable UI', () => {
       customGrammageError: 'Ya existe el gramaje 160 g para Couché Mate. Introduce otro gramaje o cancela.',
     });
 
-    render(<SubstrateSelector />);
+    render(<SubstrateSelectorScreen />);
 
+    // The complaint and the way to remove a grammage of your own moved into
+    // the catalog with the form that raises them.
+    openGrammageCatalog();
     expect(screen.getByRole('alert').textContent).toContain('Introduce otro gramaje');
-    const removeButton = screen.getByRole('button', {
-      name: 'Eliminar gramaje personalizado de 160 gramos por metro cuadrado',
-    });
+    const removeButton = screen.getByRole('button', { name: 'Eliminar' });
     expect(removeButton.getAttribute('type')).toBe('button');
     fireEvent.click(removeButton);
 
     expect(useBookStore.getState().customGrammages).toEqual([]);
     expect(useBookStore.getState().selectedGrammage).toBe(90);
-    expect(screen.queryByRole('button', {
-      name: 'Eliminar gramaje personalizado de 160 gramos por metro cuadrado',
-    })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Eliminar' })).toBeNull();
   });
 
   it('preserves an invalid custom-sheet draft selection and recovers after valid dimensions', () => {
@@ -351,14 +355,14 @@ describe('Honest and recoverable UI', () => {
   });
 
   it('shows the config source for a shipped grammage and the custom-source note for a custom one', () => {
-    const substrateSelector = render(<SubstrateSelector />);
+    const substrateSelector = render(<SubstrateSelectorScreen />);
     expect(screen.getByText('config/sustratos.json')).toBeTruthy();
     expect(screen.getByText('Valores de ejemplo; reemplazar por datos reales de la imprenta.')).toBeTruthy();
     expect(screen.queryByText(/^Fuente: /)).toBeNull();
     substrateSelector.unmount();
 
     useBookStore.getState().addCustomGrammage('couche_matte', 999, 100);
-    render(<SubstrateSelector />);
+    render(<SubstrateSelectorScreen />);
     expect(screen.getByText('gramaje personalizado')).toBeTruthy();
     expect(screen.queryByText(/config\/sustratos\.json/)).toBeNull();
     expect(screen.queryByText(/^Fuente: /)).toBeNull();
@@ -955,20 +959,24 @@ describe('Cover panel', () => {
 // size itself and the focus ring's perceptibility are verified in a real
 // browser via `npm run preview`.
 describe('Focus visibility and delete-button tap targets (UX-3)', () => {
-  it('renders the custom-grammage remove button with the class whose ::before overlay grows its tap target', () => {
+  it('removes a grammage of your own from the catalog, where the control is a full-sized button', () => {
     useBookStore.setState({
       substrateId: 'couche_matte',
       selectedGrammage: 160,
       customGrammages: [{ substrateId: 'couche_matte', grammage: 160, caliper: 130 }],
     });
 
-    render(<SubstrateSelector />);
+    render(<SubstrateSelectorScreen />);
 
-    const removeButton = screen.getByRole('button', {
-      name: 'Eliminar gramaje personalizado de 160 gramos por metro cuadrado',
-    });
+    openGrammageCatalog();
+    const removeButton = screen.getByRole('button', { name: 'Eliminar' });
 
-    expect(removeButton.className).toContain('remove-grammage-button');
+    // The 21px chip with a ::before overlay grown to a usable tap target is
+    // gone: in the catalog it is an ordinary button, and e2e/inventory.spec.ts
+    // measures that the catalog's controls are big enough.
+    expect(removeButton.className).toContain('catalog-danger');
+    fireEvent.click(removeButton);
+    expect(useBookStore.getState().customGrammages).toEqual([]);
   });
 
   it('removes a sheet of your own from the catalog, where the control is a full-sized button', () => {

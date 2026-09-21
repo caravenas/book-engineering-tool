@@ -1,7 +1,7 @@
-import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions } from '../store/useBookStore';
+import { useBookStore, getAllPresses, getAllSheetSizes, getAllBindings, getAllProportions, getAllGrammageOptions } from '../store/useBookStore';
 import { getCatalogOrigin } from './CatalogOrigin';
 import { toNumber, type CatalogEditor, type FormValues } from './CatalogEntryForm';
-import type { Binding, Press, Proportion, SheetSize } from '../types';
+import type { Binding, GrammageOption, Press, Proportion, SheetSize } from '../types';
 
 /**
  * What each catalog has that the others do not: the shape of an entry, and
@@ -29,7 +29,7 @@ export function usePressEditor(): CatalogEditor<Press> {
   const presses = catalog ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds) : customPresses;
 
   return {
-    ownNoun: 'Una prensa tuya',
+    ownNote: 'Una prensa tuya no se edita: elimínala y vuelve a añadirla con las medidas nuevas.',
     addLabel: '+ Nueva prensa',
     addSubmitLabel: 'Añadir prensa',
     hiddenLine: count => (count === 1
@@ -95,7 +95,7 @@ export function useSheetSizeEditor(): CatalogEditor<SheetSize> {
   const sheets = catalog ? getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds) : customSheetSizes;
 
   return {
-    ownNoun: 'Un pliego tuyo',
+    ownNote: 'Un pliego tuyo no se edita: elimínalo y vuelve a añadirlo con las medidas nuevas.',
     addLabel: '+ Nuevo pliego',
     addSubmitLabel: 'Añadir pliego',
     hiddenLine: count => (count === 1
@@ -142,7 +142,7 @@ export function useBindingEditor(): CatalogEditor<Binding> {
   const bindings = catalog ? getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds) : customBindings;
 
   return {
-    ownNoun: 'Una encuadernación tuya',
+    ownNote: 'Una encuadernación tuya no se edita: elimínala y vuelve a añadirla con los valores nuevos.',
     addLabel: '+ Nueva encuadernación',
     addSubmitLabel: 'Añadir encuadernación',
     hiddenLine: count => (count === 1
@@ -219,7 +219,7 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
   const label = proportionId ?? '';
 
   return {
-    ownNoun: 'Una proporción tuya',
+    ownNote: 'Una proporción tuya no se edita: elimínala y vuelve a añadirla con la razón nueva.',
     addLabel: '+ Nueva proporción',
     addSubmitLabel: 'Añadir proporción',
     hiddenLine: count => (count === 1
@@ -264,5 +264,44 @@ export function useProportionEditor(): CatalogEditor<Proportion> {
     remove: () => removeCustomProportion(label),
     hiddenCount: hiddenProportionLabels.length,
     restoreHidden: () => hiddenProportionLabels.forEach(item => showProportion(item)),
+  };
+}
+
+/**
+ * A grammage hangs off a paper and is keyed by its own value, so it has no id
+ * to patch and nothing to hide: you add yours and you remove it again. The
+ * editor says so by leaving `patch`, `unpatch` and `hide` out, and the form
+ * shows only what the catalog can actually do.
+ */
+export function useGrammageEditor(): CatalogEditor<GrammageOption> {
+  const {
+    catalog, substrateId, selectedGrammage, customGrammages, customGrammageError,
+    addCustomGrammage, removeCustomGrammage, clearCustomGrammageError,
+  } = useBookStore();
+
+  const options = catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : [];
+  const isOwn = customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === selectedGrammage);
+
+  return {
+    ownNote: 'Los gramajes no se editan ni se ocultan: puedes añadir los tuyos y quitarlos.',
+    addLabel: '+ Nuevo gramaje',
+    addSubmitLabel: 'Añadir gramaje',
+    hiddenLine: () => '',
+    restoreLabel: '',
+    fields: [
+      { key: 'grammage', label: 'Gramaje', kind: 'number' },
+      { key: 'caliper', label: 'Calibre declarado', kind: 'number' },
+    ],
+    entry: options.find(option => option.grammage === selectedGrammage) ?? null,
+    factory: null,
+    origin: isOwn ? 'own' : 'factory',
+    error: customGrammageError,
+    clearError: clearCustomGrammageError,
+    read: option => ({ grammage: String(option.grammage), caliper: String(option.caliper) }),
+    toChanges: () => ({}),
+    add: (values: FormValues) => addCustomGrammage(substrateId, toNumber(values.grammage), toNumber(values.caliper)),
+    remove: () => removeCustomGrammage(substrateId, selectedGrammage),
+    hiddenCount: 0,
+    restoreHidden: () => {},
   };
 }

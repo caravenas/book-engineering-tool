@@ -30,8 +30,12 @@ export interface FieldSpec {
 export type FormValues = Record<string, string | boolean>;
 
 export interface CatalogEditor<Entry> {
-  /** What the catalog is called in a sentence: "una prensa tuya", "un pliego tuyo". */
-  ownNoun: string;
+  /**
+   * What the form says about an entry of your own, written out per catalog
+   * rather than assembled from a noun: Spanish will not glue "tuyo" and
+   * "quitarlas" onto the same sentence and stay grammatical for five genders.
+   */
+  ownNote: string;
   /** What the add button offers: "+ Nueva prensa". */
   addLabel: string;
   /** What the add button's submit says: "Añadir prensa". */
@@ -52,9 +56,15 @@ export interface CatalogEditor<Entry> {
   /** The changed fields, as the shape the store patches or adds with. */
   toChanges: (values: FormValues, changed: Set<string>) => Record<string, unknown>;
   add: (values: FormValues) => boolean;
-  patch: (changes: Record<string, unknown>) => boolean;
-  unpatch: () => void;
-  hide: () => void;
+  /**
+   * Absent when the store has no way to change an entry in place. Grammages
+   * are like that: they hang off a paper and are keyed by their own value, so
+   * there is nothing to patch and nothing to hide — only adding yours and
+   * removing it again. The form shows what that catalog can do and no more.
+   */
+  patch?: (changes: Record<string, unknown>) => boolean;
+  unpatch?: () => void;
+  hide?: () => void;
   remove: () => void;
   hiddenCount: number;
   restoreHidden: () => void;
@@ -113,7 +123,7 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
    * So its fields are shown as they are and there is nothing to save, rather
    * than a save button that quietly does nothing.
    */
-  const editable = adding || editor.origin !== 'own';
+  const editable = adding || (editor.origin !== 'own' && Boolean(editor.patch));
   const factoryValues = editor.factory ? editor.read(editor.factory) : null;
 
   const setField = (key: string, value: string | boolean) => {
@@ -157,12 +167,12 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
       // Every field is back at its factory value, so there is no longer a
       // difference to record: the patch goes rather than lingering as one that
       // changes nothing and bounces the form back to its old values.
-      if (editor.origin === 'edited') editor.unpatch();
+      if (editor.origin === 'edited') editor.unpatch?.();
       setEdit(null);
       return;
     }
 
-    if (editor.patch(editor.toChanges(shown, changed))) setEdit(null);
+    if (editor.patch?.(editor.toChanges(shown, changed))) setEdit(null);
   };
 
   return (
@@ -232,14 +242,12 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
         )}
 
         {!editable && (
-          <p className="calculation-note">
-            {editor.ownNoun} no se edita: elimínala y vuelve a añadirla con los valores nuevos.
-          </p>
+          <p className="calculation-note">{editor.ownNote}</p>
         )}
 
         <div className="catalog-actions">
-          {!adding && editor.origin === 'edited' && (
-            <button type="button" className="catalog-secondary" onClick={() => { editor.unpatch(); setEdit(null); }}>
+          {!adding && editor.origin === 'edited' && editor.unpatch && (
+            <button type="button" className="catalog-secondary" onClick={() => { editor.unpatch?.(); setEdit(null); }}>
               Volver a fábrica
             </button>
           )}
@@ -248,7 +256,7 @@ export function CatalogEntryForm<Entry>({ editor }: { editor: CatalogEditor<Entr
               Eliminar
             </button>
           )}
-          {!adding && editor.origin !== 'own' && (
+          {!adding && editor.origin !== 'own' && editor.hide && (
             <button type="button" className="catalog-danger" onClick={editor.hide}>
               Ocultar
             </button>

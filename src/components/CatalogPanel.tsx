@@ -6,10 +6,11 @@ import {
   getAllPresses,
   getAllBindings,
   getSelectedBindingInfo,
+  getAllGrammageOptions,
 } from '../store/useBookStore';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { CatalogEntryForm } from './CatalogEntryForm';
-import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor } from './catalogEditors';
+import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor } from './catalogEditors';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
@@ -213,7 +214,13 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const sheetSizeEditor = useSheetSizeEditor();
   const bindingEditor = useBindingEditor();
   const proportionEditor = useProportionEditor();
-  const { bindingId, pressId, sheetSizeId, proportionId, catalog, customBindings, bindingPatches, hiddenBindingIds } = useBookStore();
+  const grammageEditor = useGrammageEditor();
+  const {
+    bindingId, pressId, sheetSizeId, proportionId, substrateId, selectedGrammage, customGrammages,
+    catalog, customBindings, bindingPatches, hiddenBindingIds,
+    userLayerStorageAvailable, userLayerWriteFailed,
+  } = useBookStore();
+  const storageWorks = userLayerStorageAvailable && !userLayerWriteFailed;
   const { hasFlatSpine } = catalog
     ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingId)
     : { hasFlatSpine: true };
@@ -270,6 +277,14 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
       >
         <div className="catalog-header">
           <h2 className="catalog-title">Catálogo</h2>
+          {/*
+            * Where whether your changes survive belongs: beside the changes,
+            * rather than as a notice floating above a page that may not be
+            * showing any.
+            */}
+          <p className={`catalog-persistence${storageWorks ? '' : ' catalog-persistence-warning'}`}>
+            {storageWorks ? 'Guardado en este navegador' : 'Solo para esta sesión'}
+          </p>
           <button
             type="button"
             className="catalog-close"
@@ -345,9 +360,42 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                 {current.id === 'bindings' && <CatalogEntryForm key={bindingId} editor={bindingEditor} />}
                 {current.id === 'proportions' && <CatalogEntryForm key={proportionId ?? 'manual'} editor={proportionEditor} />}
 
-                {current.readOnly && (
+                {/*
+                  * Grammages are not a catalog beside papers: they hang off
+                  * one, so they are shown inside the paper they belong to,
+                  * for the paper currently chosen.
+                  */}
+                {current.id === 'substrates' && (
+                  <>
+                    <h4 className="catalog-content-title">
+                      Gramajes de {catalog?.substrates.find(item => item.id === substrateId)?.name ?? 'el papel elegido'}
+                    </h4>
+                    <ul className="catalog-list">
+                      {(catalog ? getAllGrammageOptions(catalog, substrateId, customGrammages) : []).map(option => (
+                        <li key={option.grammage} className="catalog-list-item">
+                          <span className="catalog-list-name">{option.grammage} g/m²</span>
+                          <span className="catalog-list-detail">calibre {option.caliper} µm</span>
+                          <span className="catalog-list-origin">
+                            {customGrammages.some(custom => custom.substrateId === substrateId && custom.grammage === option.grammage)
+                              ? ORIGIN_LABEL.own
+                              : ORIGIN_LABEL.factory}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <CatalogEntryForm key={`${substrateId}-${selectedGrammage}`} editor={grammageEditor} />
+                  </>
+                )}
+
+                {current.readOnly && current.id !== 'substrates' && (
                   <p className="calculation-note">
                     Este catálogo solo se lee. Para cambiarlo, edita <span className="catalog-file">{current.file}</span> y recarga.
+                  </p>
+                )}
+                {current.id === 'substrates' && (
+                  <p className="calculation-note">
+                    Los papeles solo se leen desde <span className="catalog-file">{current.file}</span>.
+                    Sus gramajes sí admiten los tuyos, aunque no editar ni ocultar los de fábrica.
                   </p>
                 )}
                 {current.id === 'bindings' && !hasFlatSpine && (
