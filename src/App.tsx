@@ -5,6 +5,7 @@ import { readUserLayer } from './config/userLayer';
 import type { ConfigError } from './config/validateCatalog';
 import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
 import { SpecSteps } from './components/SpecSteps';
+import { SpecSummary } from './components/specSummaries';
 import { PreviewColumn } from './components/PreviewColumn';
 import { CatalogPanelProvider, useCatalogPanel } from './components/CatalogPanel';
 import { SpineResults } from './components/SpineResults';
@@ -138,6 +139,9 @@ export default function App() {
             * catalog.
             */}
           {loadState.status === 'ready' && <span className="header-badge">Datos de ejemplo</span>}
+          {/* What the book currently is, read from the same place the steps
+              read it, so the header and the sheet cannot say different things. */}
+          {loadState.status === 'ready' && <SpecSummary />}
           <CatalogButton />
         </header>
       </div>

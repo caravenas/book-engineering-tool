@@ -278,6 +278,20 @@ body::before {
   white-space: nowrap;
 }
 
+/*
+ * What the book currently is, running along the header: the same three
+ * sentences the first three steps show, so the sheet can be left closed and
+ * still be read. Its automatic margin shares the free space of the row with
+ * the catalog button's, which leaves it floating between the name of the tool
+ * and the way into the catalog rather than crowding either.
+ */
+.header-summary {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
 /* Above the breakpoint the three columns are side by side and the results
    are already in view, so there is nothing to pin. */
 .results-bar {

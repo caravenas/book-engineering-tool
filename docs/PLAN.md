@@ -860,7 +860,12 @@ El pliego que no cabe queda deshabilitado y el clic no lo elige; el que está en
 La cabecera lleva el resumen corrido de la ficha en mono: formato, papel y gramaje, y páginas.
 Es el mismo resumen que ya calculan los pasos, leído una sola vez desde donde vive.
 
-Verificación: una prueba de que el resumen de la cabecera y el del paso correspondiente no pueden discrepar, cambiando un valor y comprobando los dos.
+El resumen no se vuelve a derivar: `useStepSummaries` sale de `SpecSteps` a `specSummaries.tsx` y lo leen los dos, la fila del paso y la cabecera.
+Dos derivaciones de la misma frase son dos cosas libres de separarse el día que se toque cualquiera de ellas.
+
+La cabecera muestra los tres primeros pasos —formato, papel y páginas—, que son lo que el libro es; la prensa y la tapa son cómo se hace, y la línea tiene que leerse de un vistazo.
+
+Verificación: una prueba en `App.test.tsx` que compara la frase de la cabecera con la de los pasos antes y después de cambiar dos valores, y que falla si la cabecera se calcula por su cuenta.
 
 ### Lo que este bloque deja abierto
 

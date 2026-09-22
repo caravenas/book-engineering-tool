@@ -6,7 +6,7 @@ import encuadernacionesRaw from '../../public/config/encuadernaciones.json?raw';
 import tapasRaw from '../../public/config/tapas.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { StrictMode } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { useBookStore } from '../store/useBookStore';
@@ -133,6 +133,46 @@ describe('App runtime config loading', () => {
 
     expect(await screen.findByRole('heading', { name: 'Formato' })).toBeTruthy();
     expect(initializeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * The header says what the book currently is so the sheet can be left
+   * closed. Saying it is only worth anything if it cannot disagree with the
+   * sheet, which is why both read one derivation: this asserts they are the
+   * same sentence before and after something changes underneath them.
+   */
+  it('runs the same summary in the header as the steps show, before and after a change', async () => {
+    const fetchStub = async (url: string) => {
+      if (url.endsWith('sustratos.json')) return jsonResponse(readConfigFile('sustratos.json'));
+      if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
+      if (url.endsWith('encuadernaciones.json')) return jsonResponse(readConfigFile('encuadernaciones.json'));
+      if (url.endsWith('tapas.json')) return jsonResponse(readConfigFile('tapas.json'));
+      return jsonResponse(readConfigFile('formatos.json'));
+    };
+    vi.stubGlobal('fetch', fetchStub);
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Formato' });
+
+    const headerSays = () => document.querySelector('.header-summary')?.textContent;
+    const sheetSays = () => Array.from(document.querySelectorAll('.spec-step-value'))
+      .slice(0, 3)
+      .map(value => value.textContent)
+      .join(' · ');
+
+    expect(headerSays()).toContain('140 × 210 mm');
+    expect(headerSays()).toBe(sheetSays());
+
+    act(() => {
+      useBookStore.getState().setTotalPagesInput('64');
+      useBookStore.getState().setProportion('3:4');
+    });
+
+    expect(headerSays()).toContain('64 págs');
+    expect(headerSays()).toContain('3:4');
+    expect(headerSays()).toBe(sheetSays());
   });
 
   it('shows the generic error without a leading colon when loading rejects unexpectedly', async () => {
