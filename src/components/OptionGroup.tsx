@@ -34,8 +34,13 @@ interface OptionFieldProps {
   marginalia?: string | null;
   /** The way into the catalog these options come from, when there is one. */
   options?: { label: string; onOpen: () => void };
-  /** How many options share a row. */
+  /** How many options share a row, when they are laid out as a grid. */
   columns?: number;
+  /**
+   * 'grid' is a row of cards; 'scale' is a row of notches standing on an axis,
+   * for a field whose options are one quantity at different sizes.
+   */
+  layout?: 'grid' | 'scale';
   /**
    * True when the options are catalog entries rather than choices written in
    * the code. `e2e/inventory.spec.ts` reads this class to keep the shipped
@@ -56,6 +61,7 @@ export function OptionField({
   marginalia,
   options,
   columns = 3,
+  layout = 'grid',
   fromCatalog = false,
   error,
   note,
@@ -81,7 +87,11 @@ export function OptionField({
         )}
       </div>
       <div
-        className={`option-group${fromCatalog ? ' option-group-catalog' : ''}`}
+        className={[
+          'option-group',
+          layout === 'scale' ? 'option-group-scale' : '',
+          fromCatalog ? 'option-group-catalog' : '',
+        ].filter(Boolean).join(' ')}
         role="group"
         aria-labelledby={labelId}
         style={{ '--option-columns': columns } as CSSProperties}
@@ -103,8 +113,10 @@ interface OptionCardProps {
    * The drawing of what choosing this does. Hidden from assistive technology,
    * because it says the same thing as the name beside it, and drawn with
    * `currentColor` so it inverts with the card when the card is chosen.
+   * Omitted where an option has nothing to draw: a paper is a name and what
+   * it is for, and a swatch of flat colour would say nothing about it.
    */
-  figure: ReactNode;
+  figure?: ReactNode;
   selected: boolean;
   /**
    * Why this option cannot be chosen. Its presence disables the card and
@@ -119,6 +131,12 @@ interface OptionCardProps {
   ariaLabel?: string;
   /** Shown instead of nothing in the title attribute, e.g. a description. */
   title?: string;
+  /**
+   * 'card' is the bordered card; 'notch' is one mark of a scale, which carries
+   * the same state but wears none of the card's chrome, because the marks have
+   * to be read against each other rather than one at a time.
+   */
+  variant?: 'card' | 'notch';
 }
 
 export function OptionCard({
@@ -132,10 +150,12 @@ export function OptionCard({
   row = false,
   ariaLabel,
   title,
+  variant = 'card',
 }: OptionCardProps) {
   const className = [
     'option-card',
     row ? 'option-card-row' : '',
+    variant === 'notch' ? 'option-card-notch' : '',
     selected ? 'selected' : '',
   ].filter(Boolean).join(' ');
 
@@ -150,7 +170,7 @@ export function OptionCard({
       disabled={Boolean(disabledReason)}
       onClick={onSelect}
     >
-      <span className="option-figure" aria-hidden="true">{figure}</span>
+      {figure !== undefined && <span className="option-figure" aria-hidden="true">{figure}</span>}
       <span className="option-text">
         <span className="option-name">{name}</span>
         {detail && <span className="option-detail">{detail}</span>}

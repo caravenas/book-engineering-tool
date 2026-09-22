@@ -783,6 +783,93 @@ select.form-input {
   border-style: dashed;
 }
 
+/* ─── A Scale of Notches (R-15) ─────────────────────────────────────── */
+
+/*
+ * A field whose options are one quantity at different sizes reads as a scale
+ * rather than as a row of cards: the notches stand on a common axis, which is
+ * what makes their heights comparable.
+ */
+.option-group-scale {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+.option-card-notch {
+  /* Reversed, so the figure written first in the markup is drawn under the
+     name: the notch stands on the axis and the number labels it from above. */
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  flex: 1;
+  gap: var(--space-1);
+  padding: 0 0 1px;
+  border: 0;
+  border-radius: 0;
+}
+
+.option-card-notch:hover:not(:disabled),
+.option-card-notch.selected {
+  background: none;
+  color: var(--color-text-primary);
+}
+
+.option-card-notch .option-figure {
+  min-height: 0;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.option-card-notch .option-name {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.option-card-notch.selected .option-name {
+  font-weight: 700;
+  opacity: 1;
+}
+
+/* As thick as the paper is: an outline until it is the paper in use, and then
+   filled, which is the same way a chosen option is marked everywhere else. */
+.grammage-notch {
+  display: block;
+  width: 60%;
+  border: 1px solid var(--color-text-primary);
+}
+
+.option-card-notch:hover .grammage-notch {
+  background: var(--color-bg-card-hover);
+}
+
+.option-card-notch.selected .grammage-notch {
+  background: var(--color-text-primary);
+}
+
+/* The one figure in the spec sheet that describes the material rather than
+   the book, so it is shown at the size of an answer. */
+.caliper-figure {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.caliper-value {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-4xl);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.caliper-unit {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+}
+
 /* ─── Measurements in a Line (R-14) ─────────────────────────────────── */
 
 /* The three measurements of a format are one decision, so they read as one
@@ -1264,34 +1351,6 @@ select.form-input {
   padding: var(--space-3);
   margin-bottom: var(--space-4);
 }
-
-/* A grammage is a choice among a handful, like a format or a proportion, so
-   it looks like one. The red underline it used was the only place in the app
-   with that colour. */
-/*
- * A stadium outline drawn around two rows is not a segmented control, it is a
- * bag: the second row sits ragged inside a shape that curves away from it. The
- * grammages are capsules one by one, each with its own outline, which is what
- * the proposal asks of a chip anyway.
- */
-.grammage-options {
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  border: none;
-  padding: 0;
-}
-
-.grammage-options .segment-btn {
-  flex: 0 0 auto;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-}
-
-.grammage-options .segment-btn.active {
-  border-color: var(--color-text-primary);
-}
-
 
 
 /* Enlarges the tap target to 44x44 without resizing the painted circle: an

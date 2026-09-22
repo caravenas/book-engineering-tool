@@ -1311,9 +1311,9 @@ describe('Adding a paper from the catalog (R-10)', () => {
     expect(useBookStore.getState().selectedGrammage).toBe(120);
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
-    const select = screen.getByLabelText('Tipo de papel') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.textContent)).toContain('Verjurado del taller');
-    expect(select.value).toBe(useBookStore.getState().customSubstrates[0].id);
+    const card = document.getElementById(`substrate-${useBookStore.getState().customSubstrates[0].id}`);
+    expect(card?.textContent).toContain('Verjurado del taller');
+    expect(card?.getAttribute('aria-pressed')).toBe('true');
   });
 
   /**
@@ -1670,5 +1670,89 @@ describe('Drawn options (R-13)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Posible' }));
     expect(chosen).toEqual(['posible']);
+  });
+});
+
+describe('The weights as a scale (R-15)', () => {
+  /** The chosen paper as the catalog declares it, weights and calipers. */
+  function chosenPaper() {
+    const state = useBookStore.getState();
+    const substrate = state.catalog!.substrates.find(item => item.id === state.substrateId);
+    if (!substrate) throw new Error(`no hay papel ${state.substrateId} en el catálogo`);
+    return substrate;
+  }
+
+  function notchHeights(): Map<number, number> {
+    const group = screen.getByRole('group', { name: 'Gramaje' });
+    const heights = new Map<number, number>();
+    for (const notch of within(group).getAllByRole('button')) {
+      const grammage = Number(notch.id.split('-').pop());
+      const bar = notch.querySelector('.grammage-notch') as HTMLElement;
+      heights.set(grammage, parseFloat(bar.style.height));
+    }
+    return heights;
+  }
+
+  it('rebuilds the scale from the weights the chosen paper actually has', () => {
+    render(<SubstrateSelectorScreen />);
+    expect(useBookStore.getState().substrateId).toBe('couche_matte');
+    expect([...notchHeights().keys()]).toEqual(chosenPaper().options.map(option => option.grammage));
+
+    // Bond is sold in three weights, none of them the 150 the book starts on.
+    fireEvent.click(screen.getByRole('button', { name: /^Bond/ }));
+
+    expect(useBookStore.getState().substrateId).toBe('bond');
+    expect([...notchHeights().keys()]).toEqual(chosenPaper().options.map(option => option.grammage));
+  });
+
+  /**
+   * The notch is how thick the paper is, and thickness is declared per weight
+   * in `sustratos.json` rather than derived from the weight by a factor: the
+   * design canvas models it as `weight × factor`, which would throw away the
+   * one number a print shop can measure for itself.
+   */
+  it('draws each notch from the declared caliper, and says that caliper', () => {
+    render(<SubstrateSelectorScreen />);
+
+    const heights = notchHeights();
+    const declared = chosenPaper().options;
+
+    /*
+     * Compared as shares of each range rather than as pixels, so what is
+     * asserted is that the caliper is what the height is made of, without
+     * restating the arithmetic that turns one into the other. Ordering alone
+     * would not do: inside one paper the weights and the calipers rise
+     * together, so a notch drawn from the weight would pass an ordering check
+     * and still be drawing the wrong quantity.
+     */
+    const shareOf = (value: number, values: number[]) =>
+      (value - Math.min(...values)) / (Math.max(...values) - Math.min(...values));
+    const allHeights = [...heights.values()];
+    const allCalipers = declared.map(option => option.caliper);
+
+    for (const option of declared) {
+      expect(shareOf(heights.get(option.grammage)!, allHeights))
+        .toBeCloseTo(shareOf(option.caliper, allCalipers), 6);
+    }
+
+    const chosen = declared.find(option => option.grammage === useBookStore.getState().selectedGrammage)!;
+    expect(document.querySelector('.caliper-value')?.textContent).toContain(String(chosen.caliper));
+  });
+
+  it('marks a weight this shop added, and says so where it is announced', () => {
+    render(<SubstrateSelectorScreen />);
+    openGrammageCatalog();
+    fireEvent.click(screen.getByRole('button', { name: '+ Nuevo gramaje' }));
+    const form = document.getElementById('custom-entry-form') as HTMLElement;
+    fireEvent.change(within(form).getByLabelText('Gramaje'), { target: { value: '170' } });
+    fireEvent.change(within(form).getByLabelText('Calibre declarado'), { target: { value: '140' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir gramaje' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
+
+    const group = screen.getByRole('group', { name: 'Gramaje' });
+    const own = within(group).getByRole('button', { name: '170 g/m², personalizado' });
+    expect(own.textContent).toContain('*');
+    // And the factory weights keep saying nothing about it.
+    expect(within(group).getByRole('button', { name: '150 g/m²' }).textContent).not.toContain('*');
   });
 });

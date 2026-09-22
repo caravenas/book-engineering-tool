@@ -106,7 +106,8 @@ describe('App runtime config loading', () => {
 
     expect(await screen.findByRole('heading', { name: 'Formato' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Papel interior' })).toBeTruthy();
-    expect((screen.getByLabelText('Tipo de papel') as HTMLSelectElement).value).toBe('couche_matte');
+    // Since R-15 the paper is chosen from a card per paper, not a dropdown.
+    expect(document.getElementById('substrate-couche_matte')?.getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });

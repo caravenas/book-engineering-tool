@@ -821,7 +821,13 @@ Queda anotado abajo como decisión abierta en vez de resuelto a medias.
 El papel pasa a fichas de muestrario con su nombre y su descripción; el gramaje, a la escala de muescas, con la muesca de cada gramaje creciendo con el peso y el calibre declarado como la cifra grande al lado.
 La escala se construye con las opciones del papel elegido, que son distintas en cada papel, no con una lista fija.
 
-Verificación: una prueba de que al cambiar de papel la escala se rehace con los gramajes de ese papel y el calibre mostrado es el declarado, no uno derivado; y que un gramaje personalizado sigue distinguiéndose de uno de fábrica.
+Verificación: tres pruebas en `ui.test.tsx`.
+La escala se rehace con los gramajes del papel elegido al pasar a Bond, que se vende en tres y en ninguno de ellos el 150 con que arranca el libro.
+La altura de cada muesca sale del calibre declarado y no del gramaje, comparada como fracción de cada rango en vez de en píxeles: dentro de un papel el gramaje y el calibre suben juntos, así que una prueba de orden habría pasado dibujando la magnitud equivocada.
+Y un gramaje añadido por el taller lleva su asterisco y se anuncia como personalizado.
+
+La altura de la muesca es el calibre, no el peso, y se escala dentro del rango del propio papel.
+Una escala común para todo el catálogo no sirve: va de un estucado de 70 µm a un cartón de 490, y dibujaría todos los papeles de interior como el mismo tocón.
 
 ### R-16 — Páginas y encuadernación
 

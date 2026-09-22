@@ -274,11 +274,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Descripción': 2,
 
   // Everything below was already in the app before the layout moved.
-  '115 g/m²': 1,
-  '150 g/m²': 1,
-  '200 g/m²': 1,
-  '300 g/m²': 1,
-  '90 g/m²': 1,
   'Apaisado': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
@@ -288,7 +283,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
   'Sangrado': 1,
-  'Tipo de papel': 1,
   'Tipo de tapa': 1,
   'Vertical': 1,
 };
