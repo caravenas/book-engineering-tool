@@ -33,7 +33,7 @@ export function ImpositionResults() {
       <ResultRow label="Firmas por ejemplar">{selected.signatures}</ResultRow>
       <ResultRow label="Páginas en blanco">{selected.blankPages}</ResultRow>
       <ResultRow label="Pliegos de prensa por ejemplar">{selected.sheetsPerCopy}</ResultRow>
-      <ResultRow label="Área imprimible no utilizada">{roundTo(selected.wastePercentage, 1)}%</ResultRow>
+      <ResultRow label="Área imprimible no utilizada" unit="%">{roundTo(selected.wastePercentage, 1)}</ResultRow>
       <ResultRow label="Orientación de página">{selected.pageRotated ? 'Rotada' : 'Normal'}</ResultRow>
     </ResultList>
   );

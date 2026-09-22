@@ -17,9 +17,10 @@ export function BindingSpineResults() {
 
   return (
     <ResultList>
-      <ResultRow label="Lomo del papel interior (mm)">{formatRoundedValue(bindingSpine.interior_mm, 2)}</ResultRow>
-      <ResultRow label="Aporte de la encuadernación (mm)">{formatRoundedValue(bindingSpine.allowance_mm, 2)}</ResultRow>
-      <ResultRow label={hasFlatSpine ? 'Lomo final con encuadernación (mm)' : 'Grosor del papel en el pliegue (mm)'}>
+      <ResultRow label="Lomo del papel interior" unit="mm">{formatRoundedValue(bindingSpine.interior_mm, 2)}</ResultRow>
+      <ResultRow label="Aporte de la encuadernación" unit="mm">{formatRoundedValue(bindingSpine.allowance_mm, 2)}</ResultRow>
+      <ResultRow label={hasFlatSpine ? 'Lomo final con encuadernación' : 'Grosor del papel en el pliegue'}
+        unit="mm">
         {formatRoundedValue(bindingSpine.total_mm, 2)}
       </ResultRow>
       {/* A method that nests its sheets shifts the outermost one; one that does
@@ -27,7 +28,7 @@ export function BindingSpineResults() {
           measured rather than inapplicable. The paragraph that explains it is
           in "Cómo se calcula", at the foot of this column. */}
       {bindingCreep && (
-        <ResultRow label="Corrimiento máx. (mm)">{formatRoundedValue(bindingCreep.maxShift_mm, 3)}</ResultRow>
+        <ResultRow label="Corrimiento máx." unit="mm">{formatRoundedValue(bindingCreep.maxShift_mm, 3)}</ResultRow>
       )}
     </ResultList>
   );

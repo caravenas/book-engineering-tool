@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { mmToInches, inchesToMm, mmToPoints, pointsToMm, roundTo } from '../engine/units';
+import {
+  formatWeight,
+  formatWeightParts,
+  inchesToMm,
+  mmToInches,
+  mmToPoints,
+  pointsToMm,
+  roundTo,
+} from '../engine/units';
 
 describe('Unit Conversions', () => {
   it('mmToInches: 25.4mm → exactly 1 inch', () => {
@@ -50,5 +58,25 @@ describe('roundTo utility', () => {
     expect(roundTo(3.14159, 2)).toBe(3.14);
     expect(roundTo(3.145, 2)).toBe(3.15);
     expect(roundTo(3.1, 0)).toBe(3);
+  });
+});
+
+describe('A weight as a figure and a unit (R-21)', () => {
+  /**
+   * The results column writes the unit small beside the figure, so it needs
+   * the two apart. There is still one rule deciding which unit a weight is
+   * in, and `formatWeight` is built on the same answer.
+   */
+  it('splits a weight the same way it writes it', () => {
+    expect(formatWeightParts(70.6)).toEqual({ value: '70.6', unit: 'g' });
+    expect(formatWeight(70.6)).toBe('70.6 g');
+
+    expect(formatWeightParts(2500)).toEqual({ value: '2.5', unit: 'kg' });
+    expect(formatWeight(2500)).toBe('2.5 kg');
+
+    // The threshold is decided on the value as shown, so 999.95 is a kilo in
+    // both, and neither prints "1000 g".
+    expect(formatWeightParts(999.95).unit).toBe('kg');
+    expect(formatWeight(999.95)).toBe('1 kg');
   });
 });

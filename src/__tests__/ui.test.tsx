@@ -378,17 +378,20 @@ describe('Honest and recoverable UI', () => {
     expect(formulaCopy.textContent).toContain('× 17 hojas × 150 g/m²');
   });
 
-  it('keeps the formulas folded away behind "Cómo se calcula", and out of the step', () => {
+  it('keeps the formulas under "Cómo se calcula", at the foot of the column and out of the step', () => {
     const { container } = render(<SpineCalculatorScreen />);
 
-    // jsdom renders a closed <details> children and all, so a text query alone
-    // would pass whether or not the drawer exists. What is asserted is the
-    // drawer: closed to begin with, and holding the formulas.
-    const drawer = container.querySelector('details.how-panel') as HTMLDetailsElement;
-    expect(drawer).toBeTruthy();
-    expect(drawer.open).toBe(false);
-    expect(drawer.querySelector('summary')?.textContent).toBe('Cómo se calcula');
-    expect(drawer.textContent).toContain('Hojas físicas');
+    /*
+     * Since R-21 they are read without opening anything: the canvas keeps the
+     * six lines in the column, under a rule, rather than behind a disclosure.
+     * Nothing in this app should need a click to say what a figure is made of.
+     */
+    const panel = container.querySelector('.how-panel') as HTMLElement;
+    expect(panel).toBeTruthy();
+    expect(panel.tagName).toBe('SECTION');
+    expect(panel.querySelector('.how-panel-title')?.textContent).toBe('Cómo se calcula');
+    expect(panel.textContent).toContain('Hojas físicas');
+    expect(panel.textContent).toContain('valores preliminares');
 
     // And nowhere else: the step that takes the page count no longer carries
     // the derivation it used to show under the field.
@@ -460,12 +463,12 @@ describe('Binding selector', () => {
 
     expect([...bindingCardIds()].sort()).toEqual(['cosido', 'grapa', 'hotmelt', 'pur']);
     expect(chosenBindingId()).toBe('grapa');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('0');
+    expect(screen.getByText('Aporte de la encuadernación').nextSibling?.textContent).toBe('0 mm');
 
     chooseBinding('hotmelt');
 
     expect(useBookStore.getState().bindingId).toBe('hotmelt');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('2');
+    expect(screen.getByText('Aporte de la encuadernación').nextSibling?.textContent).toBe('2 mm');
   });
 
   it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
@@ -482,25 +485,24 @@ describe('Binding selector', () => {
     render(<BindingPanelScreen />);
 
     // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
-    expect(screen.getByText('Lomo del papel interior (mm)').nextSibling?.textContent).toBe('1.92');
-    expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('0');
-    expect(screen.getByText('Grosor del papel en el pliegue (mm)').nextSibling?.textContent).toBe('1.92');
+    expect(screen.getByText('Lomo del papel interior').nextSibling?.textContent).toBe('1.92 mm');
+    expect(screen.getByText('Aporte de la encuadernación').nextSibling?.textContent).toBe('0 mm');
+    expect(screen.getByText('Grosor del papel en el pliegue').nextSibling?.textContent).toBe('1.92 mm');
   });
 
   it('reports creep as a figure, explains it in the drawer, and drops both for a method without it', () => {
     const { container } = render(<BindingPanelScreen />);
 
-    expect(screen.getByText('Corrimiento máx. (mm)').nextSibling?.textContent).toBe('0.96');
-    const drawer = container.querySelector('details.how-panel') as HTMLDetailsElement;
-    expect(drawer.open).toBe(false);
-    expect(drawer.textContent).toContain('8 pliegos anidados');
+    expect(screen.getByText('Corrimiento máx.').nextSibling?.textContent).toBe('0.96 mm');
+    const panel = container.querySelector('.how-panel') as HTMLElement;
+    expect(panel.textContent).toContain('8 pliegos anidados');
     // The step that chooses the method no longer carries the longest text in
     // the app under its dropdown.
     expect(container.querySelector('#binding-panel')?.textContent).not.toContain('Corrimiento');
 
     chooseBinding('hotmelt');
 
-    expect(screen.queryByText('Corrimiento máx. (mm)')).toBeNull();
+    expect(screen.queryByText('Corrimiento máx.')).toBeNull();
     expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
   });
 
@@ -919,12 +921,12 @@ describe('Cover panel', () => {
     expect(chosenCardId('cover')).toBe('blanda_simple');
     // grapa (the shipped default binding) has no flat spine, so blanda_simple's
     // sheet is 2*0 + 2*140 + 0 + 2*3 = 286.
-    expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).toBe('286');
+    expect(screen.getByText('Ancho del pliego de tapa').nextSibling?.textContent).toBe('286 mm');
 
     chooseCard('cover', 'blanda_solapas');
 
     expect(useBookStore.getState().coverId).toBe('blanda_solapas');
-    expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).not.toBe('286');
+    expect(screen.getByText('Ancho del pliego de tapa').nextSibling?.textContent).not.toBe('286 mm');
   });
 
   it('offers all three covers as selectable with a flat-spine binding', () => {
@@ -992,14 +994,14 @@ describe('Cover panel', () => {
     render(<CoverPanelScreen />);
 
     expect(useBookStore.getState().coverPlan?.ok).toBe(true);
-    expect(screen.getByText('Ancho del cartón lateral (mm)')).toBeTruthy();
-    expect(screen.getByText('Alto del cartón (mm)')).toBeTruthy();
-    expect(screen.getByText('Ancho del cartón de lomo (mm)')).toBeTruthy();
-    expect(screen.getByText('Ancho del forro (mm)')).toBeTruthy();
-    expect(screen.getByText('Alto del forro (mm)')).toBeTruthy();
-    expect(screen.getByText('Área de cartón lateral (m²)')).toBeTruthy();
-    expect(screen.getByText('Área de cartón de lomo (m²)')).toBeTruthy();
-    expect(screen.getByText('Área total de cartón (m²)')).toBeTruthy();
+    expect(screen.getByText('Ancho del cartón lateral')).toBeTruthy();
+    expect(screen.getByText('Alto del cartón')).toBeTruthy();
+    expect(screen.getByText('Ancho del cartón de lomo')).toBeTruthy();
+    expect(screen.getByText('Ancho del forro')).toBeTruthy();
+    expect(screen.getByText('Alto del forro')).toBeTruthy();
+    expect(screen.getByText('Área de cartón lateral')).toBeTruthy();
+    expect(screen.getByText('Área de cartón de lomo')).toBeTruthy();
+    expect(screen.getByText('Área total de cartón')).toBeTruthy();
     expect(screen.getByText(/No se calcula el peso del cartón/)).toBeTruthy();
   });
 
@@ -2098,5 +2100,33 @@ describe('The drawings and what they are captioned with (R-20)', () => {
 
     expect(caption()).toContain('Tapa blanda con solapas');
     expect(caption()).toContain('solapas 80 mm');
+  });
+});
+
+describe('The results column as the canvas lays it out (R-21)', () => {
+  it('writes the unit beside the figure instead of inside the name of the row', () => {
+    render(<SpineCalculatorScreen />);
+
+    const label = screen.getByText('Lomo estimado');
+    expect(label.textContent).not.toContain('(mm)');
+
+    const value = label.nextSibling as HTMLElement;
+    expect(value.querySelector('.stat-unit')?.textContent?.trim()).toBe('mm');
+    // The figure itself is the figure, and the unit is not part of it.
+    expect(value.firstChild?.textContent).toBe('1.92');
+  });
+
+  /**
+   * The caveat the whole column carries is said once, at its foot. It used to
+   * be said there and again at the top of the page-count step, in two
+   * sentences that meant the same thing in two columns.
+   */
+  it('says the figures are preliminary once, where the column ends', () => {
+    const { container } = render(<PagesAndBindingScreen />);
+
+    const preliminary = Array.from(container.querySelectorAll('p'))
+      .filter(node => (node.textContent ?? '').includes('preliminar'));
+    expect(preliminary).toHaveLength(1);
+    expect(preliminary[0].className).toContain('how-panel-note');
   });
 });

@@ -933,7 +933,13 @@ La fila pasa a la forma del tablero: la etiqueta en versalitas a la izquierda, l
 
 «Cómo se calcula» deja de ser un desplegable cerrado y se queda abierto al pie de la columna, con las fórmulas en cursiva y, debajo, `valores preliminares · confirmar con la imprenta`.
 
-Verificación: que las fórmulas siguen leyéndose sin abrir nada, y que la nota de valores preliminares aparece una sola vez en la página.
+La unidad sale del nombre de la fila y se pone junto a la cifra, pequeña, que es donde el lienzo la escribe y a quién pertenece: «Lomo estimado (mm) … 1.92» pasa a «LOMO ESTIMADO … 1.92 mm».
+Para el peso, que elige entre gramos y kilos, `formatWeightParts` devuelve la cifra y la unidad por separado y `formatWeight` se construye sobre ella, así que sigue habiendo una sola regla decidiendo cuál es.
+
+Al abrir «Cómo se calcula» aparecía dos veces la misma advertencia: la línea del pie de la columna y el párrafo con que empezaba el paso de páginas decían lo mismo en dos columnas.
+Se quita el del paso. Los de imposición y tapa se quedan: dicen algo que la línea general no dice —que no es una imposición industrial certificada, que el encajado se confirma con el taller—.
+
+Verificación: `formatWeightParts` parte el peso igual que `formatWeight` lo escribe, umbral del kilo incluido; una fila dice su unidad en `.stat-unit` y no en su nombre; y la advertencia de valores preliminares aparece una sola vez en la página, al pie de la columna.
 
 ## Decisiones pendientes
 

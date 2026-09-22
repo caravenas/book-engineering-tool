@@ -258,6 +258,7 @@ export default function App() {
                 <PreviewColumn />
               </section>
               <section className="app-column column-results" aria-label="Resultados">
+                <h2 className="column-results-title">Resultados</h2>
                 <SpineResults />
                 <BindingSpineResults />
                 <ImpositionResults />

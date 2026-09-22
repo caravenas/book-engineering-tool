@@ -87,11 +87,23 @@ export function formatMm(value: number): string {
  * every figure a preliminary reference does not have.
  */
 export function formatWeight(grams: number): string {
+  const { value, unit } = formatWeightParts(grams);
+  return `${value} ${unit}`;
+}
+
+/**
+ * The same weight, split into the figure and the unit it is in, for the
+ * results column, which writes the unit small beside the figure rather than
+ * inside it. One rule decides the unit, and both callers ask it.
+ */
+export function formatWeightParts(grams: number): { value: string; unit: string } {
   // The threshold is decided on the value as it will be shown, not as it
   // arrives: 999.95 g rounds to 1000 at one decimal, and printing "1000 g"
   // beside a scale that switches at a kilo reads like the switch is broken.
   const shown = roundTo(grams, 1);
-  return shown >= 1000 ? `${formatRoundedValue(grams / 1000, 2)} kg` : `${formatRoundedValue(grams, 1)} g`;
+  return shown >= 1000
+    ? { value: formatRoundedValue(grams / 1000, 2), unit: 'kg' }
+    : { value: formatRoundedValue(grams, 1), unit: 'g' };
 }
 
 /** Format an area in square meters, rounded to 4 decimals. */

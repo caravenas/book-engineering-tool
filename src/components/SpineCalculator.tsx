@@ -75,11 +75,6 @@ export function SpineCalculator() {
 
   return (
     <div className="panel" id="spine-calculator">
-      <p className="calculation-note">
-        El lomo, el calibre y el peso son referencias preliminares.
-        Confirma materiales y encuadernación antes de producir.
-      </p>
-
       <div className="form-group page-counter">
         <label className="form-label" htmlFor="input-pages">Páginas</label>
         <div className="page-counter-row">

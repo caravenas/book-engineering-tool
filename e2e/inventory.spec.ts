@@ -293,23 +293,28 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
  */
 const CALIPER_LABEL = 'Calibre declarado';
 
+/*
+ * Since R-21 a label is the name of the figure and nothing else: the unit
+ * moved out of the parentheses and next to the figure, where it belongs to
+ * the number rather than to what the number is called.
+ */
 const EXPECTED_RESULT_LABELS = [
-  'Lomo estimado (mm)',
+  'Lomo estimado',
   'Peso estimado del papel interior',
   'Hojas de papel (interior)',
   'Gramaje',
-  'Lomo del papel interior (mm)',
-  'Aporte de la encuadernación (mm)',
-  'Grosor del papel en el pliegue (mm)',
-  'Corrimiento máx. (mm)',
+  'Lomo del papel interior',
+  'Aporte de la encuadernación',
+  'Grosor del papel en el pliegue',
+  'Corrimiento máx.',
   'Páginas / cara del pliego',
   'Firmas por ejemplar',
   'Páginas en blanco',
   'Pliegos de prensa por ejemplar',
   'Área imprimible no utilizada',
   'Orientación de página',
-  'Ancho del pliego de tapa (mm)',
-  'Alto del pliego de tapa (mm)',
+  'Ancho del pliego de tapa',
+  'Alto del pliego de tapa',
   'Peso del papel de tapa',
 ] as const;
 const EXPECTED_RESULT_LABEL_COUNT = 17;
@@ -426,22 +431,22 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     await page.locator('#cover-dura_estandar').click();
 
     expect(new Set(await resultLabels(page))).toEqual(new Set([
-      'Ancho del cartón lateral (mm)',
-      'Alto del cartón (mm)',
-      'Ancho del cartón de lomo (mm)',
-      'Ancho del forro (mm)',
-      'Alto del forro (mm)',
+      'Ancho del cartón lateral',
+      'Alto del cartón',
+      'Ancho del cartón de lomo',
+      'Ancho del forro',
+      'Alto del forro',
       'Peso del forro',
-      'Área de cartón lateral (m²)',
-      'Área de cartón de lomo (m²)',
-      'Área total de cartón (m²)',
-      'Lomo estimado (mm)',
+      'Área de cartón lateral',
+      'Área de cartón de lomo',
+      'Área total de cartón',
+      'Lomo estimado',
       'Peso estimado del papel interior',
       'Hojas de papel (interior)',
       'Gramaje',
-      'Lomo del papel interior (mm)',
-      'Aporte de la encuadernación (mm)',
-      'Lomo final con encuadernación (mm)',
+      'Lomo del papel interior',
+      'Aporte de la encuadernación',
+      'Lomo final con encuadernación',
       'Páginas / cara del pliego',
       'Firmas por ejemplar',
       'Páginas en blanco',

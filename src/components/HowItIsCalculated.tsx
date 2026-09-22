@@ -11,8 +11,10 @@ import { formatRoundedValue } from '../engine/units';
  * asked in the first one.
  *
  * It lives at the foot of the results column because that is what it
- * explains, and it is built on <details> for the reason the steps are: the
- * platform already announces the expanded state and handles the keyboard.
+ * explains. Until R-21 it was folded away behind a disclosure; the design
+ * canvas keeps it open, under a rule, as part of the column — six short
+ * lines that say what the figures above them are made of, which is worth the
+ * room it takes and was not worth a click.
  */
 export function HowItIsCalculated() {
   const {
@@ -27,8 +29,8 @@ export function HowItIsCalculated() {
   if (!safeResult && !bindingCreep) return null;
 
   return (
-    <details className="how-panel">
-      <summary className="how-panel-summary">Cómo se calcula</summary>
+    <section className="how-panel" aria-label="Cómo se calcula">
+      <h3 className="how-panel-title">Cómo se calcula</h3>
 
       {safeResult && (
         <p className="how-panel-formula">
@@ -45,6 +47,10 @@ export function HowItIsCalculated() {
           Este pliego plegado es distinto del pliego de prensa de Imposición por firmas, porque aquí se cuenta cada grupo de 4 páginas ya plegado, sin importar el esquema de plegado elegido.
         </p>
       )}
-    </details>
+
+      {/* The one sentence the whole column is qualified by, said where the
+          column ends rather than repeated under each figure. */}
+      <p className="how-panel-note">valores preliminares · confirmar con la imprenta</p>
+    </section>
   );
 }

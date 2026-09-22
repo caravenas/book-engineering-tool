@@ -14,11 +14,21 @@ export function ResultList({ children }: { children: ReactNode }) {
   return <dl className="result-list">{children}</dl>;
 }
 
-export function ResultRow({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * `unit` is the row's own rather than part of its name: the design canvas
+ * writes it small beside the figure, where it belongs to the number, instead
+ * of in parentheses after the label, where it read as part of what the row is
+ * called. Rows whose figure has no unit — a count, a word — simply leave it
+ * out.
+ */
+export function ResultRow({ label, unit, children }: { label: string; unit?: string; children: ReactNode }) {
   return (
     <div className="result-row">
       <dt className="stat-label">{label}</dt>
-      <dd className="stat-value">{children}</dd>
+      <dd className="stat-value">
+        {children}
+        {unit && <span className="stat-unit"> {unit}</span>}
+      </dd>
     </div>
   );
 }
