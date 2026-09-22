@@ -155,10 +155,14 @@ export function SheetPreview() {
 
   return (
     <div>
-      <div className="form-group">
+      {/* The canvas draws the front and stops there; this app draws both, so
+          it needs a control the canvas has no equivalent for. It is kept the
+          size of a caption rather than of a field: it belongs to the drawing,
+          not to the sheet of decisions in the other column. */}
+      <div className="drawing-control">
         <label className="form-label" htmlFor="select-imposition-side">Cara mostrada</label>
         <select
-          className="form-input"
+          className="drawing-select"
           value={side}
           onChange={event => setSide(event.target.value as Side)}
           id="select-imposition-side"

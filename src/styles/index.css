@@ -1311,6 +1311,32 @@ select.form-input {
 
 /* ─── Spine Visualizer ──────────────────────────────────────────────── */
 
+/* A control that belongs to a drawing rather than to the spec sheet: the size
+   of a caption, centred over what it changes. */
+.drawing-control {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.drawing-control .form-label {
+  margin-bottom: 0;
+}
+
+.drawing-select {
+  min-height: 40px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
 /* A sentence about the drawing, above it or under it, the way the design
    canvas captions each view. */
 .drawing-caption {
