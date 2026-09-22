@@ -25,7 +25,8 @@ import {
   CoverPanelScreen,
   SubstrateSelectorScreen,
 } from './screens';
-import { useBookStore } from '../store/useBookStore';
+import { useBookStore, getAllProportions } from '../store/useBookStore';
+import { OptionField, OptionCard } from '../components/OptionGroup';
 import { loadShippedCatalog } from './testCatalog';
 
 useBookStore.getState().initialize(loadShippedCatalog());
@@ -162,7 +163,7 @@ describe('Honest and recoverable UI', () => {
 
   it('provides named groups, labels, and interactive states for modified controls', () => {
     const canvas = render(<CanvasDesignerScreen />);
-    const formatGroup = screen.getByRole('group', { name: 'Formato' });
+    const formatGroup = screen.getByRole('group', { name: 'Orientación' });
     const verticalButton = within(formatGroup).getByRole('button', { name: 'Vertical' });
 
     expect(verticalButton.getAttribute('type')).toBe('button');
@@ -437,7 +438,7 @@ describe('Binding selector', () => {
   it('says where the selected method comes from beside its label, not under the dropdown', () => {
     const { container } = render(<BindingPanelScreen />);
 
-    const badge = container.querySelector('.form-label-row .origin-badge');
+    const badge = container.querySelector('.form-label-row .field-marginalia');
     expect(badge?.textContent).toBe('de fábrica');
     expect(container.textContent).not.toContain('config/encuadernaciones.json');
   });
@@ -1208,7 +1209,7 @@ describe('Custom proportion quick-add (UX-4)', () => {
     expect(groupButtons[groupButtons.length - 1].textContent).toBe('Manual');
     const newButton = within(proportionGroup).getByRole('button', { name: '4:5' });
     expect(newButton.getAttribute('aria-pressed')).toBe('true');
-    expect(document.querySelector('#canvas-designer .origin-badge')?.textContent).toBe('tuyo');
+    expect(document.querySelector('#canvas-designer .field-marginalia')?.textContent).toBe('tuyo');
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customProportions).toHaveLength(0);
@@ -1576,5 +1577,98 @@ describe('What the review of the catalog list found', () => {
     expect(within(panel).queryByText(/no tiene lomo plano/)).toBeNull();
     // And the book is still bound the way it was.
     expect(useBookStore.getState().bindingId).toBe('grapa');
+  });
+});
+
+describe('Drawn options (R-13)', () => {
+  /** The effective proportions, read from the store rather than written here:
+   *  what the step must offer is whatever the catalog has, not a list a test
+   *  keeps in step with `public/config/formatos.json` by hand. */
+  function effectiveProportionLabels(): string[] {
+    const state = useBookStore.getState();
+    return getAllProportions(
+      state.catalog!,
+      state.customProportions,
+      state.proportionPatches,
+      state.hiddenProportionLabels
+    ).map(proportion => proportion.label);
+  }
+
+  it('offers every proportion the catalog has, and marks exactly one', () => {
+    const labels = effectiveProportionLabels();
+    // The shipped catalog has five. Until R-13 the step showed three, so a
+    // list this long is the point of the assertion, not incidental to it.
+    expect(labels.length).toBeGreaterThan(3);
+
+    render(<CanvasDesignerScreen />);
+    const group = screen.getByRole('group', { name: 'Proporción' });
+    const cards = within(group).getAllByRole('button');
+
+    expect(cards.map(card => card.textContent)).toEqual([...labels, 'Manual']);
+    expect(cards.filter(card => card.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+  });
+
+  it('can choose a proportion that did not fit in the segmented control', () => {
+    const labels = effectiveProportionLabels();
+    const lastLabel = labels[labels.length - 1];
+    expect(useBookStore.getState().proportionId).not.toBe(lastLabel);
+
+    render(<CanvasDesignerScreen />);
+    const group = screen.getByRole('group', { name: 'Proporción' });
+    fireEvent.click(within(group).getByRole('button', { name: lastLabel }));
+
+    expect(useBookStore.getState().proportionId).toBe(lastLabel);
+  });
+
+  /**
+   * The drawing is the control, so it has to show what choosing it would do.
+   * The store applies a ratio to the short side of the orientation in use, so
+   * the same 2:3 makes a tall page in vertical and a wide one in landscape,
+   * and the two cards must not look alike.
+   */
+  it('draws each proportion in the orientation currently chosen', () => {
+    render(<CanvasDesignerScreen />);
+    const group = screen.getByRole('group', { name: 'Proporción' });
+    const shapeOf = (label: string) =>
+      within(group).getByRole('button', { name: label }).querySelector('.proportion-shape') as HTMLElement;
+
+    const upright = shapeOf('2:3');
+    expect(parseFloat(upright.style.height)).toBeGreaterThan(parseFloat(upright.style.width));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apaisado' }));
+
+    const onItsSide = shapeOf('2:3');
+    expect(parseFloat(onItsSide.style.height)).toBeLessThan(parseFloat(onItsSide.style.width));
+  });
+
+  /**
+   * No control in step 01 has an incompatible option, so the state is proved
+   * against the component that defines it. From R-16 on, real controls use it:
+   * a binding the page count rules out, a sheet the press cannot hold.
+   */
+  it('disables an option that cannot be chosen, says why on it, and refuses the click', () => {
+    const chosen: string[] = [];
+    render(
+      <OptionField label="Prueba" id="test-group">
+        <OptionCard name="Posible" figure={null} selected={false} onSelect={() => chosen.push('posible')} />
+        <OptionCard
+          name="Imposible"
+          figure={null}
+          selected={false}
+          disabledReason="no cabe en la prensa"
+          onSelect={() => chosen.push('imposible')}
+        />
+      </OptionField>
+    );
+
+    const impossible = screen.getByRole('button', { name: /Imposible/ });
+    expect(impossible.hasAttribute('disabled')).toBe(true);
+    expect(impossible.textContent).toContain('no cabe en la prensa');
+
+    fireEvent.click(impossible);
+    expect(chosen).toEqual([]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Posible' }));
+    expect(chosen).toEqual(['posible']);
   });
 });

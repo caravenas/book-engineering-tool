@@ -758,6 +758,90 @@ Mi prueba de «todos los papeles ocultos» ocultaba los siete en el store compar
 Es una fuga entre archivos de prueba, no un fallo de ninguna de las dos.
 Esa prueba corre ahora sobre su propio store.
 
+## Los controles dibujados — R-13 a R-18
+
+Origen: el lienzo `PliegoStack.dc.html` del proyecto de diseño `1984f8ac-4a51-427c-98f5-a8ab0a9aeb74`, leído el 2026-09-22.
+Su tablero 1a es un prototipo funcional de la pantalla completa, 1b una hoja de componentes con los seis estados de cada control, y 1c tres alternativas de dirección B.
+
+Decisiones de Chris el 2026-09-22: se ejecuta la **dirección A** en los tres controles donde el lienzo ofrecía dos caminos, y el alcance es **los controles más la barra superior**.
+Quedan fuera «Exportar ficha», que es UX-8 y sigue en pausa, y el tablero móvil 1d, que sigue congelado con el resto del trabajo de móvil y accesibilidad.
+
+### Lo que se toma del lienzo
+
+Cada desplegable pasa a ser un dibujo a escala de lo que elige: siluetas de página para la orientación, rectángulos a escala para la proporción, fichas de muestrario para el papel, una escala de muescas para el gramaje, un contador por firmas con un icono por cuadernillo para las páginas, el lomo visto de canto para la encuadernación, el pliego a escala para el pliego, la retícula de la firma para el esquema, y la tapa extendida en plano para la tapa.
+Con ellos vienen cuatro cambios de comportamiento: la cifra de una medida se edita en línea y se arrastra sobre su unidad, la procedencia se anota al margen del valor en vez de en un distintivo, una opción incompatible se muestra deshabilitada con su motivo en vez de producir un error después de elegirla, y la cabecera lleva el resumen corrido de la ficha.
+
+### Lo que no se toma, y por qué
+
+El lienzo deriva el calibre como `gramaje × factor del papel`, con un factor por papel.
+`public/config/sustratos.json` declara el calibre real por gramaje, que es precisamente lo que un taller puede medir y corregir, así que el modelo del archivo manda y el dibujo se construye sobre él.
+
+El prototipo lleva prensas, pliegos, tapas y esquemas escritos en su propio código.
+Eso es normal en un lienzo y no puede volverse la fuente: los datos siguen viniendo de `public/config/` y de la capa de usuario.
+
+El lienzo tampoco dibuja el Catálogo, y resuelve el `···` como «Opciones avanzadas».
+Lo que existe desde R-8 a R-11 es más que eso, así que el `···` sigue abriendo el Catálogo.
+
+El lienzo está compuesto a 1440 fijo y en tres columnas; el ancho completo de R-7 se mantiene.
+
+### El vocabulario común de los controles
+
+Un grupo de opciones es un `radiogroup` con una opción por entrada, cada una `role="radio"` con su `aria-checked`, en vez de un `<select>`.
+Los seis estados de la hoja 1b se definen una sola vez: reposo con borde de tinta sobre el fondo del panel, hover con fondo blanco, seleccionado con la tinta rellena y el texto claro, foco con contorno de 2px separado 2px, deshabilitado en gris con su motivo al lado y sin puntero, y error como una línea bajo el control.
+La procedencia y las dependencias se anotan al margen derecho de la etiqueta, en cursiva: `de fábrica` cuando el valor es el que trae `formatos.json`, `fijado por 2:3` cuando otro control manda sobre él, `paso 16` cuando el incremento no es libre.
+
+Nada de esto toca los motores: son funciones puras y siguen recibiendo los mismos argumentos.
+Del store solo cambia lo que haga falta para el gramaje y la orientación; `setPageDimensions` ya pone la proporción en `Manual` al editar una medida a mano, que es exactamente lo que el lienzo anota.
+
+### R-13 — El vocabulario, y el paso 01 como primer caso
+
+Un componente `OptionGroup`/`OptionCard` con la semántica de radiogroup, los seis estados y la ranura de marginalia, y sus clases en `src/styles/index.css`.
+Migra los dos grupos del paso 01 que no dependen del catálogo ni de una medida: orientación con siluetas y proporción con rectángulos a escala sobre el 1:1.
+
+Verificación: pruebas de unidad de los estados del grupo, incluida la opción deshabilitada con motivo; y el guardián `e2e/inventory.spec.ts` reestructurado para que los grupos cuyas opciones vienen del catálogo se comprueben por estructura —una opción por entrada efectiva, exactamente una marcada— en vez de por nombre, como ya se hizo con las filas del Catálogo en la revisión de R-5 a R-11.
+
+### R-14 — Las medidas en línea
+
+Ancho, alto y sangrado pasan a ser la cifra en línea sobre una línea de base, con la unidad a su derecha como tirador: arrastrar sobre `mm ⇔` ajusta el valor, y las flechas mueven ±1, o ±10 con mayúsculas.
+El sangrado lleva la línea punteada, que es la de corte.
+Al margen: `de fábrica`, o `fijado por` la proporción activa en el alto, que es el lado que el store deriva.
+
+Verificación: una prueba de navegador que arrastra la unidad y comprueba que el ancho cambia y que el alto sigue a la proporción; y otra de teclado para ±1 y ±10.
+Las dos son reproducciones del gesto real, no de la llamada al store.
+
+### R-15 — Papel y gramaje
+
+El papel pasa a fichas de muestrario con su nombre y su descripción; el gramaje, a la escala de muescas, con la muesca de cada gramaje creciendo con el peso y el calibre declarado como la cifra grande al lado.
+La escala se construye con las opciones del papel elegido, que son distintas en cada papel, no con una lista fija.
+
+Verificación: una prueba de que al cambiar de papel la escala se rehace con los gramajes de ese papel y el calibre mostrado es el declarado, no uno derivado; y que un gramaje personalizado sigue distinguiéndose de uno de fábrica.
+
+### R-16 — Páginas y encuadernación
+
+Las páginas pasan al contador por firmas: `−` y `+` mueven un múltiplo del paso que impone la encuadernación, la cifra grande sigue siendo el dato, y debajo va un icono por cuadernillo con el texto de firmas.
+La encuadernación pasa a fichas con el lomo visto de canto, dibujado con lo que declara `encuadernaciones.json` —si anida, cuánto aporta al lomo, qué múltiplo exige—, y una encuadernación que el número de páginas actual no admite se muestra deshabilitada con el motivo.
+
+Verificación: una prueba de que el `+` respeta el múltiplo de la encuadernación elegida y otra de que la grapa queda deshabilitada, con su motivo, en cuanto las páginas pasan de su máximo; el campo de texto libre para las páginas se conserva mientras el contador no cubra escribir una cifra cualquiera.
+
+### R-17 — Imposición y tapa
+
+La prensa pasa a una fila por prensa con su rectángulo y la pinza dibujada como el borde superior grueso; el pliego, a rectángulos a escala comparables entre sí, deshabilitando el que no entra en la prensa elegida; el esquema, a fichas con la retícula de la firma; la tapa, a la tapa extendida en plano, con solapas punteadas y el cartón como un trazo más grueso.
+La advertencia de que un esquema debe confirmarse contra un pliego doblado se queda donde está.
+
+Verificación: una prueba de que un pliego mayor que la prensa elegida aparece deshabilitado y no seleccionable, reproducida cambiando de prensa en la interfaz; y otra de que el dibujo de la tapa cambia de forma al pasar de blanda a blanda con solapas y a dura.
+
+### R-18 — La barra superior
+
+La cabecera lleva el resumen corrido de la ficha en mono: formato, papel y gramaje, y páginas.
+Es el mismo resumen que ya calculan los pasos, leído una sola vez desde donde vive.
+
+Verificación: una prueba de que el resumen de la cabecera y el del paso correspondiente no pueden discrepar, cambiando un valor y comprobando los dos.
+
+### Lo que este bloque deja abierto
+
+El desplegable de proporciones muestra hoy solo las tres primeras de fábrica, por un `slice(0, 3)` heredado, mientras `formatos.json` trae cinco.
+Con las proporciones dibujadas no hay razón para el recorte, pero quitarlo cambia lo que se ve en el paso: entra en R-13 y queda anotado aquí por si Chris prefiere lo contrario.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

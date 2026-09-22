@@ -107,11 +107,26 @@ test('on a short window the page scrolls as a whole instead of the columns', asy
  * anything, so a summary that ends in an ellipsis is a silent failure: it
  * still looks fine and no longer says what the step holds. A long title
  * squeezing its value is exactly how that happens.
+ *
+ * What is measured is the closed sheet, and it is measured with every step
+ * closed rather than with the one the app opens on. Until R-13 the two were
+ * the same thing, because the open step was a column of dropdowns; a step of
+ * drawn options is some 150px taller than the window has left, so the open
+ * sheet legitimately scrolls its own column — which is what the column is
+ * for, and what the design canvas's sidebar does. The property worth pinning
+ * is the one the accordion exists for: closed, the whole sheet is readable
+ * without scrolling anything.
  */
-test('no closed step truncates what it says, and the whole sheet fits', async ({ page }) => {
+test('no closed step truncates what it says, and the closed sheet fits', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await expect(page.locator('.app-grid')).toBeVisible();
+
+  // The app opens on step 01; closing it leaves the sheet as it reads at rest.
+  const firstStep = page.locator('details.spec-step').first();
+  await expect(firstStep).toHaveAttribute('open', '');
+  await firstStep.locator('summary').click();
+  await expect(firstStep).not.toHaveAttribute('open', '');
 
   const measured = await page.evaluate(() => ({
     clipped: Array.from(document.querySelectorAll<HTMLElement>('.spec-step-value'))
@@ -121,11 +136,14 @@ test('no closed step truncates what it says, and the whole sheet fits', async ({
       const column = document.querySelector<HTMLElement>('.column-spec');
       return column ? column.scrollHeight > column.clientHeight : true;
     })(),
+    pageScrolls: document.documentElement.scrollHeight > window.innerHeight,
   }));
 
   expect(measured.clipped).toEqual([]);
-  // With four of five steps closed the sheet is short enough to sit still.
+  // With every step closed the sheet is short enough to sit still.
   expect(measured.specScrolls).toBe(false);
+  // And an open step never makes the page itself scroll: the columns do that.
+  expect(measured.pageScrolls).toBe(false);
 });
 
 /**

@@ -67,7 +67,16 @@ function controlNameCounts(
        * What matters about the rows is that every entry has one, and that is
        * asserted on its own below.
        */
-      .filter(control => !outsideCatalogList || !control.closest('.catalog-list'));
+      .filter(control => !outsideCatalogList || !control.closest('.catalog-list'))
+      /*
+       * And, for the same reason, the drawn options of a step whose choices
+       * are catalog entries: since R-13 a step offers one card per entry
+       * instead of one <option> per entry, so counting them by name would put
+       * every paper, press, sheet and cover the shipped catalog declares into
+       * the map below. That every entry has a card, and that exactly one is
+       * chosen, is asserted on its own further down.
+       */
+      .filter(control => !control.closest('.option-group-catalog'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -264,11 +273,8 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,
   '150 g/m²': 1,
-  '1:1': 1,
   '200 g/m²': 1,
-  '2:3': 1,
   '300 g/m²': 1,
-  '3:5 (Áurea)': 1,
   '90 g/m²': 1,
   'Alto (Cerrado)': 1,
   'Ancho (Cerrado)': 1,
@@ -277,7 +283,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Cuadrado': 1,
   'Encuadernación seleccionada': 1,
   'Esquema de plegado': 1,
-  'Manual': 1,
   'Número de páginas': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
@@ -372,6 +377,34 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     }
 
     await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
+  });
+
+  /**
+   * The drawn options of the steps, asserted the same way and for the same
+   * reason as the catalog rows: what has to hold is that every group offers
+   * something and settles on exactly one choice, not which names the shipped
+   * catalog happens to carry. This is the half of R-13 that the control map
+   * above deliberately stops counting.
+   */
+  test('every group of drawn options has one choice marked', async ({ page }) => {
+    const steps = page.locator('details.spec-step');
+
+    for (let index = 0; index < await steps.count(); index += 1) {
+      await ensureOpen(steps.nth(index));
+      const groups = steps.nth(index).locator('.option-group');
+
+      for (let group = 0; group < await groups.count(); group += 1) {
+        const options = groups.nth(group).locator('.option-card');
+        // Chained on the group, not on the options: an option is itself the
+        // element that says whether it is chosen, and a locator chained on the
+        // cards would look for that inside them and find nothing.
+        const chosen = groups.nth(group).locator('.option-card[aria-pressed="true"]');
+        const where = `paso ${index + 1}, grupo ${group + 1}`;
+
+        expect(await options.count(), where).toBeGreaterThan(0);
+        expect(await chosen.count(), where).toBe(1);
+      }
+    }
   });
 
   test('every result label is still present, wherever R-3 puts it', async ({ page }) => {

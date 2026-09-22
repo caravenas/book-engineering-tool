@@ -33,7 +33,12 @@ export const ORIGIN_LABEL: Record<CatalogOrigin, string> = {
  * It appears on the five catalogs that can be changed and nowhere else:
  * saying "de fábrica" beside a field that could never be anything else is
  * noise, not information.
+ *
+ * R-13 makes it a note in the margin of the label row rather than a pill
+ * beside the label, and gives it company: the same margin now also carries
+ * which other control decides this value, so a field has one place where
+ * everything about the provenance of its value is written.
  */
 export function OriginBadge({ origin }: { origin: CatalogOrigin }) {
-  return <span className="origin-badge">{ORIGIN_LABEL[origin]}</span>;
+  return <span className="field-marginalia">{ORIGIN_LABEL[origin]}</span>;
 }
