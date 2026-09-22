@@ -783,6 +783,86 @@ select.form-input {
   border-style: dashed;
 }
 
+/* ─── Measurements in a Line (R-14) ─────────────────────────────────── */
+
+/* The three measurements of a format are one decision, so they read as one
+   row rather than as a form. */
+.measure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.measure-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+/* The value sits on a line, the way a measurement is written on a drawing. */
+.measure-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+/* A bleed is drawn dashed everywhere else in this app, because it is where
+   the cut falls rather than where the paper ends. */
+.measure-value.dashed {
+  border-bottom-style: dashed;
+}
+
+.measure-input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  line-height: 1.1;
+  /* The spinner would take a third of the room the figure needs, and the
+     arrow keys do the same job with the field at full width. */
+  appearance: textfield;
+}
+
+.measure-input::-webkit-inner-spin-button,
+.measure-input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.measure-input:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 3px;
+}
+
+/* The unit doubles as the handle: it says which unit the figure is in, and
+   dragging it sideways changes the figure. */
+.measure-unit {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+/* In a column the note goes under the value it describes; the margin it is
+   named for is the label row's, and there is no label row here. */
+.measure-field .field-marginalia {
+  margin-left: 0;
+  min-height: 1.5em;
+  white-space: normal;
+}
+
 /*
  * Where the value comes from, or which other control decides it, written in
  * the margin of the label row instead of as a pill beside the label. It takes
@@ -801,31 +881,10 @@ select.form-input {
 
 /* ─── Input Row (side by side) ──────────────────────────────────────── */
 
-.canvas-dimension-grid,
-
-
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
-}
-
-.input-with-unit {
-  position: relative;
-}
-
-.input-unit {
-  position: absolute;
-  right: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: var(--text-xs);
-  color: var(--color-text-primary);
-  pointer-events: none;
-}
-
-.input-with-unit .form-input {
-  padding-right: 45px;
 }
 
 /* ─── Stat Display ──────────────────────────────────────────────────── */
@@ -1265,7 +1324,6 @@ select.form-input {
 
 @media (max-width: 1024px) {
 
-  .canvas-dimension-grid,
   .input-row {
     grid-template-columns: 1fr;
   }

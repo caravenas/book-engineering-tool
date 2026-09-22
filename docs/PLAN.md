@@ -806,8 +806,15 @@ Ancho, alto y sangrado pasan a ser la cifra en línea sobre una línea de base, 
 El sangrado lleva la línea punteada, que es la de corte.
 Al margen: `de fábrica`, o `fijado por` la proporción activa en el alto, que es el lado que el store deriva.
 
-Verificación: una prueba de navegador que arrastra la unidad y comprueba que el ancho cambia y que el alto sigue a la proporción; y otra de teclado para ±1 y ±10.
-Las dos son reproducciones del gesto real, no de la llamada al store.
+Verificación: `e2e/measures.spec.ts`, cinco pruebas del gesto real y no de la llamada en que acaba: el arrastre de la unidad, un arrastre que se sale del tirador —que es lo que prueba la captura del puntero—, las flechas con y sin mayúsculas, el sangrado a su propia escala, y que la nota del alto desaparece con la proporción que describe.
+Cada una comprobada en rojo antes que en verde, saboteando lo que afirma.
+
+Dos cosas que este incremento decidió y conviene que consten.
+Las etiquetas pasan de «Ancho (Cerrado)», «Alto (Cerrado)» y «Sangrado (Bleed)» a «Ancho», «Alto» y «Sangrado»: en una fila de tres, las largas se partían en dos líneas, y la glosa «(Bleed)» era ruido en una interfaz en castellano.
+Se pierde el matiz de «cerrado», que era información real; si Chris lo quiere de vuelta, el sitio es el título del paso, no la etiqueta del campo.
+
+Y editar una medida sigue dejando la proporción en «Manual», como hasta ahora: el lienzo hace lo contrario —mantiene la razón y recalcula el otro lado—, y para eso el store necesitaría saber qué lado se editó, que hoy no sabe porque `setPageDimensions` recibe los dos.
+Queda anotado abajo como decisión abierta en vez de resuelto a medias.
 
 ### R-15 — Papel y gramaje
 
@@ -839,8 +846,13 @@ Verificación: una prueba de que el resumen de la cabecera y el del paso corresp
 
 ### Lo que este bloque deja abierto
 
-El desplegable de proporciones muestra hoy solo las tres primeras de fábrica, por un `slice(0, 3)` heredado, mientras `formatos.json` trae cinco.
-Con las proporciones dibujadas no hay razón para el recorte, pero quitarlo cambia lo que se ve en el paso: entra en R-13 y queda anotado aquí por si Chris prefiere lo contrario.
+El recorte a tres proporciones de fábrica, por un `slice(0, 3)` heredado mientras `formatos.json` trae cinco, se quitó en R-13: con las proporciones dibujadas no había razón para él.
+Queda anotado por si Chris prefiere lo contrario.
+
+Qué significa editar una medida cuando hay una proporción activa, decidido en R-14 a favor de lo que ya hacía la app.
+Hoy pasa a «Manual»; el lienzo mantiene la razón y mueve el otro lado.
+Lo segundo es defendible —una proporción se elige a propósito y perderla por empujar el ancho sorprende— y exige partir `setPageDimensions` en un `setPageWidth` y un `setPageHeight`, porque con una proporción activa el store deriva siempre desde el ancho y editar el alto necesita la inversa.
+Mientras siga como está, la nota «fijado por 2:3» avisa de lo que va a pasar y desaparece en cuanto pasa.
 
 ## Decisiones pendientes
 

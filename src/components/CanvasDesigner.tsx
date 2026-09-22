@@ -3,6 +3,7 @@ import { useBookStore, getAllProportions } from '../store/useBookStore';
 import { getPageDisplayDimensions, isPositiveFinite } from '../engine/units';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { OptionField, OptionCard } from './OptionGroup';
+import { MeasureField } from './MeasureField';
 import type { BookFormat } from '../types';
 
 /**
@@ -85,6 +86,17 @@ export function CanvasDesigner() {
   const { displayW, displayH, displayBleed, unit } = getPageDisplayDimensions(
     pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem
   );
+  const dimensionStep = unitSystem === 'imperial' ? 0.125 : 1;
+  const toMm = (value: number) => (unitSystem === 'imperial' ? value * 25.4 : value);
+  /*
+   * "de fábrica" on a measurement means what it means everywhere else: the
+   * value is the one the shipped configuration declares. The height has no
+   * default of its own — `formatos.json` gives a width and a proportion and
+   * the store derives the rest — so what its margin reports is the proportion
+   * deciding it.
+   */
+  const isFactoryWidth = catalog ? pageWidth_mm === catalog.defaults.pageWidth_mm : false;
+  const isFactoryBleed = catalog ? bleed_mm === catalog.defaults.bleed_mm : false;
 
   return (
     <div className="panel" id="canvas-designer">
@@ -147,68 +159,47 @@ export function CanvasDesigner() {
         />
       </OptionField>
 
-      {/* Dimensions and Units side by side */}
-      <div className="canvas-dimension-grid">
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" htmlFor="input-width">Ancho (Cerrado)</label>
-          <div className="input-with-unit">
-            <input
-              type="number"
-              className="form-input"
-              value={displayW}
-              onChange={e => {
-                const val = parseFloat(e.target.value) || 0;
-                const mm = unitSystem === 'imperial' ? val * 25.4 : val;
-                setPageDimensions(mm, pageHeight_mm);
-              }}
-              step={unitSystem === 'imperial' ? 0.125 : 1}
-              min={0}
-              id="input-width"
-            />
-            <span className="input-unit">{unit}</span>
-          </div>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" htmlFor="input-height">Alto (Cerrado)</label>
-          <div className="input-with-unit">
-            <input
-              type="number"
-              className="form-input"
-              value={displayH}
-              onChange={e => {
-                const val = parseFloat(e.target.value) || 0;
-                const mm = unitSystem === 'imperial' ? val * 25.4 : val;
-                setPageDimensions(pageWidth_mm, mm);
-              }}
-              step={unitSystem === 'imperial' ? 0.125 : 1}
-              min={0}
-              id="input-height"
-            />
-            <span className="input-unit">{unit}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bleed */}
-      <div className="form-group">
-        <label className="form-label" htmlFor="input-bleed">Sangrado (Bleed)</label>
-        <div className="input-with-unit">
-          <input
-            type="number"
-            className="form-input"
-            value={displayBleed}
-            onChange={e => {
-              const val = parseFloat(e.target.value) || 0;
-              const mm = unitSystem === 'imperial' ? val * 25.4 : val;
-              setBleed(mm);
-            }}
-            step={unitSystem === 'imperial' ? 0.0625 : 0.5}
-            min={0}
-            id="input-bleed"
-          />
-          <span className="input-unit">{unit}</span>
-        </div>
+      {/*
+        * The three measurements, each a figure in a line with its unit as the
+        * handle. They sit in one row because they are one decision, and
+        * because a step of drawn options has no vertical room to spare.
+        */}
+      <div className="measure-grid">
+        <MeasureField
+          label="Ancho"
+          id="input-width"
+          value={displayW}
+          unit={unit}
+          step={dimensionStep}
+          marginalia={isFactoryWidth ? ORIGIN_LABEL.factory : null}
+          onChange={value => setPageDimensions(toMm(value), pageHeight_mm)}
+        />
+        <MeasureField
+          label="Alto"
+          id="input-height"
+          value={displayH}
+          unit={unit}
+          step={dimensionStep}
+          /* The store derives the height from the width while a proportion is
+             on, so the field says who is deciding it. Typing here is still
+             allowed, and turns the proportion to Manual — which is what the
+             note is warning about. */
+          marginalia={proportionId === null ? null : `fijado por ${proportionId}`}
+          onChange={value => setPageDimensions(pageWidth_mm, toMm(value))}
+        />
+        <MeasureField
+          label="Sangrado"
+          id="input-bleed"
+          value={displayBleed}
+          unit={unit}
+          step={unitSystem === 'imperial' ? 0.0625 : 0.5}
+          /* A bleed is a few millimetres wide, so a pointer that moved a
+             millimetre every three pixels would be unusable on it. */
+          pixelsPerStep={12}
+          dashed
+          marginalia={isFactoryBleed ? ORIGIN_LABEL.factory : null}
+          onChange={value => setBleed(toMm(value))}
+        />
       </div>
 
     </div>

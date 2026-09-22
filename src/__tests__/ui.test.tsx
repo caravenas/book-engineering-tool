@@ -105,9 +105,9 @@ describe('Honest and recoverable UI', () => {
     expect(overflowedCanvas.container.querySelector('.page-preview')).toBeNull();
     expect(screen.getByText(/Introduce dimensiones finitas mayores que cero/)).toBeTruthy();
     for (const input of [
-      screen.getByLabelText('Ancho (Cerrado)'),
-      screen.getByLabelText('Alto (Cerrado)'),
-      screen.getByLabelText('Sangrado (Bleed)'),
+      screen.getByLabelText('Ancho', { selector: '#input-width' }),
+      screen.getByLabelText('Alto', { selector: '#input-height' }),
+      screen.getByLabelText('Sangrado'),
     ]) {
       expect((input as HTMLInputElement).value).not.toContain('Infinity');
       expect((input as HTMLInputElement).value).not.toContain('NaN');
@@ -158,7 +158,7 @@ describe('Honest and recoverable UI', () => {
     useBookStore.setState({ pageWidth_mm: 0.04, pageHeight_mm: 0.04, bleed_mm: 0 });
     render(<CanvasDesignerScreen />);
 
-    expect((screen.getByLabelText('Ancho (Cerrado)') as HTMLInputElement).value).toBe('0.04');
+    expect((screen.getByLabelText('Ancho', { selector: '#input-width' }) as HTMLInputElement).value).toBe('0.04');
   });
 
   it('provides named groups, labels, and interactive states for modified controls', () => {
@@ -169,9 +169,9 @@ describe('Honest and recoverable UI', () => {
     expect(verticalButton.getAttribute('type')).toBe('button');
     expect(verticalButton.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('group', { name: 'Proporción' })).toBeTruthy();
-    expect(screen.getByLabelText('Ancho (Cerrado)')).toBeTruthy();
-    expect(screen.getByLabelText('Alto (Cerrado)')).toBeTruthy();
-    expect(screen.getByLabelText('Sangrado (Bleed)')).toBeTruthy();
+    expect(screen.getByLabelText('Ancho', { selector: '#input-width' })).toBeTruthy();
+    expect(screen.getByLabelText('Alto', { selector: '#input-height' })).toBeTruthy();
+    expect(screen.getByLabelText('Sangrado')).toBeTruthy();
     canvas.unmount();
 
     render(<SubstrateSelectorScreen />);

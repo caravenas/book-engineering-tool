@@ -257,8 +257,11 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Lateral': 1,
   'Cola': 1,
   'Calle': 1,
-  'Ancho': 1,
-  'Alto': 1,
+  // Two apiece since R-14: the step's own measurements are named for what
+  // they measure, and the catalog's sheet form has always named its fields
+  // the same way. Different places, same word, counted where each one lives.
+  'Ancho': 2,
+  'Alto': 2,
   'Múltiplo de páginas': 1,
   'Mínimo de páginas': 1,
   'Máximo de páginas': 1,
@@ -276,8 +279,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   '200 g/m²': 1,
   '300 g/m²': 1,
   '90 g/m²': 1,
-  'Alto (Cerrado)': 1,
-  'Ancho (Cerrado)': 1,
   'Apaisado': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
@@ -286,7 +287,7 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Número de páginas': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
-  'Sangrado (Bleed)': 1,
+  'Sangrado': 1,
   'Tipo de papel': 1,
   'Tipo de tapa': 1,
   'Vertical': 1,
