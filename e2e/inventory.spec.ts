@@ -277,14 +277,10 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Apaisado': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
-  'Esquema de plegado': 1,
   'Páginas': 1,
   'Añadir una firma': 1,
   'Quitar una firma': 1,
-  'Pliego seleccionado': 1,
-  'Prensa seleccionada': 1,
   'Sangrado': 1,
-  'Tipo de tapa': 1,
   'Vertical': 1,
 };
 
@@ -426,7 +422,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     await page.locator('#binding-hotmelt').click();
 
     await openStep(page, 'Tapa');
-    await page.locator('#select-cover').selectOption('dura_estandar');
+    await page.locator('#cover-dura_estandar').click();
 
     expect(new Set(await resultLabels(page))).toEqual(new Set([
       'Ancho del cartón lateral (mm)',

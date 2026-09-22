@@ -783,6 +783,77 @@ select.form-input {
   border-style: dashed;
 }
 
+/* ─── Presses, Sheets, Folds and Covers (R-17) ──────────────────────── */
+
+/* What the press can hold, with the gripper as a thick edge along the top. */
+.press-figure {
+  display: block;
+  border: 1px solid currentColor;
+  border-top-style: solid;
+}
+
+/* The grid a folding scheme puts on one side of the sheet. */
+.fold-figure {
+  display: grid;
+  border: 1px solid currentColor;
+  gap: 0;
+}
+
+.fold-figure > span {
+  border: 1px solid currentColor;
+  opacity: 0.55;
+}
+
+/* The cover opened out flat: panels, the spine between them, and the flaps
+   drawn as the creases they are folded at. */
+.cover-figure {
+  display: flex;
+  align-items: stretch;
+  height: 28px;
+}
+
+.cover-panel,
+.cover-spine,
+.cover-flap {
+  display: block;
+  border: 1px solid currentColor;
+}
+
+.cover-panel {
+  width: 20px;
+}
+
+.cover-spine {
+  border-left: 0;
+  border-right: 0;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+/* Board is not paper, and is drawn as the thicker thing it is. */
+.cover-panel.board,
+.cover-spine.board {
+  border-width: 2px;
+}
+
+.cover-spine.board {
+  border-left: 0;
+  border-right: 0;
+}
+
+.cover-flap {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.cover-flap:first-child {
+  border-right: 0;
+}
+
+.cover-flap:last-child {
+  border-left: 0;
+}
+
 /* ─── The Page Counter (R-16) ───────────────────────────────────────── */
 
 .page-counter-row {

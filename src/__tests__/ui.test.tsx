@@ -188,24 +188,21 @@ describe('Honest and recoverable UI', () => {
   it('keeps every selector in the imposition step named, and names the way out to the catalog', () => {
     render(<ImpositionVisualizerScreen />);
 
-    expect(screen.getByLabelText('Prensa')).toBeTruthy();
-    expect(screen.getByLabelText('Esquema de plegado')).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Prensa' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Esquema de plegado' })).toBeTruthy();
     expect(screen.getByLabelText('Cara mostrada')).toBeTruthy();
 
     // The step used to swap its selector for an inline form; adding and
-    // editing live in the catalog since R-4b, so the selector stays put and
-    // the group gains one control that says where the rest went.
-    const group = screen.getByRole('group', { name: 'Tamaño del pliego' });
-    const sheetSelect = within(group).getByLabelText('Pliego seleccionado');
-    const sheetSelectLabel = within(group).getByText('Pliego seleccionado', { selector: 'label' });
-    expect(sheetSelect.id).toBe('select-sheet-size');
-    expect(sheetSelectLabel.getAttribute('for')).toBe('select-sheet-size');
+    // editing live in the catalog since R-4b, so the choice stays put and
+    // the field gains one control that says where the rest went.
+    expect(chosenCardId('sheet')).toBe('pliego_70x100');
 
-    const options = within(group).getByRole('button', { name: 'Opciones de pliego' });
+    const options = screen.getByRole('button', { name: 'Opciones de pliego' });
     expect(options.getAttribute('aria-haspopup')).toBe('dialog');
 
     fireEvent.click(options);
-    expect(document.getElementById('select-sheet-size')).toBe(sheetSelect);
+    // The step keeps its choice while the catalog is open over it.
+    expect(chosenCardId('sheet')).toBe('pliego_70x100');
     expect(screen.getByRole('button', { name: '+ Nuevo pliego' })).toBeTruthy();
   });
 
@@ -384,6 +381,37 @@ describe('Honest and recoverable UI', () => {
   });
 });
 
+/**
+ * The note in the margin of a drawn field's label row — where the value comes
+ * from, or what decides it. It is beside the group rather than inside it,
+ * because it describes the field and not one of its options.
+ */
+function marginaliaOf(fieldId: string): string | null {
+  const row = document.getElementById(`${fieldId}-label`)?.parentElement;
+  return row?.querySelector('.field-marginalia')?.textContent ?? null;
+}
+
+/**
+ * The options a drawn field offers, by id. Since R-13 a step offers one card
+ * per catalog entry instead of one <option> per entry, and every card carries
+ * the id `<prefix>-<entry id>`, which is what these read back.
+ */
+function cardIds(prefix: string): string[] {
+  return Array.from(document.querySelectorAll(`[id^="${prefix}-"].option-card`))
+    .map(card => card.id.slice(prefix.length + 1));
+}
+
+function chosenCardId(prefix: string): string | null {
+  const chosen = document.querySelector(`[id^="${prefix}-"].option-card[aria-pressed="true"]`);
+  return chosen ? chosen.id.slice(prefix.length + 1) : null;
+}
+
+function chooseCard(prefix: string, id: string): void {
+  const card = document.getElementById(`${prefix}-${id}`);
+  if (!card) throw new Error(`no hay tarjeta ${prefix}-${id}`);
+  fireEvent.click(card);
+}
+
 /** The methods step 03 offers, by id: since R-16 each one is a drawn card. */
 function bindingCardIds(): string[] {
   return Array.from(document.querySelectorAll('#binding-panel .option-card'))
@@ -465,8 +493,7 @@ describe('UX-6: components read the effective catalog', () => {
     useBookStore.getState().hidePress('prensa_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
+    expect(cardIds('press')).not.toContain('prensa_70x100');
   });
 
   it('shows a patched binding name in the dropdown instead of its factory name', () => {
@@ -483,37 +510,35 @@ describe('UX-6: components read the effective catalog', () => {
 describe('Hide and restore factory entries (UX-6)', () => {
   it('hides the selected factory press with its own control, shows a restore line, and restores it', () => {
     render(<ImpositionVisualizerScreen />);
-    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
+    expect(cardIds('press')).toContain('prensa_70x100');
     expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
 
     openPressCatalog();
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
-    expect(Array.from(select.options).map(option => option.value)).not.toContain('prensa_70x100');
+    expect(cardIds('press')).not.toContain('prensa_70x100');
     expect(screen.getByText(/1 prensa de fábrica oculta/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar prensas ocultas' }));
 
-    expect(Array.from(select.options).map(option => option.value)).toContain('prensa_70x100');
+    expect(cardIds('press')).toContain('prensa_70x100');
     expect(screen.queryByText(/prensa de fábrica oculta/)).toBeNull();
   });
 
   it('hides the selected factory sheet size with its own control, shows a restore line, and restores it', () => {
     render(<ImpositionVisualizerScreen />);
-    const select = screen.getByLabelText('Pliego seleccionado') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
+    expect(cardIds('sheet')).toContain('pliego_70x100');
     expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
 
     openCatalogFor('pliego');
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
-    expect(Array.from(select.options).map(option => option.value)).not.toContain('pliego_70x100');
+    expect(cardIds('sheet')).not.toContain('pliego_70x100');
     expect(screen.getByText(/1 pliego de fábrica oculto/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar pliegos ocultos' }));
 
-    expect(Array.from(select.options).map(option => option.value)).toContain('pliego_70x100');
+    expect(cardIds('sheet')).toContain('pliego_70x100');
     expect(screen.queryByText(/pliego de fábrica oculto/)).toBeNull();
   });
 
@@ -590,7 +615,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     expect(useBookStore.getState().pressPatches).toEqual([
       { id: 'prensa_70x100', changes: { maxSheetWidth_mm: 800 } },
     ]);
-    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('editado')).toBeTruthy();
+    expect(marginaliaOf('press-group')).toBe('editado');
   });
 
   it('persists two edits made in separate save actions, instead of the last one overwriting the first', () => {
@@ -616,14 +641,13 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     useBookStore.getState().setPress('prensa_70x100');
     useBookStore.getState().patchPress('prensa_70x100', { maxSheetWidth_mm: 800 });
     render(<ImpositionVisualizerScreen />);
-    const pressGroup = screen.getByRole('group', { name: 'Prensa' });
 
-    expect(within(pressGroup).getByText('editado')).toBeTruthy();
+    expect(marginaliaOf('press-group')).toBe('editado');
     openPressCatalog();
     fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().pressPatches).toEqual([]);
-    expect(within(pressGroup).getByText('de fábrica')).toBeTruthy();
+    expect(marginaliaOf('press-group')).toBe('de fábrica');
   });
 
   it('edits a field of a factory sheet size from the interface, and the badge switches to "editado"', () => {
@@ -639,7 +663,7 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     expect(useBookStore.getState().sheetSizePatches).toEqual([
       { id: 'pliego_70x100', changes: { width_mm: 750 } },
     ]);
-    expect(within(screen.getByRole('group', { name: 'Tamaño del pliego' })).getByText('editado')).toBeTruthy();
+    expect(marginaliaOf('sheet-size-group')).toBe('editado');
   });
 
   it('persists two sheet size edits made in separate save actions, instead of the last one overwriting the first', () => {
@@ -665,14 +689,13 @@ describe('Edit a factory press or sheet size (UX-6)', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     useBookStore.getState().patchSheetSize('pliego_70x100', { width_mm: 750 });
     render(<ImpositionVisualizerScreen />);
-    const sheetGroup = screen.getByRole('group', { name: 'Tamaño del pliego' });
 
-    expect(within(sheetGroup).getByText('editado')).toBeTruthy();
+    expect(marginaliaOf('sheet-size-group')).toBe('editado');
     openCatalogFor('pliego');
     fireEvent.click(screen.getByRole('button', { name: 'Volver a fábrica' }));
 
     expect(useBookStore.getState().sheetSizePatches).toEqual([]);
-    expect(within(sheetGroup).getByText('de fábrica')).toBeTruthy();
+    expect(marginaliaOf('sheet-size-group')).toBe('de fábrica');
   });
 
   it('cancelling the press edit form clears the store error and leaves the patch untouched', () => {
@@ -823,7 +846,7 @@ describe('Signature imposition preview', () => {
     const svg = () => document.querySelector('.imposition-svg') as HTMLElement;
 
     expect(within(svg()).queryByText('8')).toBeNull();
-    fireEvent.change(screen.getByLabelText('Esquema de plegado'), { target: { value: 'esquema_8pp' } });
+    chooseCard('folding-scheme', 'esquema_8pp');
 
     expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_8pp');
     expect(within(svg()).getByText('8')).toBeTruthy();
@@ -847,8 +870,8 @@ describe('Signature imposition preview', () => {
   it('says where the press and the sheet come from beside their labels', () => {
     render(<ImpositionVisualizerScreen />);
 
-    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('de fábrica')).toBeTruthy();
-    expect(within(screen.getByRole('group', { name: 'Tamaño del pliego' })).getByText('de fábrica')).toBeTruthy();
+    expect(marginaliaOf('press-group')).toBe('de fábrica');
+    expect(marginaliaOf('sheet-size-group')).toBe('de fábrica');
   });
 
   it('names the press-sheet stat apart from the folded, per-4-page sheet used for creep', () => {
@@ -862,17 +885,18 @@ describe('Signature imposition preview', () => {
 describe('Cover panel', () => {
   it('only offers the two soft covers as selectable with the shipped default (saddle-stitch) binding, and switching changes the displayed measurements', () => {
     render(<CoverPanelScreen />);
-    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
-    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
-      'blanda_simple', 'blanda_solapas',
-    ]);
-    expect(select.value).toBe('blanda_simple');
+    // Since R-17 the hard cover is on screen with the rest and disabled with
+    // its reason, rather than left out of the list: that it exists and why it
+    // cannot be had here is information the list used to swallow.
+    expect([...cardIds('cover')].sort()).toEqual(['blanda_simple', 'blanda_solapas', 'dura_estandar']);
+    expect((document.getElementById('cover-dura_estandar') as HTMLButtonElement).disabled).toBe(true);
+    expect(chosenCardId('cover')).toBe('blanda_simple');
     // grapa (the shipped default binding) has no flat spine, so blanda_simple's
     // sheet is 2*0 + 2*140 + 0 + 2*3 = 286.
     expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).toBe('286');
 
-    fireEvent.change(select, { target: { value: 'blanda_solapas' } });
+    chooseCard('cover', 'blanda_solapas');
 
     expect(useBookStore.getState().coverId).toBe('blanda_solapas');
     expect(screen.getByText('Ancho del pliego de tapa (mm)').nextSibling?.textContent).not.toBe('286');
@@ -881,28 +905,21 @@ describe('Cover panel', () => {
   it('offers all three covers as selectable with a flat-spine binding', () => {
     useBookStore.getState().setBinding('hotmelt');
     render(<CoverPanelScreen />);
-    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
-    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
-      'blanda_simple', 'blanda_solapas', 'dura_estandar',
-    ]);
-    for (const option of Array.from(select.options)) {
-      expect(option.disabled).toBe(false);
+    expect([...cardIds('cover')].sort()).toEqual(['blanda_simple', 'blanda_solapas', 'dura_estandar']);
+    for (const id of cardIds('cover')) {
+      expect((document.getElementById(`cover-${id}`) as HTMLButtonElement).disabled).toBe(false);
     }
   });
 
   it('offers the hard cover as selectable when a custom flat-spine binding is selected (regression)', () => {
     useBookStore.getState().addCustomBinding('Rústica de prueba', 2, 2, 2000, 2, false, false);
     render(<CoverPanelScreen />);
-    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
-    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
-      'blanda_simple', 'blanda_solapas', 'dura_estandar',
-    ]);
-    const hardCoverOption = Array.from(select.options).find(option => option.value === 'dura_estandar');
-    expect(hardCoverOption?.disabled).toBe(false);
+    expect([...cardIds('cover')].sort()).toEqual(['blanda_simple', 'blanda_solapas', 'dura_estandar']);
+    expect((document.getElementById('cover-dura_estandar') as HTMLButtonElement).disabled).toBe(false);
 
-    fireEvent.change(select, { target: { value: 'dura_estandar' } });
+    chooseCard('cover', 'dura_estandar');
     expect(useBookStore.getState().coverId).toBe('dura_estandar');
   });
 
@@ -910,18 +927,22 @@ describe('Cover panel', () => {
     useBookStore.getState().setBinding('hotmelt');
     useBookStore.getState().setCover('dura_estandar');
     render(<CoverPanelScreen />);
-    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
 
     act(() => {
       useBookStore.getState().setBinding('grapa');
     });
 
+    /*
+     * The cover the book is made of survives a binding that cannot hold it,
+     * and stays chosen and choosable: disabling the chosen option would say
+     * the book is made of something nobody may choose. What the pairing costs
+     * is reported underneath, by the engine that judged it.
+     */
     expect(useBookStore.getState().coverId).toBe('dura_estandar');
-    expect(select.value).toBe('dura_estandar');
-    const durastandarOption = Array.from(select.options).find(option => option.value === 'dura_estandar');
-    expect(durastandarOption).toBeTruthy();
-    expect(durastandarOption?.disabled).toBe(true);
-    expect(durastandarOption?.textContent).toBe('Tapa dura estándar');
+    expect(chosenCardId('cover')).toBe('dura_estandar');
+    const hardCover = document.getElementById('cover-dura_estandar') as HTMLButtonElement;
+    expect(hardCover.disabled).toBe(false);
+    expect(hardCover.textContent).toContain('Tapa dura estándar');
     expect(screen.getByText(/no admite una tapa dura/).textContent?.length).toBeGreaterThan(0);
   });
 
@@ -1148,9 +1169,8 @@ describe('Custom press quick-add (UX-4)', () => {
     expect(newPressId).toMatch(/^custom_press_/);
     expect(useBookStore.getState().customPresses).toHaveLength(1);
     expect(document.getElementById('custom-entry-form')).toBeNull();
-    const select = screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement;
-    expect(select.value).toBe(newPressId);
-    expect(within(screen.getByRole('group', { name: 'Prensa' })).getByText('tuyo')).toBeTruthy();
+    expect(chosenCardId('press')).toBe(newPressId);
+    expect(marginaliaOf('press-group')).toBe('tuyo');
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customPresses).toHaveLength(0);
@@ -1431,8 +1451,8 @@ describe('Adding a cover from the catalog (R-11)', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar catálogo' }));
-    const select = screen.getByLabelText('Tipo de tapa') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.textContent)).toContain('Dura del taller');
+    const added = useBookStore.getState().customCovers[0].id;
+    expect(document.getElementById(`cover-${added}`)?.textContent).toContain('Dura del taller');
   });
 
   it('keeps a cover the store refuses on screen, with the reason it gave', () => {
@@ -1472,7 +1492,7 @@ describe('Choosing which entry the catalog edits (R-9)', () => {
     expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato SRA3');
     // The book does not.
     expect(useBookStore.getState().pressId).toBe(usedBefore);
-    expect((screen.getByLabelText('Prensa seleccionada') as HTMLSelectElement).value).toBe(usedBefore);
+    expect(chosenCardId('press')).toBe(usedBefore);
   });
 
   it('marks the row the form is on, and moves the mark when another is chosen', () => {
@@ -1880,5 +1900,104 @@ describe('The page counter and the spine drawings (R-16)', () => {
     // Hotmelt adds 2mm to the spine and PUR 1.5, so its glue line is thicker.
     expect(Number(spineLine('hotmelt').getAttribute('stroke-width')))
       .toBeGreaterThan(Number(spineLine('pur').getAttribute('stroke-width')));
+  });
+});
+
+describe('Presses, sheets and covers drawn to scale (R-17)', () => {
+  const pixelsOf = (value: string) => parseFloat(value);
+
+  /**
+   * A sheet the press cannot print is shown disabled with the reason on it.
+   * The judgement is `sheetFitsPress`, the engine's own rule, so what the
+   * step offers and what the imposition accepts cannot disagree — including
+   * the part that is easy to get wrong twice: a press takes a sheet turned,
+   * so 1020×720 fits a 720×1020 press.
+   */
+  it('disables a sheet the chosen press cannot hold, and lets it back when the press changes', () => {
+    render(<ImpositionVisualizerScreen />);
+    expect(chosenCardId('press')).toBe('prensa_70x100');
+
+    // 770×1100 is bigger than the 720×1020 press in either orientation.
+    const tooBig = document.getElementById('sheet-pliego_77x110') as HTMLButtonElement;
+    expect(tooBig.disabled).toBe(true);
+    expect(tooBig.textContent).toContain('no cabe en la prensa');
+
+    fireEvent.click(tooBig);
+    expect(useBookStore.getState().sheetSizeId).toBe('pliego_70x100');
+
+    // A sheet that does fit is offered.
+    expect((document.getElementById('sheet-pliego_sra3') as HTMLButtonElement).disabled).toBe(false);
+
+    /*
+     * And the part that is easy to get wrong twice: a press takes a sheet
+     * turned. The SRA3 press holds 330×460 and a tabloid is 432×279, which
+     * does not fit as it stands and fits perfectly on its side.
+     */
+    fireEvent.click(document.getElementById('press-prensa_sra3') as HTMLButtonElement);
+
+    expect((document.getElementById('sheet-tabloide') as HTMLButtonElement).disabled).toBe(false);
+    // Still too big for the smaller press, in either orientation.
+    expect((document.getElementById('sheet-pliego_77x110') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('never disables the sheet the book is being printed on', () => {
+    useBookStore.getState().setSheetSize('pliego_77x110');
+    useBookStore.getState().setPress('prensa_sra3');
+    render(<ImpositionVisualizerScreen />);
+
+    const inUse = document.getElementById('sheet-pliego_77x110') as HTMLButtonElement;
+    expect(inUse.getAttribute('aria-pressed')).toBe('true');
+    expect(inUse.disabled).toBe(false);
+  });
+
+  /** The drawings are to one scale, so the sheets are read against each other. */
+  it('draws every sheet at one scale', () => {
+    render(<ImpositionVisualizerScreen />);
+    const shapeOf = (id: string) =>
+      document.querySelector(`#sheet-${id} .option-shape`) as HTMLElement;
+
+    const big = shapeOf('pliego_70x100');
+    const small = shapeOf('carta');
+    // 700×1000 against 216×279: both at 1:25, so the ratio of the drawings is
+    // the ratio of the paper.
+    expect(pixelsOf(big.style.width) / pixelsOf(small.style.width)).toBeCloseTo(700 / 216, 3);
+    expect(pixelsOf(big.style.height) / pixelsOf(small.style.height)).toBeCloseTo(1000 / 279, 3);
+  });
+
+  /** The gripper is the one press measurement that changes the imposition. */
+  it('draws each press at its size, with its gripper as a thick edge', () => {
+    render(<ImpositionVisualizerScreen />);
+    const figureOf = (id: string) => document.querySelector(`#press-${id} .press-figure`) as HTMLElement;
+
+    const big = figureOf('prensa_70x100');
+    const small = figureOf('prensa_sra3');
+    expect(pixelsOf(big.style.width)).toBeGreaterThan(pixelsOf(small.style.width));
+    // 12mm of gripper against 10, and neither of them hairline.
+    expect(pixelsOf(big.style.borderTopWidth)).toBeGreaterThan(pixelsOf(small.style.borderTopWidth));
+    expect(pixelsOf(small.style.borderTopWidth)).toBeGreaterThanOrEqual(2);
+  });
+
+  /** A scheme's grid is drawn in its own shape, not squeezed into a box. */
+  it('draws a folding scheme as the grid it puts on the sheet', () => {
+    render(<ImpositionVisualizerScreen />);
+    const scheme = useBookStore.getState().catalog!.foldingSchemes.find(item => item.id === 'esquema_16pp')!;
+    const figure = document.querySelector('#folding-scheme-esquema_16pp .fold-figure') as HTMLElement;
+
+    expect(figure.querySelectorAll('span')).toHaveLength(scheme.cols * scheme.rows);
+    expect(pixelsOf(figure.style.width) / pixelsOf(figure.style.height)).toBeCloseTo(scheme.cols / scheme.rows, 3);
+  });
+
+  /** The cover is drawn from what it declares: flaps, boards and the spine. */
+  it('draws a cover with the flaps and boards it declares', () => {
+    render(<CoverPanelScreen />);
+    const parts = (id: string) => document.querySelectorAll(`#cover-${id} .cover-figure > span`);
+
+    // Back, spine and front; the one with flaps adds a crease at each end.
+    expect(parts('blanda_simple')).toHaveLength(3);
+    expect(parts('blanda_solapas')).toHaveLength(5);
+    expect(document.querySelectorAll('#cover-blanda_solapas .cover-flap')).toHaveLength(2);
+    // Board is not paper, and is drawn as the thicker thing it is.
+    expect(document.querySelectorAll('#cover-dura_estandar .board').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('#cover-blanda_simple .board')).toHaveLength(0);
   });
 });

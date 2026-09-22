@@ -1,5 +1,6 @@
 import type {
   FoldingScheme,
+  Press,
   PrintingMode,
   SignatureOption,
   SignaturePlacement,
@@ -197,6 +198,21 @@ export function selectBestOption(options: SignatureOption[]): SignatureOption | 
 }
 
 /**
+ * Whether a sheet of this size can be printed on this press at all, in either
+ * orientation: a press that takes 720×1020 takes a 1020×720 sheet the same
+ * way, turned. `planSignatures` refuses the pair outright when neither fits,
+ * and since R-17 the imposition step disables the sheets this rules out, so
+ * the rule is stated once here instead of twice.
+ */
+export function sheetFitsPress(sheetWidth_mm: number, sheetHeight_mm: number, press: Press): boolean {
+  const fitsNormal = sheetWidth_mm <= press.maxSheetWidth_mm + EPSILON_MM
+    && sheetHeight_mm <= press.maxSheetHeight_mm + EPSILON_MM;
+  const fitsRotated = sheetWidth_mm <= press.maxSheetHeight_mm + EPSILON_MM
+    && sheetHeight_mm <= press.maxSheetWidth_mm + EPSILON_MM;
+  return fitsNormal || fitsRotated;
+}
+
+/**
  * Determine which folding schemes fit a page (with bleed) on a press sheet,
  * and select the one that wastes the least paper. A pure function: it never
  * imports catalog data, only receives it as arguments.
@@ -220,11 +236,7 @@ export function planSignatures(input: SignaturePlanInput): SignaturePlanResult {
   assertNonNegativeFinite(press.tailMargin_mm, 'El margen de cola de la prensa');
   assertNonNegativeFinite(press.gutter_mm, 'La calle entre páginas de la prensa');
 
-  const fitsNormalOnPress = sheetWidth_mm <= press.maxSheetWidth_mm + EPSILON_MM
-    && sheetHeight_mm <= press.maxSheetHeight_mm + EPSILON_MM;
-  const fitsRotatedOnPress = sheetWidth_mm <= press.maxSheetHeight_mm + EPSILON_MM
-    && sheetHeight_mm <= press.maxSheetWidth_mm + EPSILON_MM;
-  if (!fitsNormalOnPress && !fitsRotatedOnPress) {
+  if (!sheetFitsPress(sheetWidth_mm, sheetHeight_mm, press)) {
     const reason: SignaturePlanReason = 'sheet-exceeds-press';
     return { options: [], selected: null, reason };
   }

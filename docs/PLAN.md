@@ -846,7 +846,14 @@ El contador se mueve de cuatro en cuatro con grapa y de dieciséis en dieciséis
 La prensa pasa a una fila por prensa con su rectángulo y la pinza dibujada como el borde superior grueso; el pliego, a rectángulos a escala comparables entre sí, deshabilitando el que no entra en la prensa elegida; el esquema, a fichas con la retícula de la firma; la tapa, a la tapa extendida en plano, con solapas punteadas y el cartón como un trazo más grueso.
 La advertencia de que un esquema debe confirmarse contra un pliego doblado se queda donde está.
 
-Verificación: una prueba de que un pliego mayor que la prensa elegida aparece deshabilitado y no seleccionable, reproducida cambiando de prensa en la interfaz; y otra de que el dibujo de la tapa cambia de forma al pasar de blanda a blanda con solapas y a dura.
+El juicio de si un pliego cabe en la prensa es el del motor: `sheetFitsPress`, extraído de `planSignatures`, así que lo que el paso ofrece y lo que la imposición acepta no pueden discrepar.
+Incluye la parte fácil de equivocar dos veces: una prensa admite el pliego girado, y un tabloide de 432×279 no cabe de pie en una SRA3 de 330×460 y cabe tumbado.
+
+Las tapas dejan de filtrarse: la tapa dura aparece con las demás, deshabilitada y con su motivo, en vez de desaparecer de la lista.
+Que existe y por qué no puede usarse aquí es información que la lista se tragaba.
+
+Verificación: seis pruebas en `ui.test.tsx`, saboteadas una a una.
+El pliego que no cabe queda deshabilitado y el clic no lo elige; el que está en uso nunca se deshabilita; los seis pliegos se dibujan a una sola escala, comprobado por la razón entre dos de ellos; cada prensa lleva su tamaño y su pinza; el esquema se dibuja con la forma de su propia retícula; y la tapa dibuja las solapas y los cartones que declara.
 
 ### R-18 — La barra superior
 
