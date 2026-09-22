@@ -1,5 +1,21 @@
 import { useBookStore } from '../store/useBookStore';
 import { getPageDisplayDimensions } from '../engine/units';
+import type { BookFormat } from '../types';
+
+/** What each orientation is called, for the line under the drawing. */
+const FORMAT_NAMES: Record<BookFormat, string> = {
+  vertical: 'Vertical',
+  landscape: 'Apaisado',
+  square: 'Cuadrado',
+};
+
+/**
+ * How much of the page the margin guide leaves: a tenth of the short side,
+ * which is a drawing convention rather than a measurement the tool holds —
+ * nothing in the catalog declares a margin, and the guide is there to show
+ * that a page is not printed edge to edge.
+ */
+const MARGIN_SHARE = 0.1;
 
 /**
  * The page-dimensions panel's proportional preview, read straight from the
@@ -7,7 +23,7 @@ import { getPageDisplayDimensions } from '../engine/units';
  * the panel that draws it today won't be able to pass it anything.
  */
 export function PagePreview() {
-  const { pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem } = useBookStore();
+  const { pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem, format, proportionId } = useBookStore();
 
   // Keep invalid input away from CSS geometry while the calculators report how to recover.
   const canRenderPreview = Number.isFinite(pageWidth_mm)
@@ -77,29 +93,47 @@ export function PagePreview() {
     pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem
   );
 
+  const marginInset = Math.min(previewW, previewH) * MARGIN_SHARE;
+
   return (
     <div className="page-preview-container">
       {hasValidPreviewGeometry ? (
-        <div>
-          <div
-            className="page-preview"
-            style={{ width: previewWidthWithBleed, height: previewHeightWithBleed }}
-          >
-            <div className="bleed-zone" />
+        /*
+         * The page drawn the way a page is drawn on a plan: the sheet itself
+         * white with a cut line around it, the bleed dashed outside that, a
+         * guide inside for what is not printed to the edge, and every
+         * measurement written in the margin it belongs to rather than
+         * collected into a caption underneath.
+         */
+        <div className="page-figure">
+          <span className="page-measure">{displayW} {unit}</span>
+          {/*
+            * The height stands beside the drawing and drops under it when
+            * there is no room, which is a flex row wrapping rather than a
+            * width to pick: an absolutely positioned label would have hung
+            * off the side of a phone and scrolled the page sideways.
+            */}
+          <div className="page-figure-row">
             <div
-              className="safe-zone"
-              style={{
-                top: bleedScale,
-                left: bleedScale,
-                width: previewW,
-                height: previewH,
-              }}
-            />
+              className="page-preview"
+              style={{ width: previewWidthWithBleed, height: previewHeightWithBleed }}
+            >
+              <div className="bleed-zone" />
+              <div
+                className="page-sheet"
+                style={{ top: bleedScale, left: bleedScale, width: previewW, height: previewH }}
+              >
+                <div className="page-margin" style={{ inset: marginInset }} />
+              </div>
+            </div>
+            <span className="page-measure">{displayH} {unit}</span>
           </div>
-          <div className="page-preview-label">
-            {displayW} × {displayH} {unit}
-            {bleed_mm > 0 && ` + ${displayBleed} ${unit} sangrado`}
-          </div>
+          <span className="page-measure page-measure-foot">
+            <span className="page-measure-bleed">
+              {bleed_mm > 0 ? `corte + ${displayBleed} ${unit}` : 'sin sangrado'}
+            </span>
+            <span>{FORMAT_NAMES[format]} · {proportionId ?? 'manual'}</span>
+          </span>
         </div>
       ) : (
         <p className="calculation-note">

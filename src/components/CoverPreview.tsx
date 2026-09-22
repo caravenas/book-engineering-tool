@@ -161,7 +161,7 @@ function CoverSvg() {
         {softSvg.sections.map(section => (
           <g key={section.key}>
             <rect
-              className="cover-section-rect"
+              className={`cover-section-rect${section.key === 'spine' ? ' cover-section-spine' : ''}`}
               x={section.x}
               y={SVG_PADDING}
               width={section.width}
@@ -213,7 +213,7 @@ function CoverSvg() {
         ].map(board => (
           <g key={board.key}>
             <rect
-              className="cover-section-rect"
+              className={`cover-section-rect${board.key === 'spineBoard' ? ' cover-section-spine' : ''}`}
               x={board.box.x}
               y={board.box.y}
               width={board.box.width}
@@ -252,12 +252,24 @@ function CoverSvg() {
  * preview's behalf, which only worked while the two lived side by side.
  */
 export function CoverPreview() {
-  const { coverPlan } = useBookStore();
+  const {
+    coverPlan, catalog, coverId, customCovers, coverPatches, hiddenCoverIds, bindingSpine,
+  } = useBookStore();
   const plan = getPlannedCover(coverPlan);
+  const cover = catalog
+    ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds).find(item => item.id === coverId)
+    : undefined;
 
   return (
     <div className="cover-svg-container">
       <CoverSvg />
+      {plan && cover && (
+        <p className="drawing-caption drawing-caption-foot">
+          {cover.name} · lomo {formatMm(bindingSpine?.total_mm ?? 0)} mm
+          {cover.flapWidth_mm > 0 && ` · solapas ${formatMm(cover.flapWidth_mm)} mm`}
+          {cover.squares_mm > 0 && ` · ceja ${formatMm(cover.squares_mm)} mm`}
+        </p>
+      )}
       {!plan && (
         <p className="calculation-note" role="status">
           {coverPlan && !coverPlan.ok

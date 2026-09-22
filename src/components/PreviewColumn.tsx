@@ -29,12 +29,15 @@ export function PreviewColumn() {
 
   return (
     <div className="preview-stack">
-      <div className="segment-group preview-switch" role="group" aria-label="Vista">
+      {/* Four separate marks rather than one segmented capsule, as the design
+          canvas has them: a capsule reads as a single control with parts, and
+          these are four views of one book. */}
+      <div className="preview-switch" role="group" aria-label="Vista">
         {VIEWS.map(({ id, label }) => (
           <button
             key={id}
             type="button"
-            className={`segment-btn ${view === id ? 'active' : ''}`}
+            className={`view-tab ${view === id ? 'active' : ''}`}
             aria-pressed={view === id}
             onClick={() => setView(id)}
           >
@@ -43,10 +46,14 @@ export function PreviewColumn() {
         ))}
       </div>
 
-      {view === 'page' && <PagePreview />}
-      {view === 'spine' && <SpineView />}
-      {view === 'sheet' && <SheetPreview />}
-      {view === 'cover' && <CoverPreview />}
+      {/* The drawing takes whatever height the column has left and sits in the
+          middle of it, so switching views does not move it up and down. */}
+      <div className="preview-view">
+        {view === 'page' && <PagePreview />}
+        {view === 'spine' && <SpineView />}
+        {view === 'sheet' && <SheetPreview />}
+        {view === 'cover' && <CoverPreview />}
+      </div>
     </div>
   );
 }

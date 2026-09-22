@@ -34,8 +34,9 @@ test('dragging a measurement by its unit changes it, and redraws the page', asyn
 
   await expect(page.locator('#input-width')).toHaveValue('150');
   // The reason to drag rather than type is that the drawing follows, so what
-  // is asserted is the drawing's own caption, not only the field.
-  await expect(page.locator('.column-preview')).toContainText('150 × 210 mm');
+  // is asserted is the measurement written beside the drawing, not the field.
+  await expect(page.locator('.page-figure')).toContainText('150 mm');
+  await expect(page.locator('.page-figure')).toContainText('210 mm');
 });
 
 test('a drag that leaves the handle keeps changing the measurement', async ({ page }) => {

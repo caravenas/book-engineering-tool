@@ -1,7 +1,7 @@
 import { CanvasDesigner } from '../components/CanvasDesigner';
 import { PagePreview } from '../components/PagePreview';
 import { SpineCalculator } from '../components/SpineCalculator';
-import { SpinePreview, SpineThicknessPreview } from '../components/SpinePreview';
+import { SpineView } from '../components/SpinePreview';
 import { SpineResults } from '../components/SpineResults';
 import { BindingPanel } from '../components/BindingPanel';
 import { BindingSpineResults } from '../components/BindingSpineResults';
@@ -54,8 +54,7 @@ export function SpineCalculatorScreen() {
     <CatalogPanelProvider>
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
-      <SpinePreview />
-      <SpineThicknessPreview />
+      <SpineView />
       <SpineResults />
       <HowItIsCalculated />
     </CatalogPanelProvider>

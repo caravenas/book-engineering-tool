@@ -1,83 +1,37 @@
-import { useBookStore, getSafeSpineResult } from '../store/useBookStore';
+import {
+  useBookStore, getSafeSpineResult, getAllCovers, getAllSubstrates, getAllGrammageOptions,
+} from '../store/useBookStore';
 import { formatRoundedValue } from '../engine/units';
-import type { SpineResult } from '../types';
-
-const COVER_HEIGHT = 100;
 
 /**
- * The spine calculator's two drawing pieces (the two-cover profile and the
- * thickness swatch) both need the same safe result and the same pixel width
- * for the spine bar, clamped so it stays visible without dwarfing the
- * covers. Read once here instead of copied in each piece.
+ * How much the drawing exaggerates the spine. A 32-page book is two
+ * millimetres thick: at true scale it is a line, and a line says nothing
+ * about a thickness. The factor is drawn in the caption rather than left for
+ * the reader to discover from a measurement that does not match the drawing.
  */
-function useSpineGeometry(): { safeResult: SpineResult | null; spineBarWidth: number | null } {
-  const { totalPagesInput, spineResult } = useBookStore();
-  const safeResult = getSafeSpineResult(totalPagesInput, spineResult);
-  const spineBarWidth = safeResult
-    ? Math.max(2, Math.min(60, safeResult.thickness_mm * 3))
-    : null;
-  return { safeResult, spineBarWidth };
-}
+const SPINE_SCALE = 8;
+
+/** How tall the block is drawn, and the least a board may be drawn at. */
+const BLOCK_HEIGHT = 260;
+const MIN_BOARD_PX = 2;
 
 /**
- * The spine calculator's two-cover profile, read straight from the store
- * instead of taking props: R-3 moves this into its own column, where the
- * panel that draws it today won't be able to pass it anything.
- */
-export function SpinePreview() {
-  const { safeResult, spineBarWidth } = useSpineGeometry();
-  if (!safeResult || spineBarWidth === null) return null;
-
-  return (
-    <div style={{ marginTop: 'var(--space-8)', textAlign: 'center' }}>
-      <div style={{ fontSize: '10px', fontWeight: 600, marginBottom: '4px' }}>LOMO</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{ fontSize: '14px' }}>→|</span>
-        <div style={{ width: '4px', height: '14px', background: 'transparent' }} />
-        <span style={{ fontSize: '14px' }}>|←</span>
-      </div>
-      <div className="spine-visual" style={{ minHeight: 'auto', padding: 0 }}>
-        <div className="spine-cover back" style={{ height: COVER_HEIGHT, width: '40px', borderRight: 'none' }} />
-        <div className="spine-bar" style={{ width: spineBarWidth, height: COVER_HEIGHT, background: 'transparent', borderTop: '1px solid var(--color-text-primary)', borderBottom: '1px solid var(--color-text-primary)' }}>
-          <div style={{ width: '1px', height: '100%', background: 'var(--color-text-primary)', margin: '0 auto' }} />
-        </div>
-        <div className="spine-cover front" style={{ height: COVER_HEIGHT, width: '40px', borderLeft: 'none' }} />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The spine calculator's thickness swatch, read straight from the store
- * instead of taking props, for the same reason as `SpinePreview` above.
- * It stays a separate piece from `SpinePreview` because the panel lays the
- * two profiles out in different columns, and merging them into one mount
- * point would stack their combined height into a single column instead of
- * two, growing the panel well past its pinned height.
- */
-export function SpineThicknessPreview() {
-  const { safeResult, spineBarWidth } = useSpineGeometry();
-  if (!safeResult || spineBarWidth === null) return null;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-      <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--color-text-primary)', marginBottom: '4px' }}>
-        {formatRoundedValue(safeResult.thickness_mm, 2)} mm
-      </div>
-      <div style={{ width: '60px', height: '60px', border: '1px solid var(--color-text-primary)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ width: spineBarWidth, height: '100%', background: 'var(--color-text-primary)' }} />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The spine as its own view, with the empty state that belongs to it. Both
- * drawings return null when there is no usable figure, which left the column
- * blank with nothing to explain it: every other view says why it is empty.
+ * The spine seen from above, which is the one view of a book where its
+ * thickness is the subject: the two covers on edge, and between them the
+ * paper block, hatched because it is a stack of sheets rather than a solid.
+ *
+ * Until R-20 this was two drawings — a profile with two covers and a 60px
+ * swatch of the same measurement — which said one thing twice. The design
+ * canvas draws it once, at a declared scale, with the figure under it.
  */
 export function SpineView() {
-  const { safeResult } = useSpineGeometry();
+  const {
+    catalog, totalPagesInput, totalPages, spineResult, bindingSpine,
+    coverId, customCovers, coverPatches, hiddenCoverIds,
+    substrateId, selectedGrammage, customSubstrates, substratePatches, hiddenSubstrateIds, customGrammages,
+  } = useBookStore();
+
+  const safeResult = getSafeSpineResult(totalPagesInput, spineResult);
 
   if (!safeResult) {
     return (
@@ -87,10 +41,43 @@ export function SpineView() {
     );
   }
 
+  const cover = catalog
+    ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds).find(item => item.id === coverId)
+    : undefined;
+  const board_mm = cover?.boardThickness_mm ?? 0;
+  // The declared caliper of the paper in use, the figure the whole thickness
+  // is built from, read the same way the paper step reads it.
+  const substrates = catalog
+    ? getAllSubstrates(catalog, customSubstrates, substratePatches, hiddenSubstrateIds)
+    : customSubstrates;
+  const caliper = getAllGrammageOptions(substrates, substrateId, customGrammages)
+    .find(option => option.grammage === selectedGrammage)?.caliper ?? 0;
+  const sheets = Math.ceil(totalPages / 2);
+
+  // The paper block, and whatever the binding adds to it, drawn apart: the
+  // allowance is glue or thread, not paper, and hatching it would say it is.
+  const blockPx = Math.max(2, safeResult.thickness_mm * SPINE_SCALE);
+  const allowancePx = bindingSpine ? Math.max(0, (bindingSpine.total_mm - bindingSpine.interior_mm) * SPINE_SCALE) : 0;
+  const boardPx = board_mm > 0 ? Math.max(MIN_BOARD_PX, board_mm * SPINE_SCALE) : MIN_BOARD_PX;
+  const total_mm = (bindingSpine?.total_mm ?? safeResult.thickness_mm) + 2 * board_mm;
+
   return (
-    <>
-      <SpinePreview />
-      <SpineThicknessPreview />
-    </>
+    <div className="spine-view">
+      <div className="spine-block" style={{ height: `${BLOCK_HEIGHT}px` }}>
+        <span className="spine-board" style={{ width: `${boardPx}px` }} />
+        <span className="spine-paper" style={{ width: `${blockPx}px` }} />
+        {allowancePx > 0 && <span className="spine-allowance" style={{ width: `${allowancePx}px` }} />}
+        <span className="spine-board" style={{ width: `${boardPx}px` }} />
+      </div>
+
+      <div className="spine-figure-block">
+        <div className="spine-value">
+          {formatRoundedValue(total_mm, 2)} <span className="spine-unit">mm</span>
+        </div>
+        <div className="spine-caption">
+          canto visto desde arriba · escala {SPINE_SCALE}:1 · {sheets} hojas × {caliper} µm
+        </div>
+      </div>
+    </div>
   );
 }

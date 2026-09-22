@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useBookStore, getAllSheetSizes } from '../store/useBookStore';
+import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
 import { layoutSide } from '../engine/signatures';
-import { isPositiveFinite, isNonNegativeFinite } from '../engine/units';
+import { isPositiveFinite, isNonNegativeFinite, roundTo } from '../engine/units';
 import type { SheetSize, SignatureOption } from '../types';
 
 const SVG_PADDING = 30;
@@ -30,6 +30,7 @@ interface SignatureSvgGeometry {
   viewBoxHeight: number;
   sheetLabelX: number;
   sheetLabelY: number;
+  gripperHeight: number;
   slots: SignatureSlotGeometry[];
 }
 
@@ -58,6 +59,12 @@ function getSignatureSvgGeometry(
   const viewBoxHeight = scaledSheetHeight + SVG_PADDING * 2 + 20;
   const sheetLabelX = SVG_PADDING + scaledSheetWidth / 2;
   const sheetLabelY = SVG_PADDING + scaledSheetHeight + 16;
+  /*
+   * The strip the press holds the sheet by, which nothing can be printed on:
+   * it is why the pages sit lower on the sheet than the margins alone would
+   * put them, and without it the drawing looks like a badly centred grid.
+   */
+  const gripperHeight = isNonNegativeFinite(option.gripperMargin_mm) ? option.gripperMargin_mm * scale : 0;
 
   if (!isPositiveFinite(scale)
     || !isPositiveFinite(scaledSheetWidth)
@@ -110,6 +117,7 @@ function getSignatureSvgGeometry(
     viewBoxHeight,
     sheetLabelX,
     sheetLabelY,
+    gripperHeight,
     slots,
   };
 }
@@ -129,11 +137,18 @@ export function SheetPreview() {
     customSheetSizes,
     sheetSizePatches,
     hiddenSheetSizeIds,
+    pressId,
+    customPresses,
+    pressPatches,
+    hiddenPressIds,
     signaturePlan,
   } = useBookStore();
   const [side, setSide] = useState<Side>('front');
 
   const allSheets = catalog ? getAllSheetSizes(catalog, customSheetSizes, sheetSizePatches, hiddenSheetSizeIds) : customSheetSizes;
+  const press = catalog
+    ? getAllPresses(catalog, customPresses, pressPatches, hiddenPressIds).find(item => item.id === pressId)
+    : undefined;
   const currentSheet = allSheets.find(sheet => sheet.id === sheetSizeId);
   const selected = signaturePlan?.selected ?? null;
   const svgGeometry = getSignatureSvgGeometry(currentSheet, selected, side);
@@ -154,6 +169,11 @@ export function SheetPreview() {
       </div>
 
       <div className="imposition-svg-container">
+        {svgGeometry && currentSheet && (
+          <p className="drawing-caption">
+            {currentSheet.name}{press && ` · ${press.name}`}
+          </p>
+        )}
         {svgGeometry ? (
         <svg
           className="imposition-svg"
@@ -168,6 +188,33 @@ export function SheetPreview() {
             width={svgGeometry.scaledSheetWidth}
             height={svgGeometry.scaledSheetHeight}
           />
+
+          {svgGeometry.gripperHeight > 0 && (
+            <>
+              <rect
+                className="sheet-gripper"
+                x={SVG_PADDING}
+                y={SVG_PADDING}
+                width={svgGeometry.scaledSheetWidth}
+                height={svgGeometry.gripperHeight}
+              />
+              <line
+                className="sheet-gripper-edge"
+                x1={SVG_PADDING}
+                y1={SVG_PADDING + svgGeometry.gripperHeight}
+                x2={SVG_PADDING + svgGeometry.scaledSheetWidth}
+                y2={SVG_PADDING + svgGeometry.gripperHeight}
+              />
+              <text
+                className="dimension-text sheet-gripper-label"
+                x={SVG_PADDING + svgGeometry.scaledSheetWidth - 4}
+                y={SVG_PADDING + svgGeometry.gripperHeight + 11}
+                textAnchor="end"
+              >
+                pinza {selected?.gripperMargin_mm} mm
+              </text>
+            </>
+          )}
 
           {svgGeometry.slots.map((slot, index) => (
             <g key={index} transform={slot.rotated ? `rotate(180 ${slot.labelX} ${slot.labelY})` : undefined}>
@@ -188,20 +235,17 @@ export function SheetPreview() {
             </g>
           ))}
 
-          <text
-            className="dimension-text"
-            x={svgGeometry.sheetLabelX}
-            y={svgGeometry.sheetLabelY}
-            textAnchor="middle"
-          >
-            {svgGeometry.sheetWidth} × {svgGeometry.sheetHeight} mm
-          </text>
         </svg>
         ) : (
           <p className="calculation-note" role="status">
             {selected
               ? 'Corrige los valores indicados para recuperar la vista previa.'
               : 'Ningún esquema de plegado disponible cabe en el pliego, la prensa y las páginas actuales. Elige otro pliego, otra prensa o revisa la configuración.'}
+          </p>
+        )}
+        {svgGeometry && selected && (
+          <p className="drawing-caption drawing-caption-foot">
+            {selected.cols * selected.rows} pág. por cara · {roundTo(selected.wastePercentage, 1)} % sin usar
           </p>
         )}
       </div>

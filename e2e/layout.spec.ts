@@ -233,11 +233,13 @@ test('on a wide screen the side columns reach both edges', async ({ page }) => {
 });
 
 /**
- * The view switch is a capsule, and a capsule that wraps becomes two half
- * pills. Between 1025 and 1059px the middle column is only 257px wide and it
- * folded, which an independent review of the width change found. Measured
- * across that window rather than at one width, because the width it breaks at
- * depends on the length of four labels.
+ * The four views have to stay on one row. They were a capsule until R-19, and
+ * a capsule that wraps becomes two half pills: between 1025 and 1059px the
+ * middle column is only 257px wide and it folded, which an independent review
+ * of the width change found. They are four separate marks now, which cannot
+ * break in half, but they can still wrap or clip. Measured across that window
+ * rather than at one width, because the width it breaks at depends on the
+ * length of four labels.
  */
 for (const width of [1025, 1040, 1060, 1200, 1440, 2560]) {
   test(`the view switch stays on one row at ${width}px`, async ({ page }) => {
@@ -245,7 +247,7 @@ for (const width of [1025, 1040, 1060, 1200, 1440, 2560]) {
     await openTheApp(page);
 
     const measured = await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll<HTMLElement>('.preview-switch .segment-btn'));
+      const buttons = Array.from(document.querySelectorAll<HTMLElement>('.preview-switch .view-tab'));
       return {
         rows: new Set(buttons.map(button => Math.round(button.getBoundingClientRect().top))).size,
         clipped: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).map(button => button.textContent ?? ''),

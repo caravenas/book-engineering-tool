@@ -428,28 +428,61 @@ body::before {
 .preview-stack {
   max-width: 720px;
   margin: 0 auto;
+  /* Tall enough to put the drawing in the middle of the column rather than at
+     the top of it, which is where the canvas has it. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.preview-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 /*
- * Four views on one row, whatever the width. The capsule wrapped into two
- * half-pills between 1025 and 1059px, where the middle column is only 257px
- * wide, and moving the breakpoint instead would have tied the layout to the
- * length of four labels.
- *
- * `min-width: 0` is what fixes it: a flex item will not shrink below its own
- * content until it is told it may, and once it may, the four fit. `nowrap` is
- * the second guard, for a label long enough that shrinking is not enough:
- * then it clips rather than folding, and e2e/layout.spec.ts fails on the clip.
+ * Four views on one row, whatever the width, centred over the drawing they
+ * change. As one capsule they wrapped into two half-pills between 1025 and
+ * 1059px, where the middle column is only 257px wide; as four marks they can
+ * simply sit closer together, and `nowrap` keeps them on the one row that
+ * e2e/layout.spec.ts holds them to.
  */
 .preview-switch {
+  display: flex;
   flex-wrap: nowrap;
+  justify-content: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
 
-.preview-switch .segment-btn {
+.preview-switch .view-tab {
+  flex: 0 0 auto;
   min-width: 0;
-  padding-left: var(--space-1);
-  padding-right: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.preview-switch .view-tab:hover {
+  border-color: var(--color-text-primary);
+}
+
+.preview-switch .view-tab.active {
+  border-color: var(--color-text-primary);
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
 }
 
 /* ─── Spec steps ────────────────────────────────────────────────────── */
@@ -1270,39 +1303,98 @@ select.form-input {
 
 /* ─── Spine Visualizer ──────────────────────────────────────────────── */
 
-.spine-visual {
+/* A sentence about the drawing, above it or under it, the way the design
+   canvas captions each view. */
+.drawing-caption {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.drawing-caption-foot {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+}
+
+/* The strip the press holds the sheet by: hatched, because nothing can be
+   printed on it, and closed with the line the printable area starts at. */
+.imposition-svg .sheet-gripper {
+  fill: var(--color-bg-secondary);
+  stroke: none;
+}
+
+/* Where the printable area begins, which is the edge that matters. */
+.imposition-svg .sheet-gripper-edge {
+  stroke: var(--color-text-primary);
+  stroke-width: 1;
+  stroke-dasharray: 4, 4;
+}
+
+.imposition-svg .sheet-gripper-label {
+  font-size: 9px;
+  fill: var(--color-text-muted);
+}
+
+/* ─── The Spine Seen From Above (R-20) ──────────────────────────────── */
+
+.spine-view {
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 0;
-  padding: var(--space-6) 0;
-  min-height: 160px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
 }
 
-.spine-cover {
-  width: 60px;
-  background: transparent;
-  border: 1px solid var(--color-text-primary);
-  border-radius: 0;
-  min-height: 100px;
-  position: relative;
+/* The book on edge: covers, paper, and whatever the binding puts between. */
+.spine-block {
+  display: flex;
+  align-items: stretch;
 }
 
-.spine-cover.front {
-  border-right: none;
-}
-
-.spine-cover.back {
-  border-left: none;
-}
-
-.spine-bar {
+.spine-board {
+  display: block;
   background: var(--color-text-primary);
-  min-height: 100px;
-  border-radius: 0;
-  transition: width var(--transition-slow);
-  box-shadow: none;
-  position: relative;
+}
+
+/* Hatched, because it is a stack of sheets and not a solid. */
+.spine-paper {
+  display: block;
+  background: var(--color-bg-input);
+  background-image: repeating-linear-gradient(90deg, var(--color-border) 0 1px, transparent 1px 3px);
+  border-top: 1px solid var(--color-text-primary);
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+/* What the method adds to the spine — glue, thread — which is not paper. */
+.spine-allowance {
+  display: block;
+  background: rgba(18, 169, 216, 0.18);
+  border-top: 1px solid var(--color-text-primary);
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+.spine-figure-block {
+  text-align: center;
+}
+
+.spine-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-4xl);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.spine-unit {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.spine-caption {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--color-text-muted);
 }
 
 .spine-label {
@@ -1334,8 +1426,10 @@ select.form-input {
   background: transparent;
   border-radius: 0;
   padding: var(--space-4) 0;
-  border: 1px solid var(--color-border);
+  /* A column, so the sentences the canvas puts above and below the drawing
+     land above and below it rather than beside it. */
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 300px;
@@ -1354,11 +1448,13 @@ select.form-input {
   rx: 0;
 }
 
+/* A page on the sheet: tinted rather than filled, so the numbers on it are
+   read as numbers on paper and not as labels on a block of colour. The accent
+   is the colour this app gives to what the press does with the page. */
 .imposition-svg .page-rect {
-  fill: var(--color-accent);
-  stroke: #8A1C30;
-  stroke-width: 1.5;
-  stroke-dasharray: 4, 4;
+  fill: rgba(18, 169, 216, 0.12);
+  stroke: var(--color-accent);
+  stroke-width: 1;
   rx: 0;
 }
 
@@ -1378,9 +1474,9 @@ select.form-input {
 }
 
 .imposition-svg .page-number {
-  fill: #0F172A;
+  fill: var(--color-accent-ink);
   font-size: 14px;
-  font-family: var(--font-body);
+  font-family: var(--font-mono);
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
@@ -1401,8 +1497,10 @@ select.form-input {
   background: transparent;
   border-radius: 0;
   padding: var(--space-4) 0;
-  border: 1px solid var(--color-border);
+  /* A column, so the sentences the canvas puts above and below the drawing
+     land above and below it rather than beside it. */
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 220px;
@@ -1422,10 +1520,16 @@ select.form-input {
   stroke-dasharray: 4, 4;
 }
 
+/* The cover flat: paper, panel by panel, with the spine tinted because it is
+   the one panel whose width the book decides rather than the trim. */
 .cover-svg .cover-section-rect {
-  fill: var(--color-accent);
-  stroke: #8A1C30;
-  stroke-width: 1.5;
+  fill: var(--color-bg-input);
+  stroke: var(--color-text-primary);
+  stroke-width: 1;
+}
+
+.cover-svg .cover-section-spine {
+  fill: rgba(18, 169, 216, 0.12);
 }
 
 .cover-svg .dimension-text {
@@ -1445,33 +1549,66 @@ select.form-input {
 }
 
 .page-preview {
-  /* border: 1.5px dashed var(--color-border); */
-  background: var(--color-accent);
   position: relative;
-  transition: all var(--transition-slow);
 }
 
+/* Where the ink runs past the cut, dashed and in the colour every drawing in
+   this app uses for what the press does beyond the page. */
 .page-preview .bleed-zone {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px dashed #8A1C30;
+  inset: 0;
+  border: 1px dashed var(--color-accent);
   pointer-events: none;
 }
 
-.page-preview .safe-zone {
+/* The page itself: paper, with the cut line around it. */
+.page-preview .page-sheet {
   position: absolute;
-  background: transparent;
-  border: 1.5px dashed #0F172A;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-text-primary);
+  box-sizing: border-box;
 }
 
-.page-preview-label {
-  text-align: center;
-  margin-top: var(--space-3);
+.page-preview .page-margin {
+  position: absolute;
+  border: 1px dashed var(--color-border);
+}
+
+/* The drawing with its measurements around it, each in the margin it belongs
+   to: the width over it, the height beside it, and what the press does with
+   the page underneath. */
+.page-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.page-figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.page-measure {
+  font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.page-measure-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.page-measure-bleed {
+  color: var(--color-accent-ink);
 }
 
 /* ─── Animations ────────────────────────────────────────────────────── */
@@ -1578,10 +1715,6 @@ select.form-input {
 
   .panel {
     padding: var(--space-4);
-  }
-
-  .spine-cover {
-    width: 45px;
   }
 }
 

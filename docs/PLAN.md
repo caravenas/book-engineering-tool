@@ -916,7 +916,16 @@ Las pestañas pasan de un control segmentado a cuatro píldoras sueltas, como en
 
 Los cuatro dibujos ganan las acotaciones que el tablero les pone: la página, su ancho arriba y su alto a la derecha, el corte y la proporción debajo, y la caja de margen punteada dentro; el lomo, el canto visto desde arriba con las hojas rayadas entre los cartones, la cifra grande y la escala declarada; el pliego, la pinza rayada con su medida y el reparto de páginas por cara; la tapa, sus paneles rotulados —solapa, contratapa, portada— y el lomo marcado.
 
-Verificación: una prueba por dibujo de que la acotación dice lo que el store tiene, no un número escrito en el componente.
+La vista del lomo pasa de dos dibujos a uno.
+Eran un perfil con dos tapas y una muestra de 60px de la misma medida, que decían una cosa dos veces; el lienzo lo dibuja una sola, a una escala declarada y con la cifra debajo.
+
+Las páginas sobre el pliego y los paneles de la tapa dejan de ser bloques de color con un trazo granate —el único sitio de la app con ese color— y pasan al tinte y a la tinta del lienzo: la página es papel con su línea de corte, y el cian marca lo que hace la prensa con ella.
+
+Las acotaciones de la página van en el flujo, no en posición absoluta: el alto se pone al lado del dibujo y baja debajo cuando no cabe.
+Colgado del costado, a 390px se salía de la pantalla y la hacía desplazarse en horizontal, que es justo lo que `e2e/layout.spec.ts` vigila.
+
+Verificación: cuatro pruebas, una por dibujo, saboteadas una a una.
+La página dice lo que el store tiene y cambia al girar la orientación; el lomo se dibuja a la escala que declara y nombra el calibre declarado del papel; la pinza ocupa sobre el pliego la misma fracción que ocupa en la prensa; y el pie de la tapa se lee del catálogo y del lomo calculado.
 
 ### R-21 — La columna de resultados
 

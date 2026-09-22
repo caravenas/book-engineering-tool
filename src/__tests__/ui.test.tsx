@@ -165,7 +165,9 @@ describe('Honest and recoverable UI', () => {
     useBookStore.setState({ pageWidth_mm: 140, pageHeight_mm: 210, bleed_mm: 100 });
     const oversizedBleed = render(<CanvasDesignerScreen />);
     const preview = oversizedBleed.container.querySelector('.page-preview') as HTMLDivElement;
-    const safeZone = oversizedBleed.container.querySelector('.page-preview .safe-zone') as HTMLDivElement;
+    // The page inside the bleed box; named .page-sheet since R-20, when the
+    // drawing stopped being a filled block and became paper with a cut line.
+    const safeZone = oversizedBleed.container.querySelector('.page-preview .page-sheet') as HTMLDivElement;
 
     expect(parseFloat(preview.style.width)).toBeLessThanOrEqual(360);
     expect(parseFloat(preview.style.height)).toBeLessThanOrEqual(420);
@@ -2022,5 +2024,79 @@ describe('Presses, sheets and covers drawn to scale (R-17)', () => {
     // Board is not paper, and is drawn as the thicker thing it is.
     expect(document.querySelectorAll('#cover-dura_estandar .board').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('#cover-blanda_simple .board')).toHaveLength(0);
+  });
+});
+
+describe('The drawings and what they are captioned with (R-20)', () => {
+  it('writes the page measurements around the drawing, and follows the store', () => {
+    render(<CanvasDesignerScreen />);
+    const figure = () => document.querySelector('.page-figure') as HTMLElement;
+
+    expect(figure().textContent).toContain('140 mm');
+    expect(figure().textContent).toContain('210 mm');
+    expect(figure().textContent).toContain('corte + 3 mm');
+    expect(figure().textContent).toContain('Vertical · 2:3');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apaisado' }));
+
+    // The store keeps the width and recomputes the other side, so the drawing
+    // has to say a different height and a different orientation.
+    expect(figure().textContent).toContain('Apaisado · 2:3');
+    expect(figure().textContent).not.toContain('210 mm');
+  });
+
+  /**
+   * The spine is two millimetres of paper, so the drawing exaggerates it and
+   * says by how much. What it must not do is exaggerate the figure with it.
+   */
+  it('draws the spine at the scale it declares, and says what it is made of', () => {
+    render(<SpineCalculatorScreen />);
+    const state = useBookStore.getState();
+    const paper = document.querySelector('.spine-paper') as HTMLElement;
+
+    expect(parseFloat(paper.style.width)).toBeCloseTo(state.spineResult!.thickness_mm * 8, 3);
+    const caption = document.querySelector('.spine-caption')?.textContent ?? '';
+    expect(caption).toContain('escala 8:1');
+    expect(caption).toContain(`${Math.ceil(state.totalPages / 2)} hojas`);
+    // The declared caliper of the paper in use, not one derived from a factor.
+    expect(caption).toContain('120 µm');
+    expect(document.querySelector('.spine-value')?.textContent).toContain('1.92');
+  });
+
+  it('names the sheet and the press over the imposition, and the yield under it', () => {
+    render(<ImpositionVisualizerScreen />);
+    const selected = useBookStore.getState().signaturePlan!.selected!;
+    const captions = Array.from(document.querySelectorAll('.drawing-caption')).map(node => node.textContent ?? '');
+
+    expect(captions[0]).toContain('Pliego 70×100cm');
+    expect(captions[0]).toContain('Prensa formato 70×100');
+    expect(captions[1]).toContain(`${selected.cols * selected.rows} pág. por cara`);
+
+    /*
+     * The strip is the press's gripper drawn at the sheet's own scale, so its
+     * share of the sheet is the gripper's share of the sheet — which a strip
+     * drawn at some fixed height would not be.
+     */
+    const heightOf = (selector: string) =>
+      Number((document.querySelector(selector) as SVGRectElement).getAttribute('height'));
+    const state = useBookStore.getState();
+    const press = state.catalog!.presses.find(item => item.id === state.pressId)!;
+    const sheet = state.catalog!.sheetSizes.find(item => item.id === state.sheetSizeId)!;
+
+    expect(heightOf('.sheet-gripper') / heightOf('.sheet-bg'))
+      .toBeCloseTo(press.gripperMargin_mm / sheet.height_mm, 4);
+  });
+
+  it('captions the cover with what it is and the spine it is folded around', () => {
+    render(<CoverPanelScreen />);
+    const caption = () => document.querySelector('.drawing-caption-foot')?.textContent ?? '';
+
+    expect(caption()).toContain('Tapa blanda sin solapas');
+    expect(caption()).toContain('lomo 1.92 mm');
+
+    chooseCard('cover', 'blanda_solapas');
+
+    expect(caption()).toContain('Tapa blanda con solapas');
+    expect(caption()).toContain('solapas 80 mm');
   });
 });
