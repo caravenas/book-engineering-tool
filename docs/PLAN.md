@@ -877,6 +877,55 @@ Hoy pasa a «Manual»; el lienzo mantiene la razón y mueve el otro lado.
 Lo segundo es defendible —una proporción se elige a propósito y perderla por empujar el ancho sorprende— y exige partir `setPageDimensions` en un `setPageWidth` y un `setPageHeight`, porque con una proporción activa el store deriva siempre desde el ancho y editar el alto necesita la inversa.
 Mientras siga como está, la nota «fijado por 2:3» avisa de lo que va a pasar y desaparece en cuanto pasa.
 
+## La pantalla del lienzo — R-19 a R-21
+
+Decisión de Chris el 2026-09-22, después de R-18: se toma `PliegoStack.html` —el mismo documento del lienzo, empaquetado para correr solo: mismos 1300 nodos, solo cambian los nombres de atributos que pone el empaquetador— y se implementa la interfaz lo más fiel posible a su tablero 1a.
+R-13 a R-18 hicieron los controles y el resumen de la cabecera; lo que queda es el marco que los rodea, la columna del dibujo y la de resultados.
+
+### Tres cosas del tablero que no se copian, y por qué
+
+**«Exportar ficha».**
+Es UX-8, que sigue en pausa.
+Un botón fiel al dibujo y sin función detrás es peor que su ausencia: promete algo que no ocurre.
+
+**Los siete resultados.**
+El lienzo muestra siete y la app calcula diecinueve —corrimiento, páginas en blanco, las medidas de la tapa, el desglose del lomo—.
+Recortar la lista para parecerse al dibujo sería borrar salidas del motor, no implementar una interfaz.
+Se adopta la forma de la fila, no el recorte.
+
+**El catálogo.**
+El lienzo resuelve el `···` como «Opciones avanzadas» y no dibuja lo que hay detrás.
+Detrás hay altas, parches y ocultamientos de seis catálogos, que se quedan.
+
+### R-19 — El marco
+
+Las columnas pasan a 372 / resto / 336, que son las del tablero, y la cabecera a su banda de 64px con el nombre y `book engineering tool · v2` al lado.
+
+La ficha deja de ser un acordeón exclusivo.
+En el tablero las cinco secciones se abren y se cierran por separado, y arrancan las cinco abiertas: se quita el atributo `name` de los `<details>`, que es lo que hoy las hace excluyentes.
+
+El `···` sube del campo a la cabecera de la sección y deja de ser un botón con borde.
+El propio tablero lo dice en su hoja de componentes: *«vive en el margen derecho del título de sección, como una llamada de nota, no como botón»*.
+Son cinco en vez de seis, uno por paso, y cada uno abre el catálogo por el que ese paso usa más; los demás quedan a un clic, en la navegación del propio catálogo.
+
+Verificación: el guardián de inventario, que cuenta los controles alcanzables uno a uno, más una prueba de que dos secciones pueden estar abiertas a la vez —que es justo lo que el acordeón excluyente impedía— y otra de que cada paso tiene su llamada al catálogo.
+
+### R-20 — La columna del dibujo
+
+Las pestañas pasan de un control segmentado a cuatro píldoras sueltas, como en el tablero.
+
+Los cuatro dibujos ganan las acotaciones que el tablero les pone: la página, su ancho arriba y su alto a la derecha, el corte y la proporción debajo, y la caja de margen punteada dentro; el lomo, el canto visto desde arriba con las hojas rayadas entre los cartones, la cifra grande y la escala declarada; el pliego, la pinza rayada con su medida y el reparto de páginas por cara; la tapa, sus paneles rotulados —solapa, contratapa, portada— y el lomo marcado.
+
+Verificación: una prueba por dibujo de que la acotación dice lo que el store tiene, no un número escrito en el componente.
+
+### R-21 — La columna de resultados
+
+La fila pasa a la forma del tablero: la etiqueta en versalitas a la izquierda, la cifra en mono a la derecha con su unidad más pequeña al lado, y una línea punteada entre filas.
+
+«Cómo se calcula» deja de ser un desplegable cerrado y se queda abierto al pie de la columna, con las fórmulas en cursiva y, debajo, `valores preliminares · confirmar con la imprenta`.
+
+Verificación: que las fórmulas siguen leyéndose sin abrir nada, y que la nota de valores preliminares aparece una sola vez en la página.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

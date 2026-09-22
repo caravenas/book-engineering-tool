@@ -1,6 +1,5 @@
 import { useBookStore, getAllSheetSizes, getAllPresses } from '../store/useBookStore';
 import { sheetFitsPress } from '../engine/signatures';
-import { useCatalogPanel } from './CatalogPanel';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { OptionField, OptionCard } from './OptionGroup';
 import type { Press, SheetSize } from '../types';
@@ -67,7 +66,6 @@ function FoldFigure({ cols, rows }: { cols: number; rows: number }) {
 }
 
 export function ImpositionVisualizer() {
-  const { open: openCatalog } = useCatalogPanel();
   const {
     catalog,
     sheetSizeId,
@@ -119,7 +117,6 @@ export function ImpositionVisualizer() {
         columns={1}
         fromCatalog
         marginalia={ORIGIN_LABEL[pressOrigin]}
-        options={{ label: 'Opciones de prensa', onOpen: () => openCatalog('presses') }}
         note={pressOrigin === 'own' && !userLayerStorageAvailable && (
           <p className="config-source-note">prensa personalizada, guardada solo para esta sesión</p>
         )}
@@ -180,7 +177,6 @@ export function ImpositionVisualizer() {
         columns={3}
         fromCatalog
         marginalia={ORIGIN_LABEL[sheetOrigin]}
-        options={{ label: 'Opciones de pliego', onOpen: () => openCatalog('sheetSizes') }}
         error={signatureError}
         note={isSelectedSheetCustom && !userLayerStorageAvailable && (
           <p className="config-source-note">pliego personalizado, guardado solo para esta sesión</p>

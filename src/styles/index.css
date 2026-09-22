@@ -173,7 +173,7 @@ body::before {
   /* The name and its badge read as one thing, so only the row between them
      and the way into the catalog wraps, and only when 390px forces it. */
   flex-wrap: wrap;
-  row-gap: var(--space-2);
+  gap: var(--space-2) var(--space-3);
   /* A tool that claims to fit one screen cannot spend a fifth of it on its
      own name. At 7rem of logo and 6rem of title the header took 161px of the
      900 a laptop has, and the spec sheet no longer fit under it. */
@@ -182,12 +182,23 @@ body::before {
 
 .app-logo {
   font-family: var(--font-heading);
-  font-size: var(--text-2xl);
-  line-height: 0.9;
-  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: 1;
+  font-weight: 800;
   color: var(--color-text-primary);
-  letter-spacing: -0.04em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin: 0;
+}
+
+/* What the tool is, in the same breath as what it is called: closer to the
+   name than the name is to anything else in the row. */
+.app-tagline {
+  margin-left: calc(var(--space-3) * -1 + var(--space-2));
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 
@@ -202,7 +213,7 @@ body::before {
    wider screen adds goes to the middle. */
 .app-grid {
   display: grid;
-  grid-template-columns: 400px minmax(0, 1fr) 320px;
+  grid-template-columns: 372px minmax(0, 1fr) 336px;
   gap: 0;
   align-items: stretch;
   width: 100%;
@@ -220,6 +231,15 @@ body::before {
 
 .column-spec {
   border-right: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  /* The canvas's sections run edge to edge, with their own padding. */
+  padding: var(--space-2) 0 var(--space-10);
+}
+
+/* The drawing sits on the page's own colour, so the two side columns frame it
+   rather than continuing it. */
+.column-preview {
+  background: var(--color-bg-primary);
 }
 
 .column-results {
@@ -436,6 +456,7 @@ body::before {
 
 .spec-step {
   border-bottom: 1px solid var(--color-border);
+  padding: var(--space-5) var(--space-6) var(--space-5) var(--space-8);
 }
 
 .spec-step-summary {
@@ -445,9 +466,6 @@ body::before {
      defeats the point: the value drops to its own line instead. */
   flex-wrap: wrap;
   gap: var(--space-3);
-  /* 44px of target even though the row's text is shorter than that. */
-  min-height: 44px;
-  padding: var(--space-3) 0;
   cursor: pointer;
   list-style: none;
 }
@@ -465,32 +483,34 @@ body::before {
 
 .spec-step-title {
   font-family: var(--font-heading);
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-size: var(--text-base);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-text-primary);
 }
 
+/* What the step says while it is closed: on its own line under the title,
+   indented past the number so it reads as the title's own answer. A long
+   title used to squeeze it into an ellipsis on the same line. */
 .spec-step-value {
-  /* Wide enough that anything shorter wraps rather than truncates. */
-  flex: 1 0 12ch;
+  flex: 1 0 100%;
   min-width: 0;
+  margin-top: var(--space-2);
+  padding-left: var(--space-7);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-  text-align: right;
-  /* The sheet has to stay one line per step however long a name is. */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* An open step drops its own value: the fields below say the same thing. */
 .spec-step[open] .spec-step-value {
-  visibility: hidden;
+  display: none;
 }
 
+/* Indented past the number, so the controls line up under the title. */
 .spec-step-body {
-  padding: var(--space-2) 0 var(--space-6);
+  padding: var(--space-5) 0 0 var(--space-7);
 }
 
 .column-spec .panel+.panel {
@@ -582,12 +602,6 @@ select.form-input {
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
-}
-
-/* The label and whatever qualifies it read together at the start of the row;
-   the way into the catalog stays at its end however much precedes it. */
-.form-label-row .step-options {
-  margin-left: auto;
 }
 
 .form-label-row .form-label {
@@ -1950,15 +1964,28 @@ select.form-input {
 }
 
 /* The step keeps the choice and hands the catalog everything else. */
+/*
+ * "···" lives in the right margin of the step's title, as a note's call
+ * rather than as a button — which is what the design canvas says of it, and
+ * what it is: a mark saying there is more about this step somewhere else.
+ */
 .step-options {
-  min-width: 44px;
+  margin-left: auto;
+  /* A mark this small still has to be hit: the glyph stays 12px and the box
+     around it keeps the 40px this app gives a pointer target. */
+  display: inline-flex;
+  align-items: center;
   min-height: 40px;
   padding: 0 var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-bg-primary);
-  font-size: var(--text-sm);
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   line-height: 1;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   cursor: pointer;
+}
+
+.step-options:hover {
+  color: var(--color-text-primary);
 }

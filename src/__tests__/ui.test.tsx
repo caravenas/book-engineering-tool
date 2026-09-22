@@ -3,9 +3,30 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { SpecSteps } from '../components/SpecSteps';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
 
-/** Editing a catalog lives in the catalog panel; a step only opens it. */
-function openCatalogFor(what: 'prensa' | 'pliego' | 'encuadernación' | 'proporción') {
-  fireEvent.click(screen.getByRole('button', { name: `Opciones de ${what}` }));
+/**
+ * Editing a catalog lives in the catalog panel; a step only opens it.
+ *
+ * Since R-19 the way in belongs to the step rather than to the field, so a
+ * step opens the catalog it leans on most and the rest are reached from the
+ * catalog's own navigation. These helpers take the same two steps a reader
+ * would, and are named for the catalog wanted rather than for the step it is
+ * behind.
+ */
+const CATALOG_ENTRY: Record<string, { step: string; nav: RegExp | null }> = {
+  'prensa': { step: 'imposición', nav: null },
+  'pliego': { step: 'imposición', nav: /^Pliegos,/ },
+  'esquema': { step: 'imposición', nav: /^Esquemas de plegado,/ },
+  'encuadernación': { step: 'páginas y encuadernación', nav: null },
+  'proporción': { step: 'formato', nav: null },
+  'papel': { step: 'papel', nav: null },
+  'tapa': { step: 'tapa', nav: null },
+};
+
+function openCatalogFor(what: keyof typeof CATALOG_ENTRY | string) {
+  const entry = CATALOG_ENTRY[what];
+  if (!entry) throw new Error(`no hay paso que abra el catálogo de ${what}`);
+  fireEvent.click(screen.getByRole('button', { name: `Opciones de ${entry.step}` }));
+  if (entry.nav) fireEvent.click(screen.getByRole('button', { name: entry.nav }));
 }
 
 function openPressCatalog() {
@@ -15,7 +36,7 @@ function openPressCatalog() {
 /** Grammages live inside their paper in the catalog since R-4c, and since
  *  R-10 that catalog holds the paper itself, so the way in is named for it. */
 function openGrammageCatalog() {
-  fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
+  openCatalogFor('papel');
 }
 import {
   CanvasDesignerScreen,
@@ -194,13 +215,15 @@ describe('Honest and recoverable UI', () => {
 
     // The step used to swap its selector for an inline form; adding and
     // editing live in the catalog since R-4b, so the choice stays put and
-    // the field gains one control that says where the rest went.
+    // the step carries one call that says where the rest went.
     expect(chosenCardId('sheet')).toBe('pliego_70x100');
 
-    const options = screen.getByRole('button', { name: 'Opciones de pliego' });
+    const options = screen.getByRole('button', { name: 'Opciones de imposición' });
     expect(options.getAttribute('aria-haspopup')).toBe('dialog');
 
-    fireEvent.click(options);
+    // Since R-19 the call belongs to the step, so it opens the catalog this
+    // step leans on most and the sheets are one click further in.
+    openCatalogFor('pliego');
     // The step keeps its choice while the catalog is open over it.
     expect(chosenCardId('sheet')).toBe('pliego_70x100');
     expect(screen.getByRole('button', { name: '+ Nuevo pliego' })).toBeTruthy();
@@ -1328,7 +1351,7 @@ describe('Renaming a proportion of your own (R-8)', () => {
  */
 describe('Adding a paper from the catalog (R-10)', () => {
   function openPaperCatalog() {
-    fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
+    openCatalogFor('papel');
   }
 
   it('adds a paper with its first weight, and the step offers it', () => {
@@ -1410,7 +1433,7 @@ describe('Adding a paper from the catalog (R-10)', () => {
  */
 describe('Adding a cover from the catalog (R-11)', () => {
   function openCoverCatalog() {
-    fireEvent.click(screen.getByRole('button', { name: 'Opciones de tapa' }));
+    openCatalogFor('tapa');
   }
 
   it('offers the measurements the chosen kind uses, and hides the rest', () => {
@@ -1558,7 +1581,7 @@ describe('Choosing which entry the catalog edits (R-9)', () => {
 
   it('shows the weights of the paper being edited, not of the one in use', () => {
     render(<SubstrateSelectorScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'Opciones de papel' }));
+    openCatalogFor('papel');
 
     // Couché Mate, the default, sells five weights; Bond sells three.
     expect(screen.getByRole('heading', { name: /^Gramajes de Couché Mate/ })).toBeTruthy();

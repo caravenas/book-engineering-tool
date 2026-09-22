@@ -13,6 +13,7 @@ import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
 import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
+import { StepOptions } from '../components/StepOptions';
 import { HowItIsCalculated } from '../components/HowItIsCalculated';
 
 /**
@@ -25,6 +26,11 @@ import { HowItIsCalculated } from '../components/HowItIsCalculated';
  * catalog through it since R-4b. The dialog renders nothing while closed, so
  * carrying it costs a test nothing and puts no stray text in front of it.
  *
+ * Each one carries its step's way into the catalog, which since R-19 lives in
+ * the margin of the step's title rather than beside each field: mounting the
+ * panel without it would leave a screen the catalog cannot be reached from,
+ * and half these tests are about what the catalog does to the step.
+ *
  * They can drift from App without failing: drop a component from App and these
  * tests keep passing, because they mount it themselves. That is deliberate,
  * because proving App mounts everything is not their job. It belongs to
@@ -36,6 +42,7 @@ import { HowItIsCalculated } from '../components/HowItIsCalculated';
 export function CanvasDesignerScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="proportions" label="formato" />
       <CanvasDesigner />
       <PagePreview />
     </CatalogPanelProvider>
@@ -45,6 +52,7 @@ export function CanvasDesignerScreen() {
 export function SpineCalculatorScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <SpinePreview />
       <SpineThicknessPreview />
@@ -63,6 +71,7 @@ export function SpineCalculatorScreen() {
 export function PagesAndBindingScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <BindingPanel />
       <BindingSpineResults />
@@ -74,6 +83,7 @@ export function PagesAndBindingScreen() {
 export function BindingPanelScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <BindingPanel />
       <BindingSpineResults />
       <HowItIsCalculated />
@@ -84,6 +94,7 @@ export function BindingPanelScreen() {
 export function ImpositionVisualizerScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="presses" label="imposición" />
       <ImpositionVisualizer />
       <SheetPreview />
       <ImpositionResults />
@@ -94,6 +105,7 @@ export function ImpositionVisualizerScreen() {
 export function CoverPanelScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="covers" label="tapa" />
       <CoverPanel />
       <CoverPreview />
       <CoverResults />
@@ -104,6 +116,7 @@ export function CoverPanelScreen() {
 export function SubstrateSelectorScreen() {
   return (
     <CatalogPanelProvider>
+      <StepOptions catalog="substrates" label="papel" />
       <SubstrateSelector />
     </CatalogPanelProvider>
   );

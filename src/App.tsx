@@ -132,6 +132,8 @@ export default function App() {
         <header className="app-header">
           <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '2.5rem', width: 'auto' }} />
           <h1 className="app-logo">PliegoStack</h1>
+          {/* What the tool is, in the same breath as what it is called. */}
+          <span className="app-tagline">book engineering tool</span>
           {/*
             * Said once, where it applies to everything below, instead of
             * five times under five dropdowns. Which file says what, and in

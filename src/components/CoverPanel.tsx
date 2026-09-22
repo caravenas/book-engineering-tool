@@ -1,5 +1,4 @@
 import { useBookStore, getAllBindings, getAllCovers } from '../store/useBookStore';
-import { useCatalogPanel } from './CatalogPanel';
 import { OptionField, OptionCard } from './OptionGroup';
 import type { Binding, Cover } from '../types';
 
@@ -41,7 +40,6 @@ function CoverFigure({ cover, spine_mm }: { cover: Cover; spine_mm: number }) {
 }
 
 export function CoverPanel() {
-  const { open: openCatalog } = useCatalogPanel();
   const {
     catalog, coverId, bindingId, customBindings, bindingPatches, hiddenBindingIds,
     customCovers, coverPatches, hiddenCoverIds, setCover, coverPlan, coverError,
@@ -66,7 +64,6 @@ export function CoverPanel() {
         id="cover-group"
         columns={1}
         fromCatalog
-        options={{ label: 'Opciones de tapa', onOpen: () => openCatalog('covers') }}
       >
         {covers.map(cover => (
           <OptionCard

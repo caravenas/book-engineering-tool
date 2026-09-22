@@ -68,7 +68,8 @@ const ADD_PROPORTION_BUTTON = '+ Nueva proporción';
 
 /** Adding a proportion lives in the catalog since R-4b; the step opens it. */
 function addCustomProportion(label: string): void {
-  fireEvent.click(screen.getByRole('button', { name: 'Opciones de proporción' }));
+  // Since R-19 the way into a catalog is the step's, not the field's.
+  fireEvent.click(screen.getByRole('button', { name: 'Opciones de formato' }));
   fireEvent.click(screen.getByRole('button', { name: ADD_PROPORTION_BUTTON }));
   fireEvent.change(screen.getByLabelText('Etiqueta'), { target: { value: label } });
   fireEvent.change(screen.getByLabelText('Ancho de la razón'), { target: { value: '3' } });

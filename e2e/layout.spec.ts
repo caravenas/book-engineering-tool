@@ -122,11 +122,18 @@ test('no closed step truncates what it says, and the closed sheet fits', async (
   await page.goto('/');
   await expect(page.locator('.app-grid')).toBeVisible();
 
-  // The app opens on step 01; closing it leaves the sheet as it reads at rest.
-  const firstStep = page.locator('details.spec-step').first();
-  await expect(firstStep).toHaveAttribute('open', '');
-  await firstStep.locator('summary').click();
-  await expect(firstStep).not.toHaveAttribute('open', '');
+  /*
+   * The app opens with every step open, and since R-19 they close
+   * independently, so the closed sheet is all five closed rather than the one
+   * the app happened to open on.
+   */
+  const steps = page.locator('details.spec-step');
+  for (let index = 0; index < await steps.count(); index += 1) {
+    const step = steps.nth(index);
+    await expect(step).toHaveAttribute('open', '');
+    await step.locator('summary').click();
+    await expect(step).not.toHaveAttribute('open', '');
+  }
 
   const measured = await page.evaluate(() => ({
     clipped: Array.from(document.querySelectorAll<HTMLElement>('.spec-step-value'))
@@ -211,8 +218,9 @@ test('on a wide screen the side columns reach both edges', async ({ page }) => {
   expect(measured.results.right).toBe(measured.viewport);
   // The side columns keep the widths they have at 1440: every pixel the wider
   // screen adds belongs to the middle.
-  expect(measured.spec.width).toBe(400);
-  expect(measured.results.width).toBe(320);
+  // The canvas's own widths since R-19: 372 for the sheet, 336 for the figures.
+  expect(measured.spec.width).toBe(372);
+  expect(measured.results.width).toBe(336);
 
   /*
    * And the middle spends them on margin, not on stretching. Uncapped, the

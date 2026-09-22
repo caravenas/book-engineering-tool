@@ -25,7 +25,7 @@ import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEdit
  * badly by hand.
  */
 
-type CatalogId = 'proportions' | 'substrates' | 'bindings' | 'presses' | 'sheetSizes' | 'foldingSchemes' | 'covers';
+export type CatalogId = 'proportions' | 'substrates' | 'bindings' | 'presses' | 'sheetSizes' | 'foldingSchemes' | 'covers';
 
 interface CatalogPanelApi {
   /** Opens the panel showing one catalog. */

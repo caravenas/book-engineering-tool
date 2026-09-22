@@ -32,8 +32,6 @@ interface OptionFieldProps {
    * never comes.
    */
   marginalia?: string | null;
-  /** The way into the catalog these options come from, when there is one. */
-  options?: { label: string; onOpen: () => void };
   /** How many options share a row, when they are laid out as a grid. */
   columns?: number;
   /**
@@ -59,7 +57,6 @@ export function OptionField({
   label,
   id,
   marginalia,
-  options,
   columns = 3,
   layout = 'grid',
   fromCatalog = false,
@@ -74,17 +71,6 @@ export function OptionField({
       <div className="form-label-row">
         <span className="form-label" id={labelId}>{label}</span>
         {marginalia && <span className="field-marginalia">{marginalia}</span>}
-        {options && (
-          <button
-            type="button"
-            className="step-options"
-            aria-label={options.label}
-            aria-haspopup="dialog"
-            onClick={options.onOpen}
-          >
-            ···
-          </button>
-        )}
       </div>
       <div
         className={[

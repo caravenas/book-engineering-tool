@@ -214,7 +214,11 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   // catalog, and the press form that moved in from the imposition step.
   'Catálogo': 1,
   'Cerrar catálogo': 1,
-  'Opciones de prensa': 1,
+  // One per step since R-19, named for the step rather than for the catalog
+  // it opens: the rest are reached from the catalog's own navigation.
+  'Opciones de formato': 1,
+  'Opciones de imposición': 1,
+  'Opciones de páginas y encuadernación': 1,
   'Proporciones, 5 entradas': 1,
   'Papeles, 7 entradas': 1,
   'Encuadernaciones, 4 entradas': 1,
@@ -222,9 +226,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Pliegos, 6 entradas': 1,
   'Esquemas de plegado, 2 entradas, solo lectura': 1,
   'Tapas, 3 entradas': 1,
-  'Opciones de pliego': 1,
-  'Opciones de encuadernación': 1,
-  'Opciones de proporción': 1,
   'Opciones de papel': 1,
   'Opciones de tapa': 1,
   '+ Nuevo gramaje': 1,

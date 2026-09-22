@@ -1,4 +1,3 @@
-import { useCatalogPanel } from './CatalogPanel';
 import { useBookStore, getAllGrammageOptions, getAllSubstrates } from '../store/useBookStore';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { OptionField, OptionCard } from './OptionGroup';
@@ -22,7 +21,6 @@ function notchHeight(caliper: number, thinnest: number, thickest: number): numbe
 }
 
 export function SubstrateSelector() {
-  const { open: openCatalog } = useCatalogPanel();
   const {
     substrateId,
     selectedGrammage,
@@ -69,7 +67,6 @@ export function SubstrateSelector() {
         columns={2}
         fromCatalog
         marginalia={ORIGIN_LABEL[substrateOrigin]}
-        options={{ label: 'Opciones de papel', onOpen: () => openCatalog('substrates') }}
       >
         {substrates.map(substrate => (
           <OptionCard

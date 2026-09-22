@@ -1,4 +1,3 @@
-import { useCatalogPanel } from './CatalogPanel';
 import { useBookStore, getAllProportions } from '../store/useBookStore';
 import { getPageDisplayDimensions, isPositiveFinite } from '../engine/units';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
@@ -60,7 +59,6 @@ function ProportionFigure({ height, dashed }: { height: number; dashed?: boolean
 }
 
 export function CanvasDesigner() {
-  const { open: openCatalog } = useCatalogPanel();
   const {
     format, proportionId, pageWidth_mm, pageHeight_mm,
     bleed_mm, unitSystem, catalog,
@@ -132,7 +130,6 @@ export function CanvasDesigner() {
         columns={3}
         fromCatalog
         marginalia={proportionId === null ? null : ORIGIN_LABEL[proportionOrigin]}
-        options={{ label: 'Opciones de proporción', onOpen: () => openCatalog('proportions') }}
         note={isSelectedProportionCustom && !userLayerStorageAvailable && (
           <p className="config-source-note">proporción personalizada, guardada solo para esta sesión</p>
         )}

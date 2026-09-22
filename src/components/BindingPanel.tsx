@@ -1,6 +1,5 @@
 import { useBookStore, getAllBindings, getSelectedBindingInfo } from '../store/useBookStore';
 import { validatePageCount } from '../engine/binding';
-import { useCatalogPanel } from './CatalogPanel';
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { OptionField, OptionCard } from './OptionGroup';
 import type { Binding } from '../types';
@@ -45,7 +44,6 @@ function SpineFigure({ binding }: { binding: Binding }) {
 }
 
 export function BindingPanel() {
-  const { open: openCatalog } = useCatalogPanel();
   const {
     catalog,
     bindingId,
@@ -104,7 +102,6 @@ export function BindingPanel() {
         columns={2}
         fromCatalog
         marginalia={ORIGIN_LABEL[bindingOrigin]}
-        options={{ label: 'Opciones de encuadernación', onOpen: () => openCatalog('bindings') }}
         note={isSelectedBindingCustom && !userLayerStorageAvailable && (
           <p className="config-source-note">encuadernación personalizada, guardada solo para esta sesión</p>
         )}
