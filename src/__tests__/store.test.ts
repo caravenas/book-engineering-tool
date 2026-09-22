@@ -1072,6 +1072,28 @@ describe('Papers a print shop adds (R-10)', () => {
     expect(paper.options.some(option => option.grammage === useBookStore.getState().selectedGrammage)).toBe(true);
   });
 
+  /**
+   * Deleting an entry that is NOT the one in use must leave the selection
+   * alone. The repair logic asks "was this the selected one?", and getting
+   * that question backwards would move the book onto a different paper every
+   * time a print shop tidied up its catalog.
+   */
+  it('leaves the book alone when the paper deleted is not the one in use', () => {
+    expect(useBookStore.getState().addCustomSubstrate('El que se queda', 'Uno.', 120, 160)).toBe(true);
+    const keeper = useBookStore.getState().customSubstrates[0];
+    expect(useBookStore.getState().addCustomSubstrate('El que se va', 'Otro.', 200, 260)).toBe(true);
+    const doomed = useBookStore.getState().customSubstrates[1];
+    // The second alta selected itself; point the book back at the first.
+    useBookStore.getState().setSubstrate(keeper.id);
+    const grammageBefore = useBookStore.getState().selectedGrammage;
+
+    useBookStore.getState().removeCustomSubstrate(doomed.id);
+
+    expect(useBookStore.getState().substrateId).toBe(keeper.id);
+    expect(useBookStore.getState().selectedGrammage).toBe(grammageBefore);
+    expect(useBookStore.getState().customSubstrates.map(item => item.id)).toEqual([keeper.id]);
+  });
+
   it('hides a factory paper, moves off it, and brings it back', () => {
     useBookStore.getState().setSubstrate('bond');
     useBookStore.getState().hideSubstrate('bond');
@@ -1132,8 +1154,12 @@ describe('Papers a print shop adds (R-10)', () => {
       { kind: 'substratePatch', targetId: 'bond' },
       { kind: 'hiddenSubstrate', targetId: 'opalina' },
     ]);
-    // Kept, not dropped: the paper may come back in a later catalog.
-    expect(secondMount.getState().substratePatches).toHaveLength(1);
+    // Kept, not dropped, BOTH of them: the paper may come back in a later
+    // catalog, and a hide is as much work to lose as a patch.
+    expect(secondMount.getState().substratePatches).toEqual([
+      { id: 'bond', changes: { name: 'Bond de la casa' } },
+    ]);
+    expect(secondMount.getState().hiddenSubstrateIds).toEqual(['opalina']);
   });
 });
 
@@ -1217,6 +1243,29 @@ describe('Covers a print shop adds (R-11)', () => {
     expect(useBookStore.getState().customCovers[0].substrateId).toBe(paper.id);
   });
 
+  /**
+   * The soft-cover test proves the flaps reach the plan. This is the hard one,
+   * which is the riskier path: it reports boards, a wrap and three areas, and
+   * asserting only that it landed in the state array would pass while the
+   * engine failed to size a single board.
+   */
+  it('plans the boards and the wrap for a hard cover of your own', () => {
+    // A hard cover needs a binding whose signatures do not nest.
+    useBookStore.getState().setBinding('hotmelt');
+    expect(useBookStore.getState().addCustomCover({
+      ...softCover, name: 'Dura del taller', kind: 'dura', flapWidth_mm: 0,
+      squares_mm: 3, hingeGap_mm: 7, turnIn_mm: 15, boardThickness_mm: 2,
+    })).toBe(true);
+
+    const plan = useBookStore.getState().coverPlan;
+    expect(plan?.ok).toBe(true);
+    if (!plan?.ok || plan.cover.kind !== 'dura') throw new Error('se esperaba una tapa dura planificada');
+    // The squares widen the board past the page, and the wrap past the board.
+    expect(plan.cover.boardHeight_mm).toBeCloseTo(useBookStore.getState().pageHeight_mm + 2 * 3, 6);
+    expect(plan.cover.wrapWidth_mm).toBeGreaterThan(plan.cover.boardWidth_mm);
+    expect(plan.cover.boardArea_m2).toBeGreaterThan(0);
+  });
+
   it('turns a cover of your own from soft to hard, rewriting every measurement', () => {
     expect(useBookStore.getState().addCustomCover(softCover)).toBe(true);
     const { id } = useBookStore.getState().customCovers[0];
@@ -1287,5 +1336,110 @@ describe('Covers a print shop adds (R-11)', () => {
       { kind: 'coverPatch', targetId: 'blanda_simple' },
       { kind: 'hiddenCover', targetId: 'dura_estandar' },
     ]);
+    expect(secondMount.getState().coverPatches).toEqual([
+      { id: 'blanda_simple', changes: { flapWidth_mm: 80 } },
+    ]);
+    expect(secondMount.getState().hiddenCoverIds).toEqual(['dura_estandar']);
+  });
+});
+
+/**
+ * What an independent review of R-8 to R-11 found. Every one of these passed
+ * unnoticed because no test walked the path: a cross-catalog reference going
+ * stale, and a fallback resolved against the wrong list.
+ */
+describe('What the review of the catalog layer found', () => {
+  const softCover = {
+    name: 'Rústica del taller',
+    kind: 'blanda' as const,
+    substrateId: 'couche_matte',
+    grammage: 300,
+    flapWidth_mm: 120,
+    squares_mm: 0,
+    hingeGap_mm: 0,
+    turnIn_mm: 0,
+    boardThickness_mm: 0,
+  };
+
+  /**
+   * Deleting the paper left the cover made of it in place, still usable for
+   * the rest of the session, and then gone on the next reload — because that
+   * is where `mergeUserLayer` drops it. Work lost silently, one reload later.
+   */
+  it('takes the covers made of a paper with the paper', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Cartulina del taller', 'La de siempre.', 350, 420)).toBe(true);
+    const paper = useBookStore.getState().customSubstrates[0];
+    expect(useBookStore.getState().addCustomCover({ ...softCover, substrateId: paper.id, grammage: 350 })).toBe(true);
+    expect(useBookStore.getState().coverId).toBe(useBookStore.getState().customCovers[0].id);
+
+    useBookStore.getState().removeCustomSubstrate(paper.id);
+
+    expect(useBookStore.getState().customCovers).toEqual([]);
+    // And the selection follows, rather than naming a cover that is gone.
+    expect(useBookStore.getState().customCovers.some(cover => cover.id === useBookStore.getState().coverId)).toBe(false);
+    expect(catalog.covers.some(cover => cover.id === useBookStore.getState().coverId)).toBe(true);
+  });
+
+  it('leaves alone the covers made of a different paper', () => {
+    expect(useBookStore.getState().addCustomSubstrate('Cartulina del taller', 'La de siempre.', 350, 420)).toBe(true);
+    const paper = useBookStore.getState().customSubstrates[0];
+    expect(useBookStore.getState().addCustomCover(softCover)).toBe(true);
+
+    useBookStore.getState().removeCustomSubstrate(paper.id);
+
+    expect(useBookStore.getState().customCovers).toHaveLength(1);
+  });
+
+  /**
+   * Hiding every paper is allowed, and then there is nothing visible to fall
+   * back to. Resolving the weight against the visible papers alone returned
+   * the deleted paper's own weight, which the paper landed on need not sell.
+   */
+  it('lands on a weight the paper sells even when every paper is hidden', () => {
+    /*
+     * On its own store, not the shared one: hiding all seven papers is a
+     * sweeping change, and the shared instance outlives this file. Run on it,
+     * this test left every paper hidden and App.test.tsx failed with an empty
+     * paper dropdown, which is a leak between test files rather than a fault
+     * in either test.
+     */
+    const store = createBookStore(new FakeStorage());
+    store.getState().initialize(catalog);
+
+    for (const paper of catalog.substrates) store.getState().hideSubstrate(paper.id);
+    expect(store.getState().addCustomSubstrate('El único', 'Todo lo demás está oculto.', 137, 195)).toBe(true);
+    const paper = store.getState().customSubstrates[0];
+    expect(store.getState().selectedGrammage).toBe(137);
+
+    store.getState().removeCustomSubstrate(paper.id);
+
+    const landedOn = catalog.substrates.find(item => item.id === store.getState().substrateId);
+    expect(landedOn).toBeDefined();
+    // 137 g/m² was that paper's weight and nobody else's.
+    expect(landedOn!.options.some(option => option.grammage === store.getState().selectedGrammage)).toBe(true);
+  });
+
+  /**
+   * A cover needs its paper AND a weight of that paper. Checking only the
+   * paper left a cover claiming a weight nobody sells, which the store then
+   * refused to let anyone edit: stuck, permanently, with no way to say why.
+   */
+  it('drops on reload a cover whose weight its paper no longer sells', () => {
+    const storage = new FakeStorage();
+    const firstMount = createBookStore(storage);
+    firstMount.getState().initialize(catalog);
+
+    expect(firstMount.getState().addCustomGrammage('bond', 250, 320)).toBe(true);
+    expect(firstMount.getState().addCustomCover({ ...softCover, substrateId: 'bond', grammage: 250 })).toBe(true);
+    // Reloading with it still there keeps the cover.
+    const withIt = createBookStore(storage);
+    withIt.getState().initialize(catalog, readUserLayer(storage));
+    expect(withIt.getState().customCovers).toHaveLength(1);
+
+    // Now take the weight away and reload again.
+    firstMount.getState().removeCustomGrammage('bond', 250);
+    const withoutIt = createBookStore(storage);
+    withoutIt.getState().initialize(catalog, readUserLayer(storage));
+    expect(withoutIt.getState().customCovers).toEqual([]);
   });
 });

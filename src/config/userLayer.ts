@@ -217,11 +217,17 @@ export function isValidSubstrate(value: unknown): value is Substrate {
   if (!isNonEmptyString(id) || !isNonEmptyString(name) || !isNonEmptyString(type)) return false;
   if (!isNonEmptyString(description)) return false;
   if (!Array.isArray(options) || options.length === 0) return false;
-  return options.every(option => {
+  const seen = new Set<number>();
+  for (const option of options) {
     if (!isPlainObject(option)) return false;
-    return isFiniteNumber(option.grammage) && option.grammage > 0
-      && isFiniteNumber(option.caliper) && option.caliper > 0;
-  });
+    if (!isFiniteNumber(option.grammage) || option.grammage <= 0) return false;
+    if (!isFiniteNumber(option.caliper) || option.caliper <= 0) return false;
+    // The same rule validateCatalog enforces on sustratos.json: one caliper
+    // per weight, or `getCaliper` picks whichever copy comes first.
+    if (seen.has(option.grammage)) return false;
+    seen.add(option.grammage);
+  }
+  return true;
 }
 
 /**

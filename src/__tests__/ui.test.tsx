@@ -1477,6 +1477,7 @@ describe('Choosing which entry the catalog edits (R-9)', () => {
 
   it('edits the chosen entry, not the one in use', () => {
     render(<ImpositionVisualizerScreen />);
+    const usedBefore = useBookStore.getState().pressId;
     openPressCatalog();
     fireEvent.click(screen.getByRole('button', { name: /^Prensa formato SRA3, / }));
 
@@ -1486,6 +1487,10 @@ describe('Choosing which entry the catalog edits (R-9)', () => {
     expect(useBookStore.getState().pressPatches).toEqual([
       { id: 'prensa_sra3', changes: { gripperMargin_mm: 15 } },
     ]);
+    // The half the name promises and the assertion above does not make: the
+    // press the book is made of is untouched.
+    expect(useBookStore.getState().pressId).toBe(usedBefore);
+    expect(usedBefore).not.toBe('prensa_sra3');
   });
 
   it('goes back to the book’s entry when the catalog changes', () => {
@@ -1528,5 +1533,48 @@ describe('Choosing which entry the catalog edits (R-9)', () => {
     expect(screen.getByRole('button', { name: /^75 g\/m²/ })).toBeTruthy();
     // And the book is still made of the paper it was made of.
     expect(useBookStore.getState().substrateId).toBe('couche_matte');
+  });
+});
+
+/**
+ * What an independent review of R-9 found. Both were real and both came from
+ * the same oversight: R-9 decoupled "the entry being edited" from "the entry
+ * the book is made of", and two things were left reading the second.
+ */
+describe('What the review of the catalog list found', () => {
+  it('does not carry a draft typed for one entry onto another', () => {
+    render(<ImpositionVisualizerScreen />);
+    openPressCatalog();
+
+    // Type a draft for one entry without saving it.
+    fireEvent.click(screen.getByRole('button', { name: /^Prensa formato SRA3, / }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'A MEDIO ESCRIBIR' } });
+
+    // Then point the form at another.
+    fireEvent.click(screen.getByRole('button', { name: /^Prensa formato 70×100, / }));
+
+    // The form was keyed on the book's press, which had not changed, so the
+    // draft survived onto the entry chosen next and saving would have written
+    // it there.
+    expect((screen.getByLabelText('Nombre') as HTMLInputElement).value).toBe('Prensa formato 70×100');
+    expect(useBookStore.getState().pressPatches).toEqual([]);
+  });
+
+  it('says whether the binding being edited has a flat spine, not the one in use', () => {
+    // The book is made of a saddle stitch, which nests and has no flat spine.
+    expect(useBookStore.getState().bindingId).toBe('grapa');
+    const { container } = render(<BindingPanelScreen />);
+    openCatalogFor('encuadernación');
+    // Scoped to the catalog: the step itself carries its own note about the
+    // binding the book uses, and that one is right either way.
+    const panel = container.querySelector('.catalog-content') as HTMLElement;
+    expect(within(panel).getByText(/no tiene lomo plano/)).toBeTruthy();
+
+    // Point the form at one that does have a flat spine.
+    fireEvent.click(screen.getByRole('button', { name: /^Hotmelt/ }));
+
+    expect(within(panel).queryByText(/no tiene lomo plano/)).toBeNull();
+    // And the book is still bound the way it was.
+    expect(useBookStore.getState().bindingId).toBe('grapa');
   });
 });

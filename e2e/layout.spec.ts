@@ -143,11 +143,9 @@ test('on a phone the three headline figures stay put while the page scrolls', as
   // The default book: a saddle stitch on 32 pages of 150 g/m² Couché.
   await expect(bar.locator('.results-bar-value')).toHaveText(['1.92 mm', '2', '70.6 g']);
 
-  const before = await bar.boundingBox();
-  expect(before?.y).toBe(await page.evaluate(() => {
-    const element = document.querySelector('.results-bar') as HTMLElement;
-    return element.getBoundingClientRect().y;
-  }));
+  // It starts below the header rather than already pinned, so the scroll
+  // below is a real change and not a no-op.
+  expect((await bar.boundingBox())?.y ?? 0).toBeGreaterThan(0);
 
   await page.evaluate(() => window.scrollBy(0, 600));
   await expect(bar).toBeVisible();
@@ -207,3 +205,30 @@ test('on a wide screen the side columns reach both edges', async ({ page }) => {
   const slack = measured.stack.left - (measured.spec.width);
   expect(slack).toBe(measured.viewport - measured.results.width - measured.stack.right);
 });
+
+/**
+ * The view switch is a capsule, and a capsule that wraps becomes two half
+ * pills. Between 1025 and 1059px the middle column is only 257px wide and it
+ * folded, which an independent review of the width change found. Measured
+ * across that window rather than at one width, because the width it breaks at
+ * depends on the length of four labels.
+ */
+for (const width of [1025, 1040, 1060, 1200, 1440, 2560]) {
+  test(`the view switch stays on one row at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openTheApp(page);
+
+    const measured = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll<HTMLElement>('.preview-switch .segment-btn'));
+      return {
+        rows: new Set(buttons.map(button => Math.round(button.getBoundingClientRect().top))).size,
+        clipped: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).map(button => button.textContent ?? ''),
+      };
+    });
+
+    expect(measured.rows).toBe(1);
+    // On one row is not enough: a label squeezed to an ellipsis would also
+    // report one row and say nothing about which view is which.
+    expect(measured.clipped).toEqual([]);
+  });
+}

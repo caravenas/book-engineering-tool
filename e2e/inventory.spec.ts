@@ -34,9 +34,16 @@ async function openTheApp(page: Page): Promise<void> {
 function controlNameCounts(
   page: Page,
   root = 'body',
-  options: { visibleOnly?: boolean; outsideSteps?: boolean; outsidePreview?: boolean; outsideSwitch?: boolean; outsideCatalog?: boolean } = {}
+  options: {
+    visibleOnly?: boolean;
+    outsideSteps?: boolean;
+    outsidePreview?: boolean;
+    outsideSwitch?: boolean;
+    outsideCatalog?: boolean;
+    outsideCatalogList?: boolean;
+  } = {}
 ): Promise<Record<string, number>> {
-  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch, outsideCatalog }) => {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch, outsideCatalog, outsideCatalogList }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
     /*
@@ -51,7 +58,16 @@ function controlNameCounts(
       // The switch itself is counted once, with the rest of the page, rather
       // than once per view it is walked through.
       .filter(control => !outsideSwitch || !control.closest('.preview-switch'))
-      .filter(control => !outsideCatalog || !control.closest('.catalog-dialog'));
+      .filter(control => !outsideCatalog || !control.closest('.catalog-dialog'))
+      /*
+       * A row of a catalog list is a control — it chooses which entry the
+       * form edits — but its accessible name is the shipped catalog's own
+       * data, so counting it here would turn this map into a snapshot of
+       * public/config/ and break the build the day someone adds a paper.
+       * What matters about the rows is that every entry has one, and that is
+       * asserted on its own below.
+       */
+      .filter(control => !outsideCatalogList || !control.closest('.catalog-list'));
     /**
      * The accessible name is what a screen reader announces, and is the
      * identity that doesn't change when R-3 moves a control to a different
@@ -89,6 +105,7 @@ function controlNameCounts(
     outsidePreview: options.outsidePreview ?? false,
     outsideSwitch: options.outsideSwitch ?? false,
     outsideCatalog: options.outsideCatalog ?? false,
+    outsideCatalogList: options.outsideCatalogList ?? false,
   });
 }
 
@@ -140,7 +157,7 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   const catalogCount = await catalogs.count();
   for (let index = 0; index < catalogCount; index += 1) {
     await catalogs.nth(index).click();
-    add(await controlNameCounts(page, '.catalog-content'));
+    add(await controlNameCounts(page, '.catalog-content', { outsideCatalogList: true }));
   }
   await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
 
@@ -244,50 +261,6 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Alto de la razón': 1,
   'Descripción': 2,
 
-  /*
-   * R-9: every row of every catalog list is a control now, because choosing
-   * which entry the form edits is what a row does. Named by its three cells,
-   * the way the navigation items are, or a screen reader runs them together
-   * into "Bond3 gramajesde fábrica".
-   *
-   * They carry the shipped catalog's own data, so this list changes when
-   * public/config/ changes — which is a thing worth being told about.
-   */
-  '115 g/m², calibre 90 µm': 1,
-  '150 g/m², calibre 120 µm': 1,
-  '1:1, 1 : 1, de fábrica': 1,
-  '1:√2 (ISO), 1 : 1.4142, de fábrica': 1,
-  '200 g/m², calibre 160 µm': 1,
-  '2:3, 2 : 3, de fábrica': 1,
-  '300 g/m², calibre 250 µm': 1,
-  '3:4, 3 : 4, de fábrica': 1,
-  '3:5 (Áurea), 3 : 5, de fábrica': 1,
-  '90 g/m², calibre 75 µm': 1,
-  'Bond, 3 gramajes, de fábrica': 1,
-  'Carta (Letter), 216 × 279 mm, de fábrica': 1,
-  'Cartulina C1S, 2 gramajes, de fábrica': 1,
-  'Cartulina C2S, 2 gramajes, de fábrica': 1,
-  'Cartulina Sulfato, 3 gramajes, de fábrica': 1,
-  'Cosido a hilo, 32–1200 págs, múltiplo de 4, de fábrica': 1,
-  'Couché Brillo, 5 gramajes, de fábrica': 1,
-  'Couché Mate, 5 gramajes, de fábrica': 1,
-  'Doble Carta (Tabloid), 432 × 279 mm, de fábrica': 1,
-  'Firma de 16 páginas (pliego doblado 3 veces), 16 págs, 2 × 4, de fábrica': 1,
-  'Firma de 8 páginas (pliego doblado 2 veces), 8 págs, 2 × 2, de fábrica': 1,
-  'Grapa (caballete), 8–64 págs, múltiplo de 4, de fábrica': 1,
-  'Hotmelt (adhesivo termofusible), 32–600 págs, múltiplo de 2, de fábrica': 1,
-  'Oficio (Legal), 216 × 356 mm, de fábrica': 1,
-  'Opalina, 3 gramajes, de fábrica': 1,
-  'PUR (adhesivo de poliuretano), 32–800 págs, múltiplo de 2, de fábrica': 1,
-  'Pliego 70×100cm, 700 × 1000 mm, de fábrica': 1,
-  'Pliego 77×110cm, 770 × 1100 mm, de fábrica': 1,
-  'Prensa formato 70×100, 720 × 1020 mm, de fábrica': 1,
-  'Prensa formato SRA3, 330 × 460 mm, de fábrica': 1,
-  'SRA3 (320×450mm), 320 × 450 mm, de fábrica': 1,
-  'Tapa blanda con solapas, tapa blanda, de fábrica': 1,
-  'Tapa blanda sin solapas, tapa blanda, de fábrica': 1,
-  'Tapa dura estándar, tapa dura, de fábrica': 1,
-
   // Everything below was already in the app before the layout moved.
   '115 g/m²': 1,
   '150 g/m²': 1,
@@ -363,12 +336,42 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
    */
   test('the walk reaches every control the page is holding', async ({ page }) => {
     const walked = await reachableControlNameCounts(page);
-    const onScreen = await controlNameCounts(page, 'body', { visibleOnly: false });
+    const onScreen = await controlNameCounts(page, 'body', { visibleOnly: false, outsideCatalogList: true });
 
     const missed = Object.entries(onScreen)
       .filter(([name, count]) => (walked[name] ?? 0) < count)
       .map(([name]) => name);
     expect(missed).toEqual([]);
+  });
+
+  /**
+   * The rows of the catalog lists, asserted as the structure they are rather
+   * than as the data they carry: every entry a catalog declares has a row you
+   * can choose, and exactly one of them is the entry the form is on.
+   *
+   * Counting them by accessible name would have worked too, and would have
+   * embedded the shipped catalog in this file — a snapshot of
+   * public/config/ that breaks the day someone adds a paper, which teaches
+   * whoever hits it to overwrite the expectation instead of reading it.
+   */
+  test('every catalog entry has a row to choose it by, and one is marked', async ({ page }) => {
+    await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+    const catalogs = page.locator('.catalog-nav-item');
+
+    for (let index = 0; index < await catalogs.count(); index += 1) {
+      const item = catalogs.nth(index);
+      await item.click();
+      const declared = Number(await item.locator('.catalog-nav-count').innerText());
+      const rows = page.locator('.catalog-entry-list > li > .catalog-list-item');
+
+      expect(declared).toBeGreaterThan(0);
+      expect(await rows.count(), `catálogo ${index + 1}`).toBe(declared);
+      // The folding schemes have no form, so nothing is under one there.
+      const marked = await rows.locator('[aria-current="true"]').count();
+      expect(marked, `catálogo ${index + 1}`).toBeLessThanOrEqual(1);
+    }
+
+    await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
   });
 
   test('every result label is still present, wherever R-3 puts it', async ({ page }) => {

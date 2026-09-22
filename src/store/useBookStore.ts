@@ -352,14 +352,22 @@ function mergeUserLayer(catalog: Catalog, userLayer: UserLayer): Omit<UserLayer,
     ...catalog.substrates.map(s => s.id),
     ...userLayer.customSubstrates.map(s => s.id),
   ]);
+  const keptGrammages = userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId));
   return {
     ...userLayer,
-    customGrammages: userLayer.customGrammages.filter(option => knownSubstrateIds.has(option.substrateId)),
-    // A cover names the paper it is made of, so one whose paper is gone has
-    // no material and no weight: it is dropped for the same reason a grammage
-    // attached to a missing paper is, rather than kept as an orphan nothing
-    // could compute with.
-    customCovers: userLayer.customCovers.filter(cover => knownSubstrateIds.has(cover.substrateId)),
+    customGrammages: keptGrammages,
+    /*
+     * A cover names the paper it is made of AND a weight of that paper, so it
+     * needs both to still be there. Checking only the paper left a cover
+     * claiming a weight nobody sells, which the store then refused to let
+     * anyone edit: the cover was stuck, permanently, with no way to say why.
+     */
+    customCovers: userLayer.customCovers.filter(cover => {
+      const substrates = catalog.substrates.concat(userLayer.customSubstrates);
+      if (!substrates.some(item => item.id === cover.substrateId)) return false;
+      return getAllGrammageOptions(substrates, cover.substrateId, keptGrammages)
+        .some(option => option.grammage === cover.grammage);
+    }),
   };
 }
 
@@ -1653,19 +1661,42 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       if (!state.customSubstrates.some(item => item.id === id)) return state;
 
       const remaining = state.customSubstrates.filter(item => item.id !== id);
-      // The weights added to it go with it: they name a paper that no longer
-      // exists, and keeping them would leave orphans nothing can reach.
+      /*
+       * Everything that hangs off the paper goes with it: the weights added
+       * to it, and the covers made of it. Both name a paper that no longer
+       * exists, and a cover left behind was worse than an orphan — it stayed
+       * usable for the rest of the session and then vanished on the next
+       * reload, because that is where `mergeUserLayer` drops it. Losing work
+       * silently, one reload later, is the part that is not acceptable.
+       */
       const remainingGrammages = state.customGrammages.filter(option => option.substrateId !== id);
+      const remainingCovers = state.customCovers.filter(cover => cover.substrateId !== id);
       const inputPatch: Partial<BookConfig> = {
         customSubstrates: remaining,
         customGrammages: remainingGrammages,
+        customCovers: remainingCovers,
       };
 
+      const effective = getAllSubstrates(state.catalog, remaining, state.substratePatches, state.hiddenSubstrateIds);
       if (state.substrateId === id) {
-        const effective = getAllSubstrates(state.catalog, remaining, state.substratePatches, state.hiddenSubstrateIds);
-        const fallback = effective[0] ?? state.catalog.substrates[0];
+        /*
+         * Every paper may be hidden, and then there is nothing visible to
+         * land on: the fallback is a factory paper, so the weight has to be
+         * resolved against a list that contains it. Resolving against the
+         * visible ones alone returned the deleted paper's own weight, which
+         * the paper landed on does not necessarily sell.
+         */
+        const candidates = effective.length > 0 ? effective : state.catalog.substrates;
+        const fallback = candidates[0];
         inputPatch.substrateId = fallback.id;
-        inputPatch.selectedGrammage = resolveGrammage(effective, fallback.id, remainingGrammages, state.selectedGrammage);
+        inputPatch.selectedGrammage = resolveGrammage(candidates, fallback.id, remainingGrammages, state.selectedGrammage);
+      }
+
+      if (remainingCovers.length !== state.customCovers.length) {
+        const visibleCovers = getAllCovers(state.catalog, remainingCovers, state.coverPatches, state.hiddenCoverIds);
+        if (!visibleCovers.some(cover => cover.id === state.coverId)) {
+          inputPatch.coverId = visibleCovers[0]?.id ?? state.catalog.covers[0].id;
+        }
       }
 
       const patch = {

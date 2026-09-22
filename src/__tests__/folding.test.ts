@@ -63,6 +63,34 @@ describe('Deriving a folding scheme from the folds that make it', () => {
     expect(result.scheme.sides.back).toEqual([{ page: 3, rotation: 0 }, { page: 2, rotation: 180 }]);
   });
 
+  /**
+   * The other two directions, derived by hand and not read off the engine.
+   * Without these, a coordinate-mapping error specific to one direction would
+   * survive: the round trip would put a page in the wrong cell and then read
+   * it back from that same wrong cell, and say nothing.
+   *
+   * Left over right: the crease ends up on the right, so the half that was on
+   * top is the left one and page 1 is on the left of the outer face. A
+   * vertical fold turns nothing.
+   *
+   * Top over bottom: the crease ends up at the bottom, so page 1 is on the
+   * top half — and that is the half that moved, so its content is upside down
+   * in the packet and must be printed turned.
+   */
+  it('derives the folio the other way round on each axis', () => {
+    const leftOverRight = foldingSchemeFromFolds([V('left-over-right')]);
+    expect(leftOverRight.ok).toBe(true);
+    if (!leftOverRight.ok) return;
+    expect(leftOverRight.scheme.sides.front).toEqual([{ page: 1, rotation: 0 }, { page: 4, rotation: 0 }]);
+    expect(leftOverRight.scheme.sides.back).toEqual([{ page: 3, rotation: 0 }, { page: 2, rotation: 0 }]);
+
+    const topOverBottom = foldingSchemeFromFolds([H('top-over-bottom')]);
+    expect(topOverBottom.ok).toBe(true);
+    if (!topOverBottom.ok) return;
+    expect(topOverBottom.scheme.sides.front).toEqual([{ page: 1, rotation: 180 }, { page: 4, rotation: 0 }]);
+    expect(topOverBottom.scheme.sides.back).toEqual([{ page: 2, rotation: 180 }, { page: 3, rotation: 0 }]);
+  });
+
   it('gives the sheet the shape the catalog requires of it', () => {
     for (const folds of [1, 2, 3, 4].flatMap(count => everySequence(count))) {
       const result = foldingSchemeFromFolds(folds);

@@ -306,6 +306,9 @@ body::before {
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    /* Equal shares, so a figure growing from an em dash to "1.92 mm" does
+       not shove the one beside it sideways on every keystroke. */
+    flex: 1;
   }
 
   .results-bar-label {
@@ -393,8 +396,26 @@ body::before {
   margin: 0 auto;
 }
 
+/*
+ * Four views on one row, whatever the width. The capsule wrapped into two
+ * half-pills between 1025 and 1059px, where the middle column is only 257px
+ * wide, and moving the breakpoint instead would have tied the layout to the
+ * length of four labels.
+ *
+ * `min-width: 0` is what fixes it: a flex item will not shrink below its own
+ * content until it is told it may, and once it may, the four fit. `nowrap` is
+ * the second guard, for a label long enough that shrinking is not enough:
+ * then it clips rather than folding, and e2e/layout.spec.ts fails on the clip.
+ */
 .preview-switch {
+  flex-wrap: nowrap;
   margin-bottom: var(--space-6);
+}
+
+.preview-switch .segment-btn {
+  min-width: 0;
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
 }
 
 /* ─── Spec steps ────────────────────────────────────────────────────── */

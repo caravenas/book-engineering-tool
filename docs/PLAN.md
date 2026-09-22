@@ -693,6 +693,71 @@ Con el motor roto, el folio horizontal pone las páginas 1 y 3 en la misma cara 
   El motor ya está; falta la capa de usuario para esquemas, que hoy no existe, y la pantalla.
 - La maqueta imprimible, que sigue siendo lo único que zanja la convención contra la realidad.
 
+## La revisión cruzada de R-5 a R-11
+
+Decisión de Chris el 2026-09-21: antes de publicar, revisión independiente del rango que nunca la tuvo, `bf05fed..HEAD`.
+Cinco revisores en otra familia de modelos (agy, Gemini 3.1 Pro), uno por área, cada uno con su diff acotado y prohibición de explorar el repo.
+El candado de pre-push sigue cerrado: esto revisa el código, no escribe la aprobación que el hook busca, que exige `review_diff` desde Pi.
+
+### Lo que encontró, verificado y corregido
+
+- **Borrar un papel dejaba atrás las tapas hechas de él.**
+  Seguían usables el resto de la sesión y desaparecían en la siguiente recarga, que es donde `mergeUserLayer` las descarta.
+  Perder trabajo en silencio, una recarga después, es la parte que no vale.
+- **Con todos los papeles ocultos, borrar el propio dejaba un gramaje que el papel aterrizado no vende.**
+  El gramaje se resolvía contra la lista visible, que en ese caso está vacía, y devolvía el del papel borrado.
+- **Una tapa cuyo gramaje su papel ya no vende sobrevivía a la recarga.**
+  `mergeUserLayer` comprobaba solo el papel, y el store luego se negaba a dejar editarla: quedaba atascada para siempre sin decir por qué.
+- **`isValidSubstrate` no rechazaba gramajes repetidos**, que `validateCatalog` sí rechaza en el archivo entregado (línea 189).
+  Era una brecha de paridad justo donde un comentario afirmaba que no la había.
+- **El formulario del catálogo estaba clavado a la entrada del libro, no a la que se edita.**
+  Elegir una segunda fila dejaba el formulario montado y arrastraba a ella el borrador escrito para la primera, donde guardar lo habría escrito.
+- **La nota «no tiene lomo plano» del catálogo describía la encuadernación del libro**, no la que se está editando.
+- **El conmutador de vistas envolvía en dos medias cápsulas entre 1025 y 1059 px**, donde la columna central mide 257 px.
+- **La barra de móvil temblaba en horizontal**: tres contenidos de ancho variable con `space-between` mueven al del medio en cada tecleo.
+- **`formatWeight` imprimía «1000 g»** para 999.95 g, porque decidía el umbral sobre el valor sin redondear.
+- **Una aserción tautológica mía** en la prueba de la barra comparaba `boundingBox().y` con `getBoundingClientRect().y`: el mismo número por dos caminos.
+- **Tres aserciones vacuas**: dos pruebas de huérfanos no comprobaban que el ocultamiento se conservara, y la prueba llamada «edita la elegida, no la que se usa» no comprobaba la segunda mitad de su propio nombre.
+- **Dos huecos de cobertura**: una tapa dura propia no se comprobaba contra el motor, y borrar una entrada que no es la del libro no se comprobaba en absoluto.
+
+### El guardián dejó de llevar el catálogo dentro
+
+Las 34 filas de los catálogos entraron en el mapa de nombres esperados con los datos del archivo entregado dentro («Bond, 3 gramajes, de fábrica»).
+La objeción del revisor es buena y la acepto: eso convierte el guardián en una instantánea de `public/config/` que se rompe el día que alguien añade un papel, y enseña a quien se la encuentre a sobrescribir la expectativa en vez de leerla.
+
+Las filas salen del mapa y entra la aserción estructural, que es la que de verdad importa: **cada entrada que un catálogo declara tiene una fila con la que elegirla, y a lo sumo una está marcada**.
+Independiente de los datos, y comprueba la propiedad en vez del contenido.
+
+### Lo que no se sostuvo
+
+Verificado contra el código antes de tocar nada; se anota para no volver a creérselo.
+
+- «`editOwn` reemplaza la entrada entera, así que un cambio parcial borra los campos no tocados.»
+  No: `{ ...existing, ...changes }` fusiona.
+- «El pliegue horizontal pierde el giro al volver de dura a blanda.»
+  No: el valor sigue en el campo, visible, y ponerlo a cero al endurecer es la regla, no una pérdida.
+- «`.grammage-options` perdió `display: flex`.»
+  Lo hereda de `.segment-group`, que el elemento también lleva.
+- «El conmutador de vistas no tiene estado activo.»
+  `.segment-btn.active` existe global en la línea 623; la regla de gramajes es una sobrescritura.
+- «El cajón y los resultados discrepan en el número de hojas.»
+  Los dos calculan `Math.ceil(totalPages / 2)`.
+- «El cajón se dibuja con una cuenta de páginas inválida.»
+  Medido en el navegador: no se dibuja, porque el corrimiento también es nulo.
+- «La barra pegajosa no se pega porque el contenedor de scroll es otro.»
+  La prueba de navegador lo desmiente, y se comprobó apagando la regla `sticky`: cae a −455 px.
+- «`get()` seguido de `set()` recalcula desde estado viejo.»
+  No hay `await` entre los dos y el hilo es único, así que no es alcanzable.
+  Se anota porque el `addCustomX` de al lado lee la lista **dentro** del `set`, y la asimetría es real aunque hoy no muerda.
+- Su lista de «CSS muerto» es un artefacto de cómo partí los diffs: esas clases se usan en archivos que no le pasé.
+  La partición por áreas ahorra contexto y a cambio produce esto; conviene saberlo antes de creerse un «no se usa».
+
+### Una fragilidad de las pruebas que salió a la luz
+
+Mi prueba de «todos los papeles ocultos» ocultaba los siete en el store compartido, que sobrevive al archivo de pruebas: dejaba `App.test.tsx` con el desplegable de papeles vacío.
+Es una fuga entre archivos de prueba, no un fallo de ninguna de las dos.
+Esa prueba corre ahora sobre su propio store.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

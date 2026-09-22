@@ -87,7 +87,11 @@ export function formatMm(value: number): string {
  * every figure a preliminary reference does not have.
  */
 export function formatWeight(grams: number): string {
-  return grams >= 1000 ? `${formatRoundedValue(grams / 1000, 2)} kg` : `${formatRoundedValue(grams, 1)} g`;
+  // The threshold is decided on the value as it will be shown, not as it
+  // arrives: 999.95 g rounds to 1000 at one decimal, and printing "1000 g"
+  // beside a scale that switches at a kilo reads like the switch is broken.
+  const shown = roundTo(grams, 1);
+  return shown >= 1000 ? `${formatRoundedValue(grams / 1000, 2)} kg` : `${formatRoundedValue(grams, 1)} g`;
 }
 
 /** Format an area in square meters, rounded to 4 decimals. */

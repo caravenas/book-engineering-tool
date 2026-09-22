@@ -259,14 +259,23 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
   const editingPaper = selected === 'substrates' ? target : null;
   const grammageEditor = useGrammageEditor(editingPaper, editingGrammage);
   const {
-    bindingId, pressId, sheetSizeId, proportionId, substrateId, coverId, selectedGrammage, customGrammages,
+    // The book's own selections are not read here any more: since R-9 each
+    // editor falls back to them on its own, and the panel points at whatever
+    // the list chose. `substrateId` stays because the weight list still needs
+    // a paper to fall back to before anything is chosen.
+    substrateId, selectedGrammage, customGrammages,
     customSubstrates, substratePatches, hiddenSubstrateIds,
     catalog, customBindings, bindingPatches, hiddenBindingIds,
     userLayerStorageAvailable, userLayerWriteFailed,
   } = useBookStore();
   const storageWorks = userLayerStorageAvailable && !userLayerWriteFailed;
-  const { hasFlatSpine } = catalog
-    ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingId)
+  /*
+   * About the binding the catalog is pointed at, not the one the book is made
+   * of: the note sits under that form and says "el método elegido", and read
+   * from the book it described a different method from the one on screen.
+   */
+  const { hasFlatSpine } = catalog && bindingEditor.entry
+    ? getSelectedBindingInfo(getAllBindings(catalog, customBindings, bindingPatches, hiddenBindingIds), bindingEditor.entry.id)
     : { hasFlatSpine: true };
 
   /*
@@ -399,7 +408,9 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="catalog-content">
-            {current && (
+            {current && (() => {
+              const formKey = currentKey(current.id) ?? 'nothing';
+              return (
               <>
                 <h3 className="catalog-content-title">{current.title}</h3>
                 <p className="catalog-content-description">{current.description}</p>
@@ -412,7 +423,10 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   * is marked, because a form that edits "the selected entry"
                   * without saying which is the state R-9 set out to fix.
                   */}
-                <ul className="catalog-list">
+                {/* Named apart from the weight list nested below it, which is
+                    the same shape and belongs to one entry rather than the
+                    catalog. */}
+                <ul className="catalog-list catalog-entry-list">
                   {current.entries.map(entry => (
                     <li key={entry.key}>
                       <button
@@ -432,14 +446,18 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   ))}
                 </ul>
 
-                {/* Keyed on the entry: hiding or deleting one moves the
-                    selection, and a draft typed for the old one must not
-                    land on its replacement. */}
-                {current.id === 'presses' && <CatalogEntryForm key={pressId} editor={pressEditor} />}
-                {current.id === 'sheetSizes' && <CatalogEntryForm key={sheetSizeId} editor={sheetSizeEditor} />}
-                {current.id === 'bindings' && <CatalogEntryForm key={bindingId} editor={bindingEditor} />}
-                {current.id === 'proportions' && <CatalogEntryForm key={proportionId ?? 'manual'} editor={proportionEditor} />}
-                {current.id === 'covers' && <CatalogEntryForm key={coverId} editor={coverEditor} />}
+                {/*
+                  * Keyed on the entry the form is actually on, which since
+                  * R-9 is the one chosen in the list and not the one the book
+                  * is made of. Keyed on the book's instead, picking a second
+                  * row left the form mounted and carried the draft typed for
+                  * the first onto it, where saving would have written it.
+                  */}
+                {current.id === 'presses' && <CatalogEntryForm key={formKey} editor={pressEditor} />}
+                {current.id === 'sheetSizes' && <CatalogEntryForm key={formKey} editor={sheetSizeEditor} />}
+                {current.id === 'bindings' && <CatalogEntryForm key={formKey} editor={bindingEditor} />}
+                {current.id === 'proportions' && <CatalogEntryForm key={formKey} editor={proportionEditor} />}
+                {current.id === 'covers' && <CatalogEntryForm key={formKey} editor={coverEditor} />}
 
                 {/*
                   * Grammages are not a catalog beside papers: they hang off
@@ -500,7 +518,8 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                   </p>
                 )}
               </>
-            )}
+              );
+            })()}
           </div>
         </div>
         )}
