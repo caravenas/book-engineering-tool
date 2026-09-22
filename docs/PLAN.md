@@ -834,7 +834,12 @@ Una escala común para todo el catálogo no sirve: va de un estucado de 70 µm a
 Las páginas pasan al contador por firmas: `−` y `+` mueven un múltiplo del paso que impone la encuadernación, la cifra grande sigue siendo el dato, y debajo va un icono por cuadernillo con el texto de firmas.
 La encuadernación pasa a fichas con el lomo visto de canto, dibujado con lo que declara `encuadernaciones.json` —si anida, cuánto aporta al lomo, qué múltiplo exige—, y una encuadernación que el número de páginas actual no admite se muestra deshabilitada con el motivo.
 
-Verificación: una prueba de que el `+` respeta el múltiplo de la encuadernación elegida y otra de que la grapa queda deshabilitada, con su motivo, en cuanto las páginas pasan de su máximo; el campo de texto libre para las páginas se conserva mientras el contador no cubra escribir una cifra cualquiera.
+El paso del contador sale de `pageCountStep`, extraído de `validatePageCount` en `src/engine/binding.ts`: es la misma cifra con la que se juzga el recuento, así que el `+` no puede aterrizar en un número que la regla rechace acto seguido.
+Desde un recuento que el método sí rechaza —fuera del múltiplo o pasado el máximo— una sola pulsación lleva al válido más cercano, que el motor ya calculó al negarse.
+La cifra sigue siendo escribible: un libro de 248 páginas es un número que se escribe, no trece pulsaciones.
+
+Verificación: cinco pruebas en `ui.test.tsx`, cada una saboteada antes de darla por buena.
+El contador se mueve de cuatro en cuatro con grapa y de dieciséis en dieciséis al pasar a cosido; desde 320 páginas una pulsación vuelve a 64; los iconos son uno por cuadernillo y la frase dice cuántos y de qué tamaño; la grapa queda deshabilitada con «hasta 64 págs.» cuando no es la que está en uso; y cada lomo se dibuja de lo que declara el método.
 
 ### R-17 — Imposición y tapa
 

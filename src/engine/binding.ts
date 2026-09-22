@@ -78,6 +78,29 @@ function describeNearest(nearestBelow: number | null, nearestAbove: number | nul
 }
 
 /**
+ * The smallest number of pages a count can move by and still satisfy this
+ * method: its own page multiple, or the least common multiple of that and the
+ * signature size when the method demands whole signatures. It is what
+ * `validatePageCount` measures a count against, and since R-16 also what the
+ * page counter in the interface adds and subtracts, so that pressing + can
+ * never land on a count the same rule then rejects.
+ *
+ * `pagesPerSignature` is `null` when no signature plan is available, exactly
+ * as in `validatePageCount`: the signature rule is then not in force, so it
+ * does not enlarge the step either.
+ */
+export function pageCountStep(binding: Binding, pagesPerSignature: number | null): number {
+  assertPositiveSafeInteger(binding.pageMultiple, 'El múltiplo de páginas de la encuadernación');
+  if (pagesPerSignature !== null) {
+    assertPositiveSafeInteger(pagesPerSignature, 'Las páginas por firma');
+  }
+
+  return binding.requiresSignatureMultiple && pagesPerSignature !== null
+    ? lcm(binding.pageMultiple, pagesPerSignature)
+    : binding.pageMultiple;
+}
+
+/**
  * Validate `totalPages` against one binding method's rules: the page multiple
  * it demands, its [minPages, maxPages] range, and, when the method requires
  * it and a signature size is known, the folding signature's own multiple.
@@ -113,10 +136,7 @@ export function validatePageCount(
   }
 
   const signatureMultipleApplies = binding.requiresSignatureMultiple && pagesPerSignature !== null;
-
-  const step = signatureMultipleApplies
-    ? lcm(binding.pageMultiple, pagesPerSignature as number)
-    : binding.pageMultiple;
+  const step = pageCountStep(binding, pagesPerSignature);
 
   const { nearestBelow, nearestAbove } = nearestValidCounts(totalPages, binding.minPages, binding.maxPages, step);
 

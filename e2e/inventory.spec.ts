@@ -277,9 +277,10 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Apaisado': 1,
   'Cara mostrada': 1,
   'Cuadrado': 1,
-  'Encuadernación seleccionada': 1,
   'Esquema de plegado': 1,
-  'Número de páginas': 1,
+  'Páginas': 1,
+  'Añadir una firma': 1,
+  'Quitar una firma': 1,
   'Pliego seleccionado': 1,
   'Prensa seleccionada': 1,
   'Sangrado': 1,
@@ -422,7 +423,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
    */
   test('a hard cover reports the boards and the wrap it needs', async ({ page }) => {
     await openStep(page, 'Páginas y encuadernación');
-    await page.locator('#select-binding').selectOption('hotmelt');
+    await page.locator('#binding-hotmelt').click();
 
     await openStep(page, 'Tapa');
     await page.locator('#select-cover').selectOption('dura_estandar');

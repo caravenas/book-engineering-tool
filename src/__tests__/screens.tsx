@@ -54,6 +54,23 @@ export function SpineCalculatorScreen() {
   );
 }
 
+/**
+ * Step 03 as the spec sheet composes it: the page counter and the binding
+ * methods are one step, because a page count a method rejects is one
+ * decision and not two. Tests that drive one and read the other need both,
+ * which is exactly what the step gives the reader.
+ */
+export function PagesAndBindingScreen() {
+  return (
+    <CatalogPanelProvider>
+      <SpineCalculator />
+      <BindingPanel />
+      <BindingSpineResults />
+      <HowItIsCalculated />
+    </CatalogPanelProvider>
+  );
+}
+
 export function BindingPanelScreen() {
   return (
     <CatalogPanelProvider>

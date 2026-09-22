@@ -19,6 +19,7 @@ function openGrammageCatalog() {
 }
 import {
   CanvasDesignerScreen,
+  PagesAndBindingScreen,
   SpineCalculatorScreen,
   BindingPanelScreen,
   ImpositionVisualizerScreen,
@@ -290,7 +291,7 @@ describe('Honest and recoverable UI', () => {
     });
 
     render(<SpineCalculatorScreen />);
-    const pagesInput = screen.getByRole('spinbutton', { name: 'Número de páginas' });
+    const pagesInput = screen.getByRole('spinbutton', { name: 'Páginas' });
 
     expect(pagesInput.getAttribute('aria-invalid')).toBe('false');
     expect(pagesInput.getAttribute('aria-describedby')).toBe('pages-page-count-requirement');
@@ -318,7 +319,7 @@ describe('Honest and recoverable UI', () => {
   it('preserves invalid page-count text while calculations invalidate, then recovers', () => {
     useBookStore.getState().recalculate();
     render(<SpineCalculatorScreen />);
-    const pagesInput = screen.getByRole('spinbutton', { name: 'Número de páginas' });
+    const pagesInput = screen.getByRole('spinbutton', { name: 'Páginas' });
 
     fireEvent.change(pagesInput, { target: { value: '' } });
 
@@ -383,18 +384,32 @@ describe('Honest and recoverable UI', () => {
   });
 });
 
+/** The methods step 03 offers, by id: since R-16 each one is a drawn card. */
+function bindingCardIds(): string[] {
+  return Array.from(document.querySelectorAll('#binding-panel .option-card'))
+    .map(card => card.id.replace('binding-', ''));
+}
+
+function chosenBindingId(): string | null {
+  const chosen = document.querySelector('#binding-panel .option-card[aria-pressed="true"]');
+  return chosen ? chosen.id.replace('binding-', '') : null;
+}
+
+function chooseBinding(id: string): void {
+  const card = document.getElementById(`binding-${id}`);
+  if (!card) throw new Error(`no hay tarjeta para la encuadernación ${id}`);
+  fireEvent.click(card);
+}
+
 describe('Binding selector', () => {
   it('renders the four shipped methods and switching changes the displayed rules', () => {
     render(<BindingPanelScreen />);
-    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
 
-    expect(Array.from(select.options).map(option => option.value).sort()).toEqual([
-      'cosido', 'grapa', 'hotmelt', 'pur',
-    ]);
-    expect(select.value).toBe('grapa');
+    expect([...bindingCardIds()].sort()).toEqual(['cosido', 'grapa', 'hotmelt', 'pur']);
+    expect(chosenBindingId()).toBe('grapa');
     expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('0');
 
-    fireEvent.change(select, { target: { value: 'hotmelt' } });
+    chooseBinding('hotmelt');
 
     expect(useBookStore.getState().bindingId).toBe('hotmelt');
     expect(screen.getByText('Aporte de la encuadernación (mm)').nextSibling?.textContent).toBe('2');
@@ -402,7 +417,8 @@ describe('Binding selector', () => {
 
   it('shows an accessible message naming the nearest valid page counts for an invalid count', () => {
     useBookStore.getState().setTotalPages(33); // grapa requires a multiple of 4
-    render(<BindingPanelScreen />);
+    // The message is about the page count, so it is reported beside it.
+    render(<PagesAndBindingScreen />);
 
     const message = screen.getByRole('status');
     expect(message.textContent).toContain('32');
@@ -429,7 +445,7 @@ describe('Binding selector', () => {
     // the app under its dropdown.
     expect(container.querySelector('#binding-panel')?.textContent).not.toContain('Corrimiento');
 
-    fireEvent.change(screen.getByLabelText('Encuadernación seleccionada'), { target: { value: 'hotmelt' } });
+    chooseBinding('hotmelt');
 
     expect(screen.queryByText('Corrimiento máx. (mm)')).toBeNull();
     expect(screen.queryByText(/Corrimiento \(creep\)/)).toBeNull();
@@ -457,10 +473,10 @@ describe('UX-6: components read the effective catalog', () => {
     useBookStore.getState().patchBinding('grapa', { name: 'Grapa personalizada' });
     render(<BindingPanelScreen />);
 
-    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
-    expect(select.value).toBe('grapa');
-    expect(within(select).getByRole('option', { name: 'Grapa personalizada' })).toBeTruthy();
-    expect(within(select).queryByRole('option', { name: 'Grapa (caballete)' })).toBeNull();
+    expect(chosenBindingId()).toBe('grapa');
+    const panel = document.getElementById('binding-panel') as HTMLElement;
+    expect(panel.textContent).toContain('Grapa personalizada');
+    expect(panel.textContent).not.toContain('Grapa (caballete)');
   });
 });
 
@@ -503,19 +519,18 @@ describe('Hide and restore factory entries (UX-6)', () => {
 
   it('hides the selected factory binding with its own control, shows a restore line, and restores it', () => {
     render(<BindingPanelScreen />);
-    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
-    expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
+    expect(bindingCardIds()).toContain('grapa');
     expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
 
     openCatalogFor('encuadernación');
     fireEvent.click(screen.getByRole('button', { name: 'Ocultar' }));
 
-    expect(Array.from(select.options).map(option => option.value)).not.toContain('grapa');
+    expect(bindingCardIds()).not.toContain('grapa');
     expect(screen.getByText(/1 encuadernación de fábrica oculta/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar encuadernaciones ocultas' }));
 
-    expect(Array.from(select.options).map(option => option.value)).toContain('grapa');
+    expect(bindingCardIds()).toContain('grapa');
     expect(screen.queryByText(/encuadernación de fábrica oculta/)).toBeNull();
   });
 
@@ -1169,9 +1184,9 @@ describe('Custom binding quick-add (UX-4)', () => {
     expect(newBindingId).toMatch(/^custom_binding_/);
     expect(useBookStore.getState().customBindings).toHaveLength(1);
     expect(document.getElementById('custom-entry-form')).toBeNull();
-    const select = screen.getByLabelText('Encuadernación seleccionada') as HTMLSelectElement;
-    expect(select.value).toBe(newBindingId);
-    expect(within(screen.getByRole('group', { name: 'Encuadernación' })).getByText('tuyo')).toBeTruthy();
+    expect(chosenBindingId()).toBe(newBindingId);
+    // In the margin of the label row, which is beside the group rather than in it.
+    expect(within(document.getElementById('binding-panel') as HTMLElement).getByText('tuyo')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }));
     expect(useBookStore.getState().customBindings).toHaveLength(0);
@@ -1571,8 +1586,9 @@ describe('What the review of the catalog list found', () => {
     const panel = container.querySelector('.catalog-content') as HTMLElement;
     expect(within(panel).getByText(/no tiene lomo plano/)).toBeTruthy();
 
-    // Point the form at one that does have a flat spine.
-    fireEvent.click(screen.getByRole('button', { name: /^Hotmelt/ }));
+    // Point the form at one that does have a flat spine. Scoped to the
+    // catalog: since R-16 the step has a card named after every method too.
+    fireEvent.click(within(panel).getByRole('button', { name: /^Hotmelt/ }));
 
     expect(within(panel).queryByText(/no tiene lomo plano/)).toBeNull();
     // And the book is still bound the way it was.
@@ -1754,5 +1770,115 @@ describe('The weights as a scale (R-15)', () => {
     expect(own.textContent).toContain('*');
     // And the factory weights keep saying nothing about it.
     expect(within(group).getByRole('button', { name: '150 g/m²' }).textContent).not.toContain('*');
+  });
+});
+
+describe('The page counter and the spine drawings (R-16)', () => {
+  function counterButton(which: 'Añadir' | 'Quitar'): HTMLButtonElement {
+    return screen.getByRole('button', {
+      name: which === 'Añadir' ? 'Añadir una firma' : 'Quitar una firma',
+    }) as HTMLButtonElement;
+  }
+
+  function pagesValue(): string {
+    return (screen.getByRole('spinbutton', { name: 'Páginas' }) as HTMLInputElement).value;
+  }
+
+  /**
+   * The step the counter moves by is the one the binding rules measure the
+   * count against, so + can never land on a count the same step then
+   * rejects. The saddle stitch shipped asks for multiples of four.
+   */
+  it('moves by the multiple the chosen method demands', () => {
+    render(<PagesAndBindingScreen />);
+    expect(pagesValue()).toBe('32');
+
+    fireEvent.click(counterButton('Añadir'));
+    expect(pagesValue()).toBe('36');
+
+    fireEvent.click(counterButton('Quitar'));
+    expect(pagesValue()).toBe('32');
+
+    // Sewing asks for whole signatures, sixteen pages each.
+    chooseBinding('cosido');
+    fireEvent.click(counterButton('Añadir'));
+    expect(pagesValue()).toBe('48');
+  });
+
+  /**
+   * From a count the method rejects, one press lands on one it accepts: the
+   * engine works the nearest valid counts out in the course of refusing this
+   * one, and the counter uses them rather than stepping back a hundred pages
+   * four at a time.
+   */
+  it('walks back into the range in one press', () => {
+    render(<PagesAndBindingScreen />);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Páginas' }), { target: { value: '320' } });
+
+    // A saddle stitch holds 64 pages, so there is nothing above.
+    expect(counterButton('Añadir').disabled).toBe(true);
+
+    fireEvent.click(counterButton('Quitar'));
+    expect(pagesValue()).toBe('64');
+    expect(useBookStore.getState().bindingPageCount?.ok).toBe(true);
+  });
+
+  it('counts the pages in booklets, and says how many of what size', () => {
+    render(<PagesAndBindingScreen />);
+
+    const signatures = useBookStore.getState().signaturePlan?.selected?.signatures;
+    expect(signatures).toBe(2);
+    expect(document.querySelectorAll('.signature-icon')).toHaveLength(2);
+    expect(document.querySelector('.signature-text')?.textContent).toBe('2 firmas de 16 · 16 hojas');
+  });
+
+  /**
+   * A method that cannot hold the book as it stands is shown disabled with
+   * the reason on it, instead of being offered and then refused. The method
+   * in use is never disabled: it would leave a chosen option that cannot be
+   * chosen, and its reason is already reported in full beside the count.
+   */
+  it('disables a method the page count rules out, but never the one in use', () => {
+    render(<PagesAndBindingScreen />);
+    const grapa = document.getElementById('binding-grapa') as HTMLButtonElement;
+    const cosido = document.getElementById('binding-cosido') as HTMLButtonElement;
+
+    // At 32 pages the saddle stitch is in use and sewing needs 32 at least.
+    expect(grapa.disabled).toBe(false);
+    expect(cosido.disabled).toBe(false);
+
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Páginas' }), { target: { value: '320' } });
+
+    expect(grapa.getAttribute('aria-pressed')).toBe('true');
+    expect(grapa.disabled).toBe(false);
+    const hotmelt = document.getElementById('binding-hotmelt') as HTMLButtonElement;
+    expect(hotmelt.disabled).toBe(false);
+
+    chooseBinding('hotmelt');
+    const grapaNow = document.getElementById('binding-grapa') as HTMLButtonElement;
+    expect(grapaNow.disabled).toBe(true);
+    expect(grapaNow.textContent).toContain('hasta 64 págs.');
+  });
+
+  /**
+   * The drawing on each card comes from what the catalog declares about the
+   * method, so a method a print shop adds is drawn like the rest: nesting
+   * makes a folded spine with staples, demanding whole signatures makes a
+   * sewn one, and anything else is glued as thick as its spine allowance.
+   */
+  it('draws each spine from what the method declares', () => {
+    render(<PagesAndBindingScreen />);
+    const spineLine = (id: string) =>
+      document.querySelector(`#binding-${id} .spine-figure line`) as SVGLineElement;
+
+    expect(document.querySelectorAll('#binding-grapa .spine-figure circle')).toHaveLength(2);
+    expect(spineLine('grapa').getAttribute('stroke-dasharray')).toBeNull();
+
+    expect(document.querySelectorAll('#binding-cosido .spine-figure circle')).toHaveLength(0);
+    expect(spineLine('cosido').getAttribute('stroke-dasharray')).toBe('6 4');
+
+    // Hotmelt adds 2mm to the spine and PUR 1.5, so its glue line is thicker.
+    expect(Number(spineLine('hotmelt').getAttribute('stroke-width')))
+      .toBeGreaterThan(Number(spineLine('pur').getAttribute('stroke-width')));
   });
 });
