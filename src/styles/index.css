@@ -463,13 +463,35 @@ body::before {
     border-top: 1px solid var(--color-border);
   }
 
+  /*
+   * The header was written when the page below the breakpoint was a long
+   * scroll with the tool's name at the top of it, so the name was set three
+   * sizes larger and the row was given no side padding at all: at 390px
+   * «PLIEGOSTACK» ran to both edges, the tagline started four pixels off the
+   * left of the screen, and the whole header stood 202px tall — a quarter of
+   * the phone, spent on saying what the tool is called.
+   */
   .app-header {
-    margin-bottom: var(--space-6);
-    padding: var(--space-4) 0;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
   }
 
-  .app-logo {
-    font-size: var(--text-3xl);
+  /* The name is enough at this width. Saying what the tool is, beside what it
+     is called, costs the row the badge then has to wrap to. */
+  .app-tagline {
+    display: none;
+  }
+
+
+  /* The switch is the one thing in the header that is used rather than read,
+     so it gets the row to itself rather than a share of one. */
+  .central-tabs {
+    order: 1;
+  }
+
+  .header-summary {
+    order: 2;
+    margin-left: 0;
   }
 
   /* Three uppercase words with this much letter-spacing are wider than a
@@ -679,6 +701,26 @@ body::before {
 /* Indented past the number, so the controls line up under the title. */
 .spec-step-body {
   padding: var(--space-5) 0 0 var(--space-7);
+}
+
+/*
+ * The sheet's own gutters on a phone. 32px of indent is a canvas's margin on
+ * a 404px column; on a 390px screen it is 8% of the width, and it left the
+ * row of step 03 four pixels short of holding its title and the call into its
+ * catalog, which dropped the call to a line of its own again.
+ *
+ * It sits here rather than in the breakpoint's own block further up the file:
+ * that block is written before these rules, and a media query does not beat a
+ * later rule of the same specificity.
+ */
+@media (max-width: 1024px) {
+  .spec-step {
+    padding-left: var(--space-4);
+  }
+
+  .spec-step-body {
+    padding-left: 0;
+  }
 }
 
 .column-spec .panel+.panel {
@@ -2485,11 +2527,24 @@ select.form-input {
 
 /* ── B · Papers: caliper by grammage ── */
 
+.board-paper-scroll {
+  overflow-x: auto;
+}
+
 .board-paper-grid {
   display: grid;
+  grid-template-columns: minmax(200px, 1.6fr) repeat(var(--grammage-columns), minmax(0, 1fr));
   align-items: stretch;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+}
+
+/* Narrow enough and the tracks stop shrinking: a caliper needs room for three
+   digits and its tick, and the section scrolls sideways instead. */
+@media (max-width: 1024px) {
+  .board-paper-grid {
+    grid-template-columns: minmax(140px, 1fr) repeat(var(--grammage-columns), minmax(46px, 1fr));
+  }
 }
 
 .board-grid-head {
@@ -2770,6 +2825,39 @@ select.form-input {
   align-items: flex-end;
   gap: var(--space-8);
   min-width: 0;
+}
+
+/*
+ * One column on a phone. Two tracks, the second with a 260px floor, left the
+ * drawings 82px to stand in: the page hung out of its cell, the three
+ * captions under it ran into one another, and the ficha was printed over the
+ * top of all of it.
+ */
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: stretch;
+  }
+
+  /*
+   * The three stay in one row, because that is the whole claim the hero
+   * makes: the page, the edge and the stack at the same scale. What makes
+   * room for them is letting their labels break — «pliego 70×100cm» kept on
+   * one line is 110px of minimum width for a drawing 56px wide, and three
+   * such minimums are wider than the screen, so the stack wrapped away on
+   * its own and left a column of nothing where it had been.
+   */
+  .hero-drawings {
+    flex-wrap: nowrap;
+    gap: var(--space-4);
+  }
+
+  .hero-value,
+  .hero-caption {
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .hero-item {

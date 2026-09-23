@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type CSSProperties, type ReactNode } from 'react';
 import {
   useBookStore,
   getAllProportions,
@@ -294,9 +294,16 @@ export function CatalogBoard() {
         catalog="substrates"
         editLabel="Editar el catálogo de papeles"
       >
+        {/* The grid is as wide as it needs to be and the section scrolls it
+            sideways when the screen is narrower: eleven weights cannot be
+            read in 342px, and squeezed into them the headers ran into one
+            another and the calipers collided. */}
+        <div className="board-paper-scroll">
         <div
           className="board-paper-grid"
-          style={{ gridTemplateColumns: `minmax(200px, 1.6fr) repeat(${grammages.length}, minmax(0, 1fr))` }}
+          /* The track count is data; how wide a track is belongs to the
+             stylesheet, which is the only place that knows the screen. */
+          style={{ '--grammage-columns': grammages.length } as CSSProperties}
         >
           <span className="board-grid-head">Papel</span>
           {grammages.map(grammage => (
@@ -349,6 +356,7 @@ export function CatalogBoard() {
               }),
             ];
           })}
+        </div>
         </div>
       </Section>
 

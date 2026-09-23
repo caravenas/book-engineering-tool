@@ -1,4 +1,5 @@
 import { useStepSummaries } from './specSummaries';
+import { useIsPhone } from './useIsPhone';
 import { StepOptions } from './StepOptions';
 import { CanvasDesigner } from './CanvasDesigner';
 import { SubstrateSelector } from './SubstrateSelector';
@@ -39,6 +40,15 @@ const STEPS: { title: string; catalog: CatalogId; options: string }[] = [
  */
 export function SpecSteps() {
   const summaries = useStepSummaries();
+  /*
+   * Five steps open is the whole sheet in order, which is what a sheet is —
+   * on a screen wide enough to put it beside everything else. On a phone the
+   * page is one column, the five open steps are 3300px of it, and everything
+   * the tool works out is below them. Closed, the sheet is five lines that
+   * still say what they hold, which is the property the accordion was built
+   * for and what makes it readable at that width.
+   */
+  const startClosed = useIsPhone();
   const contents = [
     <CanvasDesigner key="format" />,
     <SubstrateSelector key="substrate" />,
@@ -53,7 +63,7 @@ export function SpecSteps() {
   return (
     <>
       {STEPS.map((step, index) => (
-        <details key={step.title} className="spec-step" open>
+        <details key={step.title} className="spec-step" open={!startClosed}>
           <summary className="spec-step-summary">
             <span className="spec-step-number">{String(index + 1).padStart(2, '0')}</span>
             <h2 className="panel-title spec-step-title">{step.title}</h2>

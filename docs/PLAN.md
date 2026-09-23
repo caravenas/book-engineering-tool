@@ -541,6 +541,7 @@ Con el tope de 1440 px, una pantalla ancha dibujaba la herramienta como una losa
 Instrucción de Chris el 2026-09-21: si un taller necesita añadir una máquina nueva o materiales con configuraciones nuevas, tiene que ser simple hacerlo **desde la app**, no editando un archivo.
 Lo que se añada persiste en el almacenamiento del navegador, que es un apaño hasta que haya un backend detrás.
 Además: no se implementa nada de móvil ni de accesibilidad hasta que Chris lo diga, porque el diseño no está cerrado.
+(Chris descongeló móvil el 2026-09-23 y dejó accesibilidad para el final: ver «El teléfono, primera pasada».)
 
 ### Sobre dónde persiste
 
@@ -1164,6 +1165,46 @@ De paso, los nombres de los siete catálogos salen de `catalogNames.ts` en vez d
 
 Verificación: cinco pruebas del distintivo —los seis, algunos, uno, ninguno, y a cuáles nombra— y cuatro del validador, incluida la que recorre los seis archivos con `provisional` ausente, texto, número y nulo.
 Saboteadas: el distintivo volviendo a ser un literal, el filtro ignorando el campo, y el validador aceptando su ausencia.
+
+## El teléfono, primera pasada — R-31
+
+Decisión de Chris el 2026-09-23: se continúa con móvil; accesibilidad se deja para el final.
+
+El lienzo no ayuda aquí: `PliegoStack v2.html` dibuja una sola pantalla, «v2 Escritorio», y ningún teléfono.
+Así que esto no es fidelidad a un dibujo sino cuatro cosas medidas que hacían la herramienta inservible a 390px.
+
+**La cabecera medía 202px**, una cuarta parte de la pantalla, gastada en decir cómo se llama la herramienta.
+El nombre estaba tres tamaños más grande que en escritorio y la fila no tenía relleno lateral ninguno: «PLIEGOSTACK» llegaba a los dos bordes y el subtítulo empezaba cuatro píxeles fuera de la pantalla por la izquierda.
+Ahora la fila tiene sus márgenes, el nombre su tamaño, y el subtítulo no se muestra: decir qué es la herramienta, al lado de cómo se llama, costaba la fila a la que el distintivo tenía que bajarse.
+160px.
+
+**La ficha empieza cerrada.**
+Cinco pasos abiertos son la hoja entera en orden, que es lo que una hoja es —en una pantalla lo bastante ancha para ponerla al lado de todo lo demás—.
+En un teléfono la página es una sola columna, los cinco pasos abiertos eran 3300 de sus 6177 píxeles, y todo lo que la herramienta calcula quedaba debajo.
+Cerrada, la hoja son cinco líneas que siguen diciendo lo que guardan, que es justo la propiedad para la que se construyó el acordeón.
+La página pasa de 6177 a 3501 y la vista central empieza a 922px en vez de a 3600.
+
+Se lee una vez, al montar, y no se suscribe: una hoja que se replegara sola porque se giró el teléfono estaría deshaciendo el trabajo del lector para obedecer una regla de maquetación.
+
+**El libro a escala estaba en dos columnas dentro de 342px.**
+El suelo de 260px de la segunda dejaba 82 para los tres dibujos: la página se salía de su celda, los tres pies se pisaban entre ellos y la ficha se imprimía encima de todo.
+En una columna, y los tres dibujos en una sola fila, porque esa fila *es* la afirmación del hero —página, canto y pila a la misma escala— y un dibujo que se va a una fila propia ya no se compara con nada.
+Lo que hace sitio para los tres es dejar que sus etiquetas partan: «pliego 70×100cm» en una línea son 110px de ancho mínimo para un dibujo de 56.
+
+**La rejilla de papeles se desplaza en horizontal** en vez de exprimir sus once columnas hasta los 13px, donde las cabeceras se leían «7590115120150180200225250300350».
+El número de columnas es dato y va en una propiedad personalizada; lo ancha que es una columna es de la hoja de estilos, que es la única que sabe qué pantalla hay.
+
+Verificación: cuatro pruebas de navegador a 390px, saboteadas una a una.
+Dos de ellas pasaban al principio con el fallo en pantalla: la del hero porque los tres dibujos, en 58px, seguían en una fila y sin desbordar —se encogían, no se salían—, y la de la cabecera porque el umbral estaba en 200 y el fallo medía 194.
+La primera mide ahora lo ancho que se dibuja la página; la segunda, qué fracción de la pantalla ocupa la cabecera.
+
+### Lo que esta pasada no toca
+
+- El orden en móvil sigue siendo ficha → vista central.
+  Con la hoja cerrada la vista central queda a una pantalla de distancia, así que invertirlos deja de ser urgente; si se hiciera, sería para que la pestaña que se pulsa esté justo encima de lo que cambia.
+- La barra sigue repitiendo tres cifras que también están en la vista de resultados.
+- Accesibilidad, que Chris dejó para el final.
+  Lo primero que habrá que mirar ahí es el editor del catálogo: conserva Escape y el foco, pero no atrapa el tabulador como hacía el `<dialog>`.
 
 ## Decisiones pendientes
 

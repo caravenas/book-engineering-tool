@@ -123,8 +123,15 @@ test('closing the editor gives the board its place back', async ({ page }) => {
  * on a line of its own reads as a control belonging to nothing, and the whole
  * point of it is that it belongs to the title beside it.
  */
-test('the call of every step shares the line with the title it belongs to', async ({ page }) => {
-  await openTheApp(page);
+for (const { width, height, label } of [
+  { width: 1440, height: 900, label: 'desktop' },
+  { width: 1024, height: 900, label: 'the breakpoint' },
+  { width: 390, height: 844, label: 'a phone' },
+]) {
+test(`the call of every step shares the line with the title it belongs to, at ${width}px on ${label}`, async ({ page }) => {
+  await page.setViewportSize({ width, height });
+  await page.goto('/');
+  await expect(page.locator('.app-grid')).toBeVisible();
 
   const rows = await page.evaluate(() => Array
     .from(document.querySelectorAll<HTMLElement>('.spec-step-summary'))
@@ -142,3 +149,4 @@ test('the call of every step shares the line with the title it belongs to', asyn
   expect(rows).toHaveLength(5);
   expect(rows.filter(row => row.apart > 12)).toEqual([]);
 });
+}
