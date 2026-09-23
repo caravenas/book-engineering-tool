@@ -33,8 +33,14 @@ test('dragging a measurement by its unit changes it, and redraws the page', asyn
   await page.mouse.up();
 
   await expect(page.locator('#input-width')).toHaveValue('150');
-  // The reason to drag rather than type is that the drawing follows, so what
-  // is asserted is the measurement written beside the drawing, not the field.
+  /*
+   * The reason to drag rather than type is that the drawing follows, so what
+   * is asserted is the measurement written beside the drawing, not the field.
+   * Since R-22 the drawings are one of the three views of the middle of the
+   * screen, so the drag happens in the sheet and the drawing is looked at
+   * afterwards — which is how it is used, with the sheet always on the left.
+   */
+  await page.locator('.central-tab', { hasText: 'Visualización' }).click();
   await expect(page.locator('.page-figure')).toContainText('150 mm');
   await expect(page.locator('.page-figure')).toContainText('210 mm');
 });

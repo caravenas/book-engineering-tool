@@ -36,6 +36,11 @@ async function openTheApp(page: Page): Promise<void> {
   await expect(page.locator('.app-grid')).toBeVisible();
 }
 
+/** Switches the middle of the screen to one of its three views. */
+async function showCentralView(page: Page, name: 'Resultados' | 'Visualización' | 'Catálogo'): Promise<void> {
+  await page.locator('.central-tab', { hasText: name }).click();
+}
+
 for (const { label, width, height } of VIEWPORTS) {
   test(`does not scroll sideways at ${width}px, on ${label}`, async ({ page }) => {
     await page.setViewportSize({ width, height });
@@ -73,14 +78,15 @@ test('at 1440px the page does not scroll, its columns do', async ({ page }) => {
   });
 
   expect(measured.pageScrollHeight).toBeLessThanOrEqual(measured.viewportHeight);
-  expect(measured.columns).toHaveLength(3);
+  // Two since R-22: the spec sheet, and the middle that holds one of three views.
+  expect(measured.columns).toHaveLength(2);
   for (const column of measured.columns) {
     expect(column.overflowY, `${column.name} must scroll on its own`).toBe('auto');
   }
 });
 
 /**
- * The escape hatch for a window too short to divide into three scrolling
+ * The escape hatch for a window too short to divide into scrolling
  * columns, which a laptop at heavy browser zoom reaches as easily as a small
  * screen. There the page scrolls as a whole again, because columns a few
  * hundred pixels tall are worse than a long page: this asserts the content is
@@ -99,7 +105,7 @@ test('on a short window the page scrolls as a whole instead of the columns', asy
   }));
 
   expect(measured.pageScrollHeight).toBeGreaterThan(measured.viewportHeight);
-  expect(measured.columnOverflow).toEqual(['visible', 'visible', 'visible']);
+  expect(measured.columnOverflow).toEqual(['visible', 'visible']);
 });
 
 /**
@@ -198,38 +204,38 @@ test('at 1440px there is no results bar, because the results never left', async 
 
 /**
  * The tool spans the screen rather than sitting in a fixed block centred on
- * it: capped at 1440px, a wide monitor drew the seams of the side columns in
+ * it: capped at 1440px, a wide monitor drew the seam of the spec column in
  * mid-air with empty page either side. Measured on a screen wider than the
  * old cap, because at or below it the two layouts are indistinguishable.
  */
-test('on a wide screen the side columns reach both edges', async ({ page }) => {
+test('on a wide screen the sheet keeps its width and the middle takes the rest', async ({ page }) => {
   await page.setViewportSize({ width: 2560, height: 1400 });
   await openTheApp(page);
+  await showCentralView(page, 'Visualización');
 
   const measured = await page.evaluate(() => {
     const box = (selector: string) => {
       const rect = document.querySelector(selector)!.getBoundingClientRect();
       return { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
     };
-    return { spec: box('.column-spec'), results: box('.column-results'), stack: box('.preview-stack'), viewport: window.innerWidth };
+    return { spec: box('.column-spec'), main: box('.column-main'), stack: box('.preview-stack'), viewport: window.innerWidth };
   });
 
   expect(measured.spec.left).toBe(0);
-  expect(measured.results.right).toBe(measured.viewport);
-  // The side columns keep the widths they have at 1440: every pixel the wider
-  // screen adds belongs to the middle.
-  // The canvas's own widths since R-19: 372 for the sheet, 336 for the figures.
+  expect(measured.main.right).toBe(measured.viewport);
+  // The sheet keeps the width it has at 1440 — the canvas's own 372 — so every
+  // pixel the wider screen adds belongs to the middle.
   expect(measured.spec.width).toBe(372);
-  expect(measured.results.width).toBe(336);
+  expect(measured.main.left).toBe(372);
 
   /*
-   * And the middle spends them on margin, not on stretching. Uncapped, the
+   * And the drawing spends them on margin, not on stretching. Uncapped, the
    * sheet's drawing sat in an SVG box 1790px wide and the four-way switch
    * spread across the same 1790px, reading as a toolbar rather than a choice.
    */
   expect(measured.stack.width).toBe(720);
-  const slack = measured.stack.left - (measured.spec.width);
-  expect(slack).toBe(measured.viewport - measured.results.width - measured.stack.right);
+  // Centred in the middle: the same slack either side of it.
+  expect(measured.stack.left - measured.main.left).toBe(measured.main.right - measured.stack.right);
 });
 
 /**
@@ -245,6 +251,7 @@ for (const width of [1025, 1040, 1060, 1200, 1440, 2560]) {
   test(`the view switch stays on one row at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await openTheApp(page);
+    await showCentralView(page, 'Visualización');
 
     const measured = await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll<HTMLElement>('.preview-switch .view-tab'));

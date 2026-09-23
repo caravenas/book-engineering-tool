@@ -36,6 +36,8 @@ test-results/
 .claude/
 
 # The design canvas, exported from claude.ai to be read beside the app. It is
-# the reference R-13 to R-21 were built against, not part of the app, and it
-# weighs 813KB with its fonts inlined.
+# the reference these increments were built against — R-13 to R-21 against the
+# first export, R-22 onward against v2 — not part of the app, and each weighs
+# around 800KB with its fonts inlined.
 PliegoStack.html
+PliegoStack v2.html

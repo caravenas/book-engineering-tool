@@ -7,12 +7,12 @@ import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types
 import { SpecSteps } from './components/SpecSteps';
 import { SpecSummary } from './components/specSummaries';
 import { PreviewColumn } from './components/PreviewColumn';
-import { CatalogPanelProvider, useCatalogPanel } from './components/CatalogPanel';
-import { SpineResults } from './components/SpineResults';
-import { BindingSpineResults } from './components/BindingSpineResults';
-import { ImpositionResults } from './components/ImpositionResults';
-import { CoverResults } from './components/CoverResults';
-import { HowItIsCalculated } from './components/HowItIsCalculated';
+import { CatalogPanelProvider } from './components/CatalogPanel';
+import { CatalogBoard } from './components/CatalogBoard';
+import { ResultsView } from './components/ResultsView';
+import {
+  CentralViewProvider, CentralViewTabs, useCentralView, CENTRAL_VIEW_LABEL,
+} from './components/CentralView';
 import { ResultsBar } from './components/ResultsBar';
 
 type LoadState =
@@ -47,13 +47,20 @@ function describeOrphanKind(kind: OrphanedUserLayerEntryKind): string {
   return kind.startsWith('hidden') ? 'un ocultamiento' : 'un parche';
 }
 
-/** Opens the catalog from the header, where it belongs to no single step. */
-function CatalogButton() {
-  const { open } = useCatalogPanel();
+/**
+ * The middle of the screen: the figures, the drawings or the catalog, whichever
+ * the header's switch is on. One region rather than three, so a screen reader
+ * announces the change of view and not merely a change of contents.
+ */
+function CentralColumn() {
+  const { view } = useCentralView();
+
   return (
-    <button type="button" className="catalog-open" onClick={() => open('presses')}>
-      Catálogo
-    </button>
+    <section className="app-column column-main" aria-label={CENTRAL_VIEW_LABEL[view]}>
+      {view === 'results' && <ResultsView />}
+      {view === 'visual' && <PreviewColumn />}
+      {view === 'catalog' && <CatalogBoard />}
+    </section>
   );
 }
 
@@ -127,6 +134,7 @@ export default function App() {
 
   return (
     <CatalogPanelProvider>
+    <CentralViewProvider>
     <div className="page-wrapper">
       <div className="header-section">
         <header className="app-header">
@@ -141,10 +149,13 @@ export default function App() {
             * catalog.
             */}
           {loadState.status === 'ready' && <span className="header-badge">Datos de ejemplo</span>}
+          {/* What the middle of the screen is showing. It sits between the name
+              of the tool and what the book currently is, because it belongs to
+              neither: it changes the whole of the screen below. */}
+          {loadState.status === 'ready' && <CentralViewTabs />}
           {/* What the book currently is, read from the same place the steps
               read it, so the header and the sheet cannot say different things. */}
           {loadState.status === 'ready' && <SpecSummary />}
-          <CatalogButton />
         </header>
       </div>
 
@@ -254,23 +265,14 @@ export default function App() {
               <section className="app-column column-spec" aria-label="Ficha técnica">
                 <SpecSteps />
               </section>
-              <section className="app-column column-preview" aria-label="Vista previa">
-                <PreviewColumn />
-              </section>
-              <section className="app-column column-results" aria-label="Resultados">
-                <h2 className="column-results-title">Resultados</h2>
-                <SpineResults />
-                <BindingSpineResults />
-                <ImpositionResults />
-                <CoverResults />
-                <HowItIsCalculated />
-              </section>
+              <CentralColumn />
             </div>
             </>
           )}
         </main>
       </div>
     </div>
+    </CentralViewProvider>
     </CatalogPanelProvider>
   );
 }

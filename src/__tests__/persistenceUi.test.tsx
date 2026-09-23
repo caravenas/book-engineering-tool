@@ -143,7 +143,9 @@ describe('Storage unavailable (UX-5, §3.5)', () => {
     expect(notice.textContent).toContain('se perderán al recargar');
 
     // Every quick-add stays usable, and all six live in the catalog now.
-    fireEvent.click(screen.getByRole('button', { name: 'Catálogo' }));
+    // Since R-22 the header switches the middle of the screen instead of
+    // opening the catalog, so the way in is a step's own call.
+    fireEvent.click(screen.getByRole('button', { name: 'Opciones de imposición' }));
     for (const [catalogName, addName] of [
       ['Prensas, 2 entradas', '+ Nueva prensa'],
       ['Pliegos, 6 entradas', '+ Nuevo pliego'],

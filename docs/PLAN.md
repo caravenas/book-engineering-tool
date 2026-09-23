@@ -941,6 +941,61 @@ Se quita el del paso. Los de imposición y tapa se quedan: dicen algo que la lí
 
 Verificación: `formatWeightParts` parte el peso igual que `formatWeight` lo escribe, umbral del kilo incluido; una fila dice su unidad en `.stat-unit` y no en su nombre; y la advertencia de valores preliminares aparece una sola vez en la página, al pie de la columna.
 
+## La vista central — R-22 y R-23
+
+Decisión de Chris el 2026-09-22, después de R-21: el lienzo se actualiza a `PliegoStack v2.html`.
+La pantalla pasa de tres columnas a dos.
+La ficha técnica se queda a la izquierda, con sus 372px; el resto de la pantalla es una sola vista central que muestra una de tres cosas —resultados, visualización o catálogo— y se cambia con un conmutador en la cabecera.
+
+Lo que había en la app antes de esto: los resultados vivían en una columna de 336px a la derecha, el dibujo ocupaba el centro, y el catálogo era un diálogo modal encima de todo.
+Cada una de las tres era contenido de una columna metido en una columna.
+El lienzo les da el mismo centro y deja que cada una lo use entero.
+
+### Lo que no se toma del tablero v2, y por qué
+
+**«Exportar ficha».**
+Sigue siendo UX-8, que sigue en pausa, por la misma razón que en R-19: un botón fiel al dibujo y sin función detrás promete algo que no ocurre.
+
+**`role="tablist"` en el conmutador.**
+Una lista de pestañas promete que las flechas mueven entre ellas y que solo una está en el orden de tabulación.
+Construir eso es trabajo de accesibilidad, que está congelado.
+El conmutador es un grupo de botones con `aria-pressed`, que es lo que ya usa el resto de la app y lo que promete exactamente lo que hay.
+
+**El calibre calculado.**
+El tablero del lienzo llena su rejilla de papeles con `gramaje × factor`, y por eso los nueve gramajes existen para los cuatro papeles.
+Aquí el calibre lo declara `sustratos.json` por gramaje, que es el único número que una imprenta puede medir.
+La rejilla tiene huecos donde un papel no vende un gramaje, y el hueco es parte de lo que dice: qué papeles llegan a qué gramajes.
+
+### R-22 — El marco y el catálogo dibujado
+
+La rejilla pasa a `372px minmax(0, 1fr)` y la cabecera gana el conmutador de tres vistas, entre el nombre de la herramienta y el resumen del libro.
+
+El catálogo deja de ser solo un diálogo y gana un tablero: cinco secciones —proporciones, papeles, pliegos y prensas, encuadernación y plegado, tapas— dibujadas a escala, donde cada celda se aplica al libro con un clic.
+Leer y editar quedan separados a propósito.
+El tablero elige; el diálogo que hay detrás de cada «editar» da de alta, parchea y oculta.
+Una superficie que hiciera las dos cosas tendría que explicar, en cada celda, si un clic es sobre este libro o sobre todos los libros.
+
+El lienzo no dibuja sección de proporciones —su tablero no tiene ese catálogo— y sí mete el plegado dentro de la de encuadernación.
+Aquí hay siete catálogos, así que la sección de proporciones se añade primero, que es donde cae en el orden del propio tablero: formato, papel, pliego y prensa, encuadernación y plegado, tapa.
+
+Lo que cada pliego rinde sobre la prensa elegida lo calcula `planSignatures`, el mismo motor que usa el paso de imposición, así que el tablero y el paso no pueden decir cosas distintas.
+
+El `···` de cada paso sigue abriendo el diálogo, no el tablero: se llama «Opciones de …» y lleva al sitio donde se cambian los datos.
+La cabecera deja de tener su propio botón de catálogo, porque el catálogo es ahora una de las tres vistas.
+
+Dos detalles que salieron al mirarlo en pantalla:
+el título de la sección de papeles va en versalitas, y `µ` en mayúscula es una mu griega, así que «calibre en µm» se leía «CALIBRE EN ΜM»; la unidad se bajó a la nota en cursiva.
+Y el segundo renglón de cada papel mostraba `type`, que en los archivos entregados es el mismo `id` del papel; ahora muestra `description`, que es la frase que el catálogo sí escribe.
+
+Verificación: el guardián de inventario recorre ahora las tres vistas además de los cinco pasos y del diálogo, y sigue cuadrando control a control; dos pruebas nuevas dicen que cada sección del tablero ofrece su catálogo y marca una sola elección, y que elegir en el tablero cambia la ficha; y las pruebas de disposición pasan a dos columnas.
+
+### R-23 — Los resultados dibujados
+
+Pendiente.
+Los resultados se quedan por ahora con la forma que les dio R-21, centrados en el ancho de una columna dentro de la vista central.
+R-23 les da la forma del tablero v2: el libro a escala arriba —página, lomo y pila de pliegos a la misma escala—, seis pictogramas con su cifra grande, y las fórmulas al pie.
+Las diecinueve filas que el motor calcula se quedan, como se decidió en R-19: se adopta la forma, no el recorte.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

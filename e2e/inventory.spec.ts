@@ -37,13 +37,13 @@ function controlNameCounts(
   options: {
     visibleOnly?: boolean;
     outsideSteps?: boolean;
-    outsidePreview?: boolean;
     outsideSwitch?: boolean;
     outsideCatalog?: boolean;
     outsideCatalogList?: boolean;
+    outsideBoardEntries?: boolean;
   } = {}
 ): Promise<Record<string, number>> {
-  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsidePreview, outsideSwitch, outsideCatalog, outsideCatalogList }) => {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsideSwitch, outsideCatalog, outsideCatalogList, outsideBoardEntries }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
     /*
@@ -54,7 +54,6 @@ function controlNameCounts(
     const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'))
       .filter(control => !visibleOnly || (control as HTMLElement).getClientRects().length > 0)
       .filter(control => !outsideSteps || !control.closest('.spec-step-body'))
-      .filter(control => !outsidePreview || !control.closest('.column-preview'))
       // The switch itself is counted once, with the rest of the page, rather
       // than once per view it is walked through.
       .filter(control => !outsideSwitch || !control.closest('.preview-switch'))
@@ -68,6 +67,14 @@ function controlNameCounts(
        * asserted on its own below.
        */
       .filter(control => !outsideCatalogList || !control.closest('.catalog-list'))
+      /*
+       * And, for the same reason, the cells of the catalog board: every one
+       * of them is named after a catalog entry, so counting them here would
+       * make this map a snapshot of public/config/. That the board offers
+       * every entry, and marks the one in use, is asserted on its own below.
+       */
+      .filter(control => !outsideBoardEntries
+        || !control.closest('.board-cell, .board-row, .board-paper-cell'))
       /*
        * And, for the same reason, the drawn options of a step whose choices
        * are catalog entries: since R-13 a step offers one card per entry
@@ -111,11 +118,16 @@ function controlNameCounts(
     selector: root,
     visibleOnly: options.visibleOnly ?? true,
     outsideSteps: options.outsideSteps ?? false,
-    outsidePreview: options.outsidePreview ?? false,
     outsideSwitch: options.outsideSwitch ?? false,
     outsideCatalog: options.outsideCatalog ?? false,
     outsideCatalogList: options.outsideCatalogList ?? false,
+    outsideBoardEntries: options.outsideBoardEntries ?? false,
   });
+}
+
+/** Switches the middle of the screen to one of its three views. */
+async function showCentralView(page: Page, name: 'Resultados' | 'Visualización' | 'Catálogo'): Promise<void> {
+  await page.locator('.central-tab', { hasText: name }).click();
 }
 
 /**
@@ -124,6 +136,10 @@ function controlNameCounts(
  * reachable. Counting the document in one pass would therefore count controls
  * nobody can touch. Walking the steps instead asserts the stronger thing: that
  * every step opens, and that between them they still hold every control.
+ *
+ * Since R-22 the middle of the screen is walked the same way, and for the same
+ * reason: it holds one of three views at a time, and the two it is not showing
+ * are unmounted rather than hidden.
  */
 async function reachableControlNameCounts(page: Page): Promise<Record<string, number>> {
   const totals: Record<string, number> = {};
@@ -140,26 +156,32 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
     add(await controlNameCounts(page, `details.spec-step:nth-of-type(${index + 1}) .spec-step-body`));
   }
 
-  // The preview column shows one drawing at a time, so its controls have to be
+  // Visualización shows one drawing at a time, so its controls have to be
   // walked the same way: the shown-side switch only exists while the sheet is
   // the drawing on screen.
+  await showCentralView(page, 'Visualización');
   const views = page.locator('.preview-switch .view-tab');
   const viewCount = await views.count();
   for (let index = 0; index < viewCount; index += 1) {
     await views.nth(index).click();
-    add(await controlNameCounts(page, '.column-preview', { outsideSwitch: true }));
+    add(await controlNameCounts(page, '.column-main', { outsideSwitch: true }));
   }
 
   // The switch is counted once rather than once per view it walks through.
   add(await controlNameCounts(page, '.preview-switch'));
 
+  // The board, minus its cells: every one of those is named after a catalog
+  // entry, and the map below is not a copy of public/config/.
+  await showCentralView(page, 'Catálogo');
+  add(await controlNameCounts(page, '.catalog-board', { outsideBoardEntries: true }));
+
   /*
-   * The catalog is a modal, so nothing inside it is reachable until it opens,
-   * and it shows one catalog at a time for the same reason the steps do. Its
-   * navigation is counted once; each catalog's own controls are counted as the
-   * walk arrives at them.
+   * The editing dialog is a modal, so nothing inside it is reachable until it
+   * opens, and it shows one catalog at a time for the same reason the steps
+   * do. Its navigation is counted once; each catalog's own controls are
+   * counted as the walk arrives at them.
    */
-  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+  await page.getByRole('button', { name: 'Opciones de imposición' }).click();
   add(await controlNameCounts(page, '.catalog-header'));
   add(await controlNameCounts(page, '.catalog-nav'));
   const catalogs = page.locator('.catalog-nav-item');
@@ -170,10 +192,13 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   }
   await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
 
-  // Whatever lives outside both: the notices, and anything the layout grows
-  // later. Counting named regions could quietly miss a control added somewhere
-  // else, so the walk is reconciled against the page below.
-  add(await controlNameCounts(page, 'body', { outsideSteps: true, outsidePreview: true, outsideCatalog: true }));
+  // Whatever lives outside all of it: the header's own switch, the notices,
+  // and anything the layout grows later. Counted with the figures on screen,
+  // which carry no controls of their own, so nothing here is counted twice.
+  // Naming regions could quietly miss a control added somewhere else, so the
+  // walk is reconciled against the page below.
+  await showCentralView(page, 'Resultados');
+  add(await controlNameCounts(page, 'body', { outsideSteps: true, outsideCatalog: true }));
   return totals;
 }
 
@@ -189,10 +214,10 @@ async function openStep(page: Page, title: string): Promise<void> {
   await ensureOpen(page.locator('details.spec-step', { has: page.getByRole('heading', { name: title, exact: true }) }));
 }
 
-/** Every `.stat-label` in the results column, regardless of which component put it there. */
+/** Every `.stat-label` in the figures view, regardless of which component put it there. */
 function resultLabels(page: Page): Promise<string[]> {
   return page.evaluate(() =>
-    Array.from(document.querySelectorAll('.column-results .stat-label')).map(el => el.textContent?.trim() ?? ''));
+    Array.from(document.querySelectorAll('.results-view .stat-label')).map(el => el.textContent?.trim() ?? ''));
 }
 
 /**
@@ -204,15 +229,29 @@ function resultLabels(page: Page): Promise<string[]> {
  * not just a total that happens to still add up.
  */
 const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
-  // The four views of the preview column, added by R-3c.
+  // What the middle of the screen is showing, added by R-22. The header used
+  // to carry a way into the catalog instead; the catalog is one of the three
+  // views now, so the name stayed and what it does changed.
+  'Resultados': 1,
+  'Visualización': 1,
+  'Catálogo': 1,
+
+  // The four drawings of Visualización, added by R-3c.
   'Página': 1,
   'Lomo': 1,
   'Pliego': 1,
   'Tapa': 1,
 
-  // The catalog, added by R-4a: the way in, the way out, one entry per
-  // catalog, and the press form that moved in from the imposition step.
-  'Catálogo': 1,
+  // The way from each section of the board to the catalog that changes it,
+  // added by R-22: the board chooses, the dialog behind these edits.
+  'Editar el catálogo de proporciones': 1,
+  'Editar el catálogo de papeles': 1,
+  'Editar el catálogo de pliegos': 1,
+  'Editar el catálogo de encuadernaciones': 1,
+  'Editar el catálogo de tapas': 1,
+
+  // The editing dialog, added by R-4a: the way out, one entry per catalog,
+  // and the press form that moved in from the imposition step.
   'Cerrar catálogo': 1,
   // One per step since R-19, named for the step rather than for the catalog
   // it opens: the rest are reached from the catalog's own navigation.
@@ -358,7 +397,7 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
    * whoever hits it to overwrite the expectation instead of reading it.
    */
   test('every catalog entry has a row to choose it by, and one is marked', async ({ page }) => {
-    await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+    await page.getByRole('button', { name: 'Opciones de imposición' }).click();
     const catalogs = page.locator('.catalog-nav-item');
 
     for (let index = 0; index < await catalogs.count(); index += 1) {
@@ -403,6 +442,65 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
         expect(await chosen.count(), where).toBe(1);
       }
     }
+  });
+
+  /**
+   * The board, asserted as the structure it is rather than as the data it
+   * carries, for the same reason the catalog rows are: every catalog it draws
+   * offers something, and settles on exactly one choice. The paper grid is the
+   * exception the canvas does not have — a caliper is declared per weight here,
+   * not computed from one, so a paper that does not sell a weight leaves that
+   * cell empty — and what is asserted there is that at least one cell exists
+   * and exactly one is marked.
+   */
+  test('every section of the board offers its catalog and marks one choice', async ({ page }) => {
+    await showCentralView(page, 'Catálogo');
+    const board = page.locator('.catalog-board');
+    await expect(board).toBeVisible();
+
+    // A · proporciones, B · papeles, C · pliegos y prensas (two groups),
+    // D · encuadernación y plegado (two groups), E · tapas.
+    const groups = [
+      '.board-proportions .board-proportion',
+      '.board-paper-grid .board-paper-cell',
+      '.board-sheets .board-sheet',
+      '.board-rows .board-row:has(.board-press-shape)',
+      '.board-rows .board-row:has(.board-binding-mark)',
+      '.board-folds .board-fold',
+      '.board-covers .board-cover',
+    ];
+
+    for (const selector of groups) {
+      const options = board.locator(selector);
+      const chosen = board.locator(`${selector}[aria-pressed="true"]`);
+      expect(await options.count(), selector).toBeGreaterThan(0);
+      expect(await chosen.count(), selector).toBe(1);
+    }
+
+    // Five sections, each with the way into the catalog that changes it.
+    await expect(board.locator('.board-section')).toHaveCount(5);
+    await expect(board.locator('.board-section-edit')).toHaveCount(5);
+  });
+
+  /**
+   * Choosing on the board changes the book, which is what a board is for: it
+   * reads the catalogs and applies them, and the editing dialog behind each
+   * «editar» is the one that changes the catalogs themselves.
+   */
+  test('a cell of the board applies itself to the spec sheet', async ({ page }) => {
+    await showCentralView(page, 'Catálogo');
+    const target = page.locator('.board-sheets .board-sheet[aria-pressed="false"]:not([disabled])').first();
+    const name = (await target.locator('.board-sheet-name').innerText()).trim();
+    await target.click();
+
+    await expect(page.locator('.board-sheets .board-sheet[aria-pressed="true"] .board-sheet-name')).toHaveText(name);
+
+    await showCentralView(page, 'Resultados');
+    await openStep(page, 'Imposición');
+    // A field names its group through `aria-labelledby`; the id it is given
+    // belongs to the label, not to the group, so the group is found by it.
+    const sheetGroup = page.locator('[aria-labelledby="sheet-size-group-label"]');
+    await expect(sheetGroup.locator('.option-card[aria-pressed="true"] .option-name')).toHaveText(name);
   });
 
   test('every result label is still present, wherever R-3 puts it', async ({ page }) => {
@@ -523,9 +621,9 @@ test('every control is big enough to hit, in the catalog and on the way to it', 
    * that is the restyle's job, not something to assert before it is done. When
    * that increment lands, this measures the steps too and has to stay green.
    */
-  tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.step-options, .catalog-open'));
+  tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.step-options, .central-tab'));
 
-  await page.getByRole('button', { name: 'Catálogo', exact: true }).click();
+  await page.getByRole('button', { name: 'Opciones de imposición' }).click();
   const catalogs = page.locator('.catalog-nav-item');
   for (let index = 0; index < await catalogs.count(); index += 1) {
     await catalogs.nth(index).click();
