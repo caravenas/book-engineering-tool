@@ -1015,6 +1015,29 @@ Un resultado al que se le dio un dibujo sigue siendo un resultado, y el guardiá
 Verificación: seis pruebas de unidad, saboteadas una a una —el peso suma los dos papeles y los nombra; la tapa dura avisa de que el cartón no está contado; el lomo se llama según lo que el método hace; se dibuja un pliego por pliego; con una cuenta de páginas inservible no queda ninguna cifra; y el canto suma los dos cartones—.
 Y tres de navegador, también saboteadas, porque un dibujo es una afirmación sobre proporciones y en jsdom todo mide cero: el lomo está a la misma escala que los lomos con que se compara, la barra de aprovechamiento se llena exactamente lo que dice, y la página se dibuja en la proporción que tiene la ficha.
 
+### R-24 — Las cuatro vistas a la vez, y el ancho entero
+
+Decisión de Chris el 2026-09-23: la visualización muestra los cuatro dibujos al mismo tiempo, en una cuadrícula, y las dos vistas centrales aprovechan todo el espacio disponible.
+
+**Los cuatro dibujos.**
+Se turnaban desde R-3c, detrás de cuatro píldoras, porque la columna en que vivían medía 336px y cuatro dibujos apilados habrían tenido un cuarto del alto cada uno.
+El centro de la pantalla ya no es esa columna, y los cuatro caben de sobra en dos filas de dos.
+Cambiar de uno a otro costaba un clic para comparar una página con el pliego en que se imprime, que es justo la comparación para la que están los dibujos.
+
+**Cada dibujo se mide contra su celda.**
+Hasta aquí la escala salía de una constante: 360 por 420 píxeles para la página, dijera lo que dijera la pantalla.
+Mostrados de uno en uno en un marco de 720px eso era solo desperdicio; mostrados cuatro a la vez, en celdas cuyo tamaño depende de la ventana, una constante es sencillamente incorrecta —o desborda la celda o deja media celda vacía—.
+Cada celda se mide con un `ResizeObserver` y le pasa su tamaño al dibujo.
+Las filas de la cuadrícula tienen base cero, y donde la columna no tiene alto propio se les da uno fijo: una fila que creciera con su contenido realimentaría la medida en sí misma, que fue exactamente lo que pasó la primera vez, con una celda de 2127px de alto.
+
+**El ancho entero.**
+La vista de resultados tenía un tope de 1080px que en una pantalla ancha dejaba un tercio vacío a la derecha.
+Lo que hay dentro se reparte en más columnas en vez de estirarse: las seis cifras dibujadas llegan a tres columnas y ahí paran —más sería poner la última fuera de lo que se lee de una vez—, y el desglose llega a cuatro, que es cuantos grupos hay.
+
+Verificación: una prueba de navegador por ancho —1024, 1440 y 2560— que mide, en cada celda, la tinta y no la caja: un `<svg>` puede llenar su celda mientras el dibujo de dentro se encoge hasta un sello.
+Comprueba que cada dibujo ocupa más de la mitad de uno de los dos ejes de su celda y que nada se sale de ella, porque un dibujo centrado al que le sobra tamaño se desborda por arriba y por abajo a la vez y se lleva sus propias acotaciones fuera de la vista.
+Las dos cosas saboteadas: tirar la medida y quedarse con el valor de reserva, y darle a la página la celda entera sin descontar sus acotaciones.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

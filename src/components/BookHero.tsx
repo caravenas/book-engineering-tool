@@ -1,4 +1,5 @@
 import { useBookFigures, SPINE_EXAGGERATION } from './bookFigures';
+import { useElementSize } from './useElementSize';
 import { getPageDisplayDimensions, formatRoundedValue, isPositiveFinite } from '../engine/units';
 import { useBookStore } from '../store/useBookStore';
 
@@ -17,9 +18,15 @@ import { useBookStore } from '../store/useBookStore';
  * it cannot come from two different derivations.
  */
 
-/** How tall the page is drawn, and how wide it may get, in pixels. */
-const HERO_HEIGHT = 230;
-const HERO_MAX_PAGE_WIDTH = 240;
+/**
+ * How tall the page may be drawn, how much of the row it may take, and the
+ * widest it is ever worth drawing. The share leaves room for the two drawings
+ * beside it; the cap stops a very wide screen from turning a paperback into a
+ * poster, which says nothing more about it than a readable drawing does.
+ */
+const HERO_MAX_HEIGHT = 300;
+const HERO_PAGE_SHARE = 0.42;
+const HERO_MAX_PAGE_WIDTH = 340;
 
 /** At most this many sheets are drawn; the last one says the rest are there. */
 const MAX_DRAWN_SHEETS = 12;
@@ -28,13 +35,20 @@ export function BookHero() {
   const figures = useBookFigures();
   const { pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem, selectedGrammage } = useBookStore();
   const { displayW, displayH, unit } = getPageDisplayDimensions(pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem);
+  /*
+   * The row the three drawings share. Its width comes from the grid rather
+   * than from what is in it, so measuring it cannot feed back into the size
+   * of what is drawn inside it.
+   */
+  const [drawingsRef, drawingsSize] = useElementSize<HTMLDivElement>({ width: 600, height: HERO_MAX_HEIGHT });
 
   // The drawing is geometry, so it waits for a page that has one. The steps
   // are already saying what is wrong with it; a hero drawn from a NaN would
   // add a broken picture to a message that is doing its job.
   if (!isPositiveFinite(figures.pageWidth_mm) || !isPositiveFinite(figures.pageHeight_mm)) return null;
 
-  const scale = Math.min(HERO_HEIGHT / figures.pageHeight_mm, HERO_MAX_PAGE_WIDTH / figures.pageWidth_mm);
+  const pageRoom = Math.min(HERO_MAX_PAGE_WIDTH, Math.max(140, drawingsSize.width * HERO_PAGE_SHARE));
+  const scale = Math.min(HERO_MAX_HEIGHT / figures.pageHeight_mm, pageRoom / figures.pageWidth_mm);
   const pageHeight = figures.pageHeight_mm * scale;
   const pageWidth = figures.pageWidth_mm * scale;
   const edge_mm = figures.edgeTotal_mm;
@@ -51,7 +65,7 @@ export function BookHero() {
 
   return (
     <div className="hero">
-      <div className="hero-drawings">
+      <div className="hero-drawings" ref={drawingsRef}>
         <div className="hero-item">
           <span className="hero-value">{displayW} × {displayH} {unit}</span>
           <span className="hero-page" style={{ width: `${pageWidth}px`, height: `${pageHeight}px` }}>

@@ -11,9 +11,12 @@ import { formatRoundedValue } from '../engine/units';
  */
 const SPINE_SCALE = 8;
 
-/** How tall the block is drawn, and the least a board may be drawn at. */
+/** How tall the block is drawn by default, and the least a board may be. */
 const BLOCK_HEIGHT = 260;
 const MIN_BOARD_PX = 2;
+
+/** What the figure and the caption under the block take, in pixels. */
+const CAPTION_HEIGHT = 74;
 
 /**
  * The spine seen from above, which is the one view of a book where its
@@ -24,7 +27,7 @@ const MIN_BOARD_PX = 2;
  * swatch of the same measurement — which said one thing twice. The design
  * canvas draws it once, at a declared scale, with the figure under it.
  */
-export function SpineView() {
+export function SpineView({ maxHeight = BLOCK_HEIGHT + CAPTION_HEIGHT }: { maxHeight?: number }) {
   const {
     catalog, totalPagesInput, totalPages, spineResult, bindingSpine,
     coverId, customCovers, coverPatches, hiddenCoverIds,
@@ -61,9 +64,16 @@ export function SpineView() {
   const boardPx = board_mm > 0 ? Math.max(MIN_BOARD_PX, board_mm * SPINE_SCALE) : MIN_BOARD_PX;
   const total_mm = (bindingSpine?.total_mm ?? safeResult.thickness_mm) + 2 * board_mm;
 
+  /*
+   * The block takes whatever the cell has left once the figure and the
+   * caption under it are out, and never less than a hundred pixels: a spine
+   * drawn shorter than that stops reading as the edge of a book.
+   */
+  const blockHeight = Math.max(100, maxHeight - CAPTION_HEIGHT);
+
   return (
     <div className="spine-view">
-      <div className="spine-block" style={{ height: `${BLOCK_HEIGHT}px` }}>
+      <div className="spine-block" style={{ height: `${blockHeight}px` }}>
         <span className="spine-board" style={{ width: `${boardPx}px` }} />
         <span className="spine-paper" style={{ width: `${blockPx}px` }} />
         {allowancePx > 0 && <span className="spine-allowance" style={{ width: `${allowancePx}px` }} />}

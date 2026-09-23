@@ -37,13 +37,12 @@ function controlNameCounts(
   options: {
     visibleOnly?: boolean;
     outsideSteps?: boolean;
-    outsideSwitch?: boolean;
     outsideCatalog?: boolean;
     outsideCatalogList?: boolean;
     outsideBoardEntries?: boolean;
   } = {}
 ): Promise<Record<string, number>> {
-  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsideSwitch, outsideCatalog, outsideCatalogList, outsideBoardEntries }) => {
+  return page.evaluate(({ selector, visibleOnly, outsideSteps, outsideCatalog, outsideCatalogList, outsideBoardEntries }) => {
     const scope = document.querySelector(selector);
     if (!scope) throw new Error(`No element matches ${selector}`);
     /*
@@ -54,9 +53,6 @@ function controlNameCounts(
     const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'))
       .filter(control => !visibleOnly || (control as HTMLElement).getClientRects().length > 0)
       .filter(control => !outsideSteps || !control.closest('.spec-step-body'))
-      // The switch itself is counted once, with the rest of the page, rather
-      // than once per view it is walked through.
-      .filter(control => !outsideSwitch || !control.closest('.preview-switch'))
       .filter(control => !outsideCatalog || !control.closest('.catalog-dialog'))
       /*
        * A row of a catalog list is a control — it chooses which entry the
@@ -118,7 +114,6 @@ function controlNameCounts(
     selector: root,
     visibleOnly: options.visibleOnly ?? true,
     outsideSteps: options.outsideSteps ?? false,
-    outsideSwitch: options.outsideSwitch ?? false,
     outsideCatalog: options.outsideCatalog ?? false,
     outsideCatalogList: options.outsideCatalogList ?? false,
     outsideBoardEntries: options.outsideBoardEntries ?? false,
@@ -156,19 +151,10 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
     add(await controlNameCounts(page, `details.spec-step:nth-of-type(${index + 1}) .spec-step-body`));
   }
 
-  // Visualización shows one drawing at a time, so its controls have to be
-  // walked the same way: the shown-side switch only exists while the sheet is
-  // the drawing on screen.
+  // Visualización holds the four drawings at once since R-24, so there is
+  // nothing to walk: what it carries is on screen the moment it is shown.
   await showCentralView(page, 'Visualización');
-  const views = page.locator('.preview-switch .view-tab');
-  const viewCount = await views.count();
-  for (let index = 0; index < viewCount; index += 1) {
-    await views.nth(index).click();
-    add(await controlNameCounts(page, '.column-main', { outsideSwitch: true }));
-  }
-
-  // The switch is counted once rather than once per view it walks through.
-  add(await controlNameCounts(page, '.preview-switch'));
+  add(await controlNameCounts(page, '.column-main'));
 
   // The board, minus its cells: every one of those is named after a catalog
   // entry, and the map below is not a copy of public/config/.
@@ -236,11 +222,12 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Visualización': 1,
   'Catálogo': 1,
 
-  // The four drawings of Visualización, added by R-3c.
-  'Página': 1,
-  'Lomo': 1,
-  'Pliego': 1,
-  'Tapa': 1,
+  /*
+   * The four drawings had a switch of their own from R-3c to R-23 — Página,
+   * Lomo, Pliego, Tapa — and it is gone: since R-24 all four are on screen
+   * together, named by a heading apiece rather than chosen by a button. The
+   * only control left among them is the sheet's own two sides.
+   */
 
   // The way from each section of the board to the catalog that changes it,
   // added by R-22: the board chooses, the dialog behind these edits.

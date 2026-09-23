@@ -251,14 +251,14 @@ body::before {
 
 /* The figures take the middle, in the order the canvas puts them: the book
    itself, the six drawn figures, what those are made of, how it is worked
-   out. Capped, because a row of a breakdown is a name and a number read as a
-   pair, and a pair stretched a metre apart stops being one. */
+   out. The whole of the middle: the cap R-23 put on it left a wide screen
+   with an empty third down the right-hand side, and what is inside — a grid
+   of figures, a grid of rows — divides into more columns rather than
+   stretching each of them. */
 .results-view {
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  max-width: 1080px;
-  margin: 0 auto;
   padding-bottom: var(--space-6);
 }
 
@@ -494,77 +494,124 @@ body::before {
 /* Stacked in one column, consecutive panels ran together: the six cells used
    to be told apart by the seams of the grid they sat in, and that grid is
    gone. A hairline does the same work in a column. */
-/* ─── Preview switch ────────────────────────────────────────────────── */
+/* ─── The Four Drawings (R-24) ──────────────────────────────────────── */
 
-/* The same segmented control the format and proportion rows use; only its
-   place on the page differs. */
 /*
- * The drawings are bounded by their own heights, so past a point a wider
- * column buys nothing: at 2560px the sheet's SVG box measured 1790px wide to
- * draw 284px of sheet inside it, and the switch above it spread four segments
- * across the same 1790px and read as a toolbar rather than a choice of four.
- * The stack stops at the width the drawings were composed at — 1440 less the
- * two side columns — and centres itself, so a wider screen adds margin around
- * the drawing instead of inside it.
+ * All four at once, in a grid that takes the middle of the screen. They took
+ * turns until R-24, behind four pills, because the column they lived in was
+ * 336px wide; the middle of the screen is everything the spec sheet does not
+ * take, and four drawings fit in it with room to spare.
+ *
+ * The rows have a base of zero so nothing in a cell can push the grid taller:
+ * a cell measures itself and hands its size to the drawing inside it, and a
+ * row that grew with its content would feed that measurement back into
+ * itself. `min-height` is what keeps a short window from squeezing them to
+ * nothing — under it the column scrolls, which is what the column is for.
  */
-.preview-stack {
-  max-width: 720px;
-  margin: 0 auto;
-  /* Tall enough to put the drawing in the middle of the column rather than at
-     the top of it, which is where the canvas has it. */
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-8);
+  height: 100%;
+  min-height: 660px;
 }
 
-.preview-view {
-  flex: 1;
+.preview-cell {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
   min-height: 0;
 }
 
-/*
- * Four views on one row, whatever the width, centred over the drawing they
- * change. As one capsule they wrapped into two half-pills between 1025 and
- * 1059px, where the middle column is only 257px wide; as four marks they can
- * simply sit closer together, and `nowrap` keeps them on the one row that
- * e2e/layout.spec.ts holds them to.
- */
-.preview-switch {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-6);
-}
-
-.preview-switch .view-tab {
-  flex: 0 0 auto;
-  min-width: 0;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text-secondary);
+.preview-cell-title {
+  margin: 0;
   font-family: var(--font-body);
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
+  color: var(--color-text-secondary);
 }
 
-.preview-switch .view-tab:hover {
-  border-color: var(--color-text-primary);
+/* The box a drawing is measured into. Whatever it holds is centred in it and
+   clipped by it, so a drawing that outgrows its cell is cut off at the seam
+   instead of shoving the three beside it out of shape. */
+.preview-cell-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.preview-switch .view-tab.active {
-  border-color: var(--color-text-primary);
-  background: var(--color-text-primary);
-  color: var(--color-bg-primary);
+/*
+ * The cell's height has to reach all the way down to the drawing, or the
+ * drawing sizes itself to its own content in the middle of a box nobody told
+ * it about. Every link of the chain takes the height it is given and passes
+ * it on: the preview's own root, the container it was built with, the SVG.
+ */
+.preview-cell-body > * {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.preview-cell-body .sheet-preview,
+.preview-cell-body .spine-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* These were built to sit alone in a column and reserve a height of their
+   own, which here would be a height nobody gave them. */
+.preview-cell-body .imposition-svg-container,
+.preview-cell-body .cover-svg-container,
+.preview-cell-body .page-preview-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+}
+
+/* The chrome around a drawing costs it height, and in a cell a quarter of
+   the height is what these two margins were. */
+.preview-cell-body .drawing-control {
+  margin-bottom: var(--space-2);
+}
+
+.preview-cell-body .drawing-caption {
+  margin-bottom: var(--space-1);
+}
+
+.preview-cell-body .imposition-svg,
+.preview-cell-body .cover-svg {
+  /* The viewBox letterboxes what it draws, so filling the box distorts
+     nothing: the drawing grows until one of the two edges stops it. */
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Below the breakpoint the page scrolls as a whole, so there is no column
+   height for the rows to divide: the rows get one apiece, and the drawings
+   take two abreast or one, whichever the width allows. */
+@media (max-width: 1024px) {
+  .preview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-rows: none;
+    grid-auto-rows: 360px;
+    height: auto;
+    min-height: 0;
+  }
 }
 
 /* ─── Spec steps ────────────────────────────────────────────────────── */
@@ -1847,6 +1894,18 @@ select.form-input {
   .app-column {
     overflow-y: visible;
   }
+
+  /*
+   * The column has no height of its own here — the page scrolls instead — so
+   * the rows are given one. Left as fractions of nothing they would size to
+   * their content, and their content is a drawing measured from the row: the
+   * cell would have grown, the drawing with it, and round again.
+   */
+  .preview-grid {
+    grid-template-rows: repeat(2, 330px);
+    height: auto;
+    min-height: 0;
+  }
 }
 
 /* ─── Catalog panel ─────────────────────────────────────────────────── */
@@ -2661,7 +2720,12 @@ select.form-input {
  */
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  /* Halves rather than a wide cell and a narrow one: capped at 380px the
+     ficha wrapped its lines while a third of the drawings' half stood empty.
+     Both tracks are fractions, so neither is sized by what is inside it —
+     the drawings measure their own track, and a track that grew with them
+     would feed that measurement back into itself. */
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr);
   gap: var(--space-10);
   align-items: flex-end;
   padding-bottom: var(--space-8);
@@ -2784,10 +2848,20 @@ select.form-input {
 
 /* ── The six drawn figures ── */
 
+/* Three at a time where there is room for three, which is what the canvas
+   draws and as many as a row of drawings can be read across. Wider than that,
+   the three simply get wider: a fourth column would put the last figure past
+   the edge of what anyone reads in one go. */
 .figure-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   gap: var(--space-8) var(--space-10);
+}
+
+@media (min-width: 1360px) {
+  .figure-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .figure {
@@ -3040,7 +3114,9 @@ select.form-input {
 
 .result-detail {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* Four groups, so four columns is as wide as it ever goes: `auto-fit`
+     collapses the tracks nothing lands in. */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-6) var(--space-10);
   padding-top: var(--space-6);
   border-top: 1px solid var(--color-border);

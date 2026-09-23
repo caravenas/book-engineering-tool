@@ -6,7 +6,7 @@ import type { ConfigError } from './config/validateCatalog';
 import type { OrphanedUserLayerEntry, OrphanedUserLayerEntryKind } from './types';
 import { SpecSteps } from './components/SpecSteps';
 import { SpecSummary } from './components/specSummaries';
-import { PreviewColumn } from './components/PreviewColumn';
+import { PreviewGrid } from './components/PreviewGrid';
 import { CatalogPanelProvider } from './components/CatalogPanel';
 import { CatalogBoard } from './components/CatalogBoard';
 import { ResultsView } from './components/ResultsView';
@@ -58,7 +58,7 @@ function CentralColumn() {
   return (
     <section className="app-column column-main" aria-label={CENTRAL_VIEW_LABEL[view]}>
       {view === 'results' && <ResultsView />}
-      {view === 'visual' && <PreviewColumn />}
+      {view === 'visual' && <PreviewGrid />}
       {view === 'catalog' && <CatalogBoard />}
     </section>
   );

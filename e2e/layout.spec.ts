@@ -218,7 +218,16 @@ test('on a wide screen the sheet keeps its width and the middle takes the rest',
       const rect = document.querySelector(selector)!.getBoundingClientRect();
       return { left: Math.round(rect.left), right: Math.round(rect.right), width: Math.round(rect.width) };
     };
-    return { spec: box('.column-spec'), main: box('.column-main'), stack: box('.preview-stack'), viewport: window.innerWidth };
+    return {
+      spec: box('.column-spec'),
+      main: box('.column-main'),
+      grid: box('.preview-grid'),
+      cells: Array.from(document.querySelectorAll('.preview-cell')).map(cell => {
+        const rect = cell.getBoundingClientRect();
+        return { width: Math.round(rect.width), height: Math.round(rect.height) };
+      }),
+      viewport: window.innerWidth,
+    };
   });
 
   expect(measured.spec.left).toBe(0);
@@ -229,41 +238,91 @@ test('on a wide screen the sheet keeps its width and the middle takes the rest',
   expect(measured.main.left).toBe(372);
 
   /*
-   * And the drawing spends them on margin, not on stretching. Uncapped, the
-   * sheet's drawing sat in an SVG box 1790px wide and the four-way switch
-   * spread across the same 1790px, reading as a toolbar rather than a choice.
+   * And since R-24 the middle spends them on the drawings rather than on
+   * margin: four cells, two by two, dividing the whole of it. Until R-23 one
+   * drawing sat in a 720px frame in the centre with the rest of the screen
+   * blank either side of it.
    */
-  expect(measured.stack.width).toBe(720);
-  // Centred in the middle: the same slack either side of it.
-  expect(measured.stack.left - measured.main.left).toBe(measured.main.right - measured.stack.right);
+  expect(measured.cells).toHaveLength(4);
+  expect(measured.grid.width).toBeGreaterThan(measured.main.width - 100);
+  const widths = new Set(measured.cells.map(cell => cell.width));
+  const heights = new Set(measured.cells.map(cell => cell.height));
+  expect(widths.size).toBe(1);
+  expect(heights.size).toBe(1);
+  // Two columns, so a cell is about half the middle.
+  expect([...widths][0]).toBeGreaterThan(measured.main.width / 2 - 100);
 });
 
 /**
- * The four views have to stay on one row. They were a capsule until R-19, and
- * a capsule that wraps becomes two half pills: between 1025 and 1059px the
- * middle column is only 257px wide and it folded, which an independent review
- * of the width change found. They are four separate marks now, which cannot
- * break in half, but they can still wrap or clip. Measured across that window
- * rather than at one width, because the width it breaks at depends on the
- * length of four labels.
+ * The four drawings are shown to be compared, which they cannot be if one of
+ * them is a dot in the corner of its cell. Each one fills a good part of the
+ * box it was given, at every width the tool claims to work at — which is the
+ * whole point of measuring the cell instead of drawing at a fixed size.
  */
-for (const width of [1025, 1040, 1060, 1200, 1440, 2560]) {
-  test(`the view switch stays on one row at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
+for (const { width, height, label } of [
+  { width: 1440, height: 900, label: 'desktop' },
+  { width: 1024, height: 900, label: 'the breakpoint' },
+  { width: 2560, height: 1400, label: 'a wide screen' },
+]) {
+  test(`every drawing fills the cell it was given at ${width}px, on ${label}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
     await openTheApp(page);
     await showCentralView(page, 'Visualización');
+    await expect(page.locator('.preview-cell')).toHaveCount(4);
 
-    const measured = await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll<HTMLElement>('.preview-switch .view-tab'));
-      return {
-        rows: new Set(buttons.map(button => Math.round(button.getBoundingClientRect().top))).size,
-        clipped: buttons.filter(button => button.scrollWidth > button.clientWidth + 1).map(button => button.textContent ?? ''),
-      };
-    });
+    const measured = await page.evaluate(() => Array
+      .from(document.querySelectorAll<HTMLElement>('.preview-cell'))
+      .map(cell => {
+        const body = cell.querySelector<HTMLElement>('.preview-cell-body')!.getBoundingClientRect();
+        /*
+         * The ink, not the box around it: an SVG box can fill its cell while
+         * the drawing inside it letterboxes down to a stamp, so what is
+         * measured is the shapes — the sheet of paper, the block of the
+         * spine, the panels of the cover.
+         */
+        const shapes = Array.from(cell.querySelectorAll('.page-preview, .spine-block, .sheet-bg, .cover-section-rect, .cover-wrap-rect'))
+          .map(shape => shape.getBoundingClientRect());
+        const left = Math.min(...shapes.map(box => box.left));
+        const right = Math.max(...shapes.map(box => box.right));
+        const top = Math.min(...shapes.map(box => box.top));
+        const bottom = Math.max(...shapes.map(box => box.bottom));
+        /*
+         * And nothing at all may fall outside the cell. The drawing is
+         * centred in its box, so a drawing given more room than the box has
+         * spills equally above and below it and pushes its own measurements
+         * out of sight — which the shapes above would not notice, because
+         * the shapes would still be inside while the labels around them were
+         * already gone.
+         */
+        const everything = Array.from(cell.querySelectorAll<HTMLElement>('.preview-cell-body *'))
+          .map(node => node.getBoundingClientRect())
+          .filter(box => box.width > 0 && box.height > 0);
 
-    expect(measured.rows).toBe(1);
-    // On one row is not enough: a label squeezed to an ellipsis would also
-    // report one row and say nothing about which view is which.
-    expect(measured.clipped).toEqual([]);
+        return {
+          name: cell.querySelector('.preview-cell-title')?.textContent ?? '(sin nombre)',
+          shapes: shapes.length,
+          /*
+           * The larger of the two shares. A drawing scaled to fit touches one
+           * of the two edges and falls short of the other by however far its
+           * proportion differs from the cell's — and a spine is a sliver
+           * whatever room it is given, so its width share says nothing.
+           */
+          share: Math.max((right - left) / body.width, (bottom - top) / body.height),
+          clipped: everything.filter(box =>
+            box.top < body.top - 1 || box.bottom > body.bottom + 1
+            || box.left < body.left - 1 || box.right > body.right + 1
+          ).length,
+        };
+      }));
+
+    expect(measured).toHaveLength(4);
+    for (const cell of measured) {
+      expect(cell.shapes, `${cell.name} no dibuja nada`).toBeGreaterThan(0);
+      expect(cell.clipped, `${cell.name} deja ${cell.clipped} elementos fuera de su celda`).toBe(0);
+      // Low enough that a drawing whose proportion fights the cell's still
+      // passes, high enough that one stuck at a fixed size does not.
+      expect(cell.share, `${cell.name} solo ocupa ${Math.round(cell.share * 100)} % de su celda`)
+        .toBeGreaterThan(0.45);
+    }
   });
 }

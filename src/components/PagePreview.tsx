@@ -19,10 +19,16 @@ const MARGIN_SHARE = 0.1;
 
 /**
  * The page-dimensions panel's proportional preview, read straight from the
- * store instead of taking props: R-3 moves this into its own column, where
- * the panel that draws it today won't be able to pass it anything.
+ * store: R-3 moved this into a view of its own, where the panel that used to
+ * draw it cannot pass it anything.
+ *
+ * The one thing it does take is the box it has been given. Since R-24 the
+ * four views are on screen at once, in cells whose size depends on the
+ * window, so the bounds the drawing scales into are measured rather than
+ * fixed. The defaults are the fixed pair it used before, for the tests that
+ * mount it on its own and for any environment that cannot measure.
  */
-export function PagePreview() {
+export function PagePreview({ maxWidth = 360, maxHeight = 420 }: { maxWidth?: number; maxHeight?: number }) {
   const { pageWidth_mm, pageHeight_mm, bleed_mm, unitSystem, format, proportionId } = useBookStore();
 
   // Keep invalid input away from CSS geometry while the calculators report how to recover.
@@ -32,10 +38,14 @@ export function PagePreview() {
     && pageHeight_mm > 0
     && Number.isFinite(bleed_mm)
     && bleed_mm >= 0;
-  // Sized for a corner of a panel it no longer sits in: with a view of its own
-  // it gets the column, within the bounds the sheet and cover drawings use.
-  const maxPreviewH = 420;
-  const maxPreviewW = 360;
+  /*
+   * The bounds the drawing scales into, never smaller than something legible:
+   * a cell squeezed to nothing would otherwise turn the page into a dot, and
+   * a drawing that has run out of room should overflow its cell visibly
+   * rather than shrink out of existence.
+   */
+  const maxPreviewH = Math.max(120, maxHeight);
+  const maxPreviewW = Math.max(100, maxWidth);
   const bleedSpan = bleed_mm * 2;
   const outerPageWidth = pageWidth_mm + bleedSpan;
   const outerPageHeight = pageHeight_mm + bleedSpan;

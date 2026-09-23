@@ -154,7 +154,7 @@ export function SheetPreview() {
   const svgGeometry = getSignatureSvgGeometry(currentSheet, selected, side);
 
   return (
-    <div>
+    <div className="sheet-preview">
       {/* The canvas draws the front and stops there; this app draws both, so
           it needs a control the canvas has no equivalent for. It is kept the
           size of a caption rather than of a field: it belongs to the drawing,
