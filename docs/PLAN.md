@@ -1240,8 +1240,9 @@ La primera mide ahora lo ancho que se dibuja la página; la segunda, qué fracci
   Persistir preferencias fue un no objetivo explícito del incremento 1; cambiarlo es otra decisión.
 - ~~2026-09-17: el área táctil del botón de eliminar gramaje personalizado invadía a su vecino.~~
   Sin objeto desde R-4b: ese botón ya no está en el paso, y eliminar un gramaje se hace desde el Catálogo como cualquier otra entrada.
-- **2026-09-21: los esquemas de plegado entregados no superan la derivación por dobleces**, y el modelo que los reproduce no corresponde a ningún plegado físico.
-  `esquema_8pp` se lee 1 2 4 3 6 5 7 8 al plegarlo y `esquema_16pp` 1 2 4 3 5 6 8 7 10 9 11 12 14 13 15 16.
-  Está fijado en `src/__tests__/folding.test.ts`, que falla el día que el archivo se corrija.
-  Corregirlos es decisión de Chris, y conviene doblar un papel antes: ver R-12.
+- ~~2026-09-21: los esquemas de plegado entregados no superan la derivación por dobleces.~~
+  Cerrado el 2026-09-23 en R-27: Chris dobló un pliego, el de 16 páginas se deriva ahora de sus tres dobleces reales y `folding.test.ts` comprueba que se lee 1–16.
+- **2026-09-23, pendiente de confirmar doblando un papel: cuál de los dos dobleces se salta para hacer una firma de 8 páginas.**
+  El esquema entregado es la secuencia de 16 sin el último doblez, y se lee 1–8; saltando el primero en su lugar sale otra imposición, igual de correcta, con las páginas en otros huecos.
+  `esquemas.json` lo dice en su `source`, y sigue declarándose `provisional`.
 - El motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego, lo que desaprovecha pliegos grandes con páginas pequeñas; es candidato a un incremento posterior.
