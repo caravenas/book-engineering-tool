@@ -1091,6 +1091,10 @@ La fila del paso 03 tiene 315px y necesita 346: 14 del número, 270 del título,
 Así que la columna pasa de los 372 del lienzo a **404**, que es lo que mide su título más largo con su llamada al lado.
 Con 8px la llamada habría seguido cayendo a una línea propia, que es lo que el cambio quería evitar.
 
+Chris ajustó después a mano el canalón derecho de los pasos, de `--space-6` a `--space-4`.
+Son 8px que la fila recupera: el paso 03 pasa de 1px de holgura sobre los 346 que necesita a **9**, y el `···` queda a 17px del borde —16 de relleno y 1 del filete— en vez de a 25.
+El canalón izquierdo se queda en `--space-8`, que es donde lo puso el lienzo: la numeración de los pasos cuelga de ese margen y es lo que alinea los cinco.
+
 La fila se parte antes de encoger nada porque el `<summary>` lleva `flex-wrap: wrap`, y lo lleva por una razón que sigue en pie: sin él, un título largo aplastaba el valor del paso cerrado hasta dejarlo en puntos suspensivos, y el valor es justo lo que hace legible la ficha sin abrirla.
 Lo que se parte es lo que no cabe, y lo que no cabía era la llamada.
 
