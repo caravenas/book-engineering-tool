@@ -1082,6 +1082,20 @@ La misma medida cubre el tablero del catálogo, que marca su celda elegida igual
 Hoy no lo hace, porque todas sus reglas de hover se escribieron con `:not(.selected)` desde el principio; la prueba está para que siga siendo verdad.
 Las dos saboteadas.
 
+## La ficha se ensancha lo que mide su título más largo
+
+Pedido por Chris el 2026-09-23: la columna de la izquierda unos 8px más ancha, para que quepa el `···` de «Páginas y encuadernación» en la línea de su título, y el margen inferior del `h2` de los títulos a `--space-4`.
+
+Medido, no son 8px sino 31.
+La fila del paso 03 tiene 315px y necesita 346: 14 del número, 270 del título, 38 de la llamada y dos separaciones de 12.
+Así que la columna pasa de los 372 del lienzo a **404**, que es lo que mide su título más largo con su llamada al lado.
+Con 8px la llamada habría seguido cayendo a una línea propia, que es lo que el cambio quería evitar.
+
+La fila se parte antes de encoger nada porque el `<summary>` lleva `flex-wrap: wrap`, y lo lleva por una razón que sigue en pie: sin él, un título largo aplastaba el valor del paso cerrado hasta dejarlo en puntos suspensivos, y el valor es justo lo que hace legible la ficha sin abrirla.
+Lo que se parte es lo que no cabe, y lo que no cabía era la llamada.
+
+Verificación: una prueba de navegador que compara el centro vertical del título con el de la llamada en los cinco pasos, y falla en cuanto la columna vuelve a 372.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

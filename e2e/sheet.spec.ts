@@ -113,3 +113,32 @@ test('closing the editor gives the board its place back', async ({ page }) => {
   await expect(page.locator('.catalog-editor')).toHaveCount(0);
   await expect(page.locator('.catalog-board')).toBeVisible();
 });
+
+/**
+ * Every step's title and the call into its catalog share a line.
+ *
+ * The summary wraps rather than squeezing its value to an ellipsis, and what
+ * wraps first is whatever does not fit — which at the canvas's 372px was the
+ * call of step 03, dropped under a title 31px too long for the row. A call
+ * on a line of its own reads as a control belonging to nothing, and the whole
+ * point of it is that it belongs to the title beside it.
+ */
+test('the call of every step shares the line with the title it belongs to', async ({ page }) => {
+  await openTheApp(page);
+
+  const rows = await page.evaluate(() => Array
+    .from(document.querySelectorAll<HTMLElement>('.spec-step-summary'))
+    .map(summary => {
+      const title = summary.querySelector<HTMLElement>('.spec-step-title')!.getBoundingClientRect();
+      const call = summary.querySelector<HTMLElement>('.step-options')!.getBoundingClientRect();
+      return {
+        title: summary.querySelector('.spec-step-title')?.textContent ?? '',
+        // Baselines rather than tops: the call is a 40px box around a 12px
+        // glyph and the title is a 16px line, so their tops never match.
+        apart: Math.round(Math.abs((title.top + title.height / 2) - (call.top + call.height / 2))),
+      };
+    }));
+
+  expect(rows).toHaveLength(5);
+  expect(rows.filter(row => row.apart > 12)).toEqual([]);
+});

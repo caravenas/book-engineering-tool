@@ -232,10 +232,11 @@ test('on a wide screen the sheet keeps its width and the middle takes the rest',
 
   expect(measured.spec.left).toBe(0);
   expect(measured.main.right).toBe(measured.viewport);
-  // The sheet keeps the width it has at 1440 — the canvas's own 372 — so every
-  // pixel the wider screen adds belongs to the middle.
-  expect(measured.spec.width).toBe(372);
-  expect(measured.main.left).toBe(372);
+  // The sheet keeps the width it has at 1440 — the canvas's 372, widened in
+  // R-26 to the 404 its longest step title and that title's call take — so
+  // every pixel the wider screen adds belongs to the middle.
+  expect(measured.spec.width).toBe(404);
+  expect(measured.main.left).toBe(404);
 
   /*
    * And since R-24 the middle spends them on the drawings rather than on

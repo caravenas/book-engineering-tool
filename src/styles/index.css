@@ -216,10 +216,16 @@ body::before {
    capped, a wide screen showed the tool as a slab floating between two empty
    margins, with the seam of the side column standing in mid-air instead of
    framing the screen. The sheet keeps its width, so every pixel a wider screen
-   adds goes to the middle. */
+   adds goes to the middle.
+
+   404 rather than the canvas's 372: at 372 the row of step 03 was 31px short
+   of holding its own title and the call into its catalog, so the call dropped
+   to a line of its own under a title that had room for it nowhere. The width
+   is measured from the longest title the five have — «Páginas y
+   encuadernación», 270px of it — rather than chosen. */
 .app-grid {
   display: grid;
-  grid-template-columns: 372px minmax(0, 1fr);
+  grid-template-columns: 404px minmax(0, 1fr);
   gap: 0;
   align-items: stretch;
   width: 100%;
@@ -690,7 +696,7 @@ body::before {
   color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: -0.01em;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
   display: flex;
   align-items: center;
   gap: var(--space-2);
