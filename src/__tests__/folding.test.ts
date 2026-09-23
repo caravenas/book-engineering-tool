@@ -175,52 +175,66 @@ describe('Deriving a folding scheme from the folds that make it', () => {
 });
 
 /**
- * The two schemes in `public/config/esquemas.json` were built by hand and
- * have always carried a note saying they must be confirmed against a folded
- * sheet. Folding them says what is wrong with them, and it is one thing: the
- * model they were built with turns the content of a horizontal fold upside
- * down without turning the paper over, so every leaf that went through an odd
- * number of those has its two pages on the wrong sides.
+ * The two schemes in `public/config/esquemas.json` used to be built by hand,
+ * and folding them said what was wrong with them: the model they were written
+ * with turned the content of a horizontal fold upside down without turning
+ * the paper over, so every leaf that went through an odd number of those had
+ * its two pages on the wrong sides.
  *
- * They are read with the back of the sheet facing out, which is the more
- * favourable of the two orientations: it is the one that at least brings page
- * 1 out first. Even read that way they are out of order.
+ * Chris folded a sheet on 2026-09-23 and read the sixteen-page signature off
+ * it: bottom over top, then the left half over the right, then top over
+ * bottom, with the back of the press sheet facing out of the packet. The file
+ * now holds what `foldingSchemeFromFolds` derives from exactly those folds,
+ * rather than numbers anyone typed, and what is asserted here is the round
+ * trip: fold the shipped scheme and the pages come out 1, 2, 3, …
  *
- * This is pinned as a test rather than left in a document because the day the
- * file is corrected, this test fails and says so.
+ * The eight-page scheme is the same sequence one fold short. It reads in
+ * order, so it is a correct imposition; which of the two folds a shop drops
+ * to make an eight-page signature is the part still to confirm, and the
+ * file's own `source` says so.
  */
 describe('The shipped schemes, folded', () => {
   const catalog = loadShippedCatalog();
   const eightUp = catalog.foldingSchemes.find(scheme => scheme.id === 'esquema_8pp')!;
   const sixteenUp = catalog.foldingSchemes.find(scheme => scheme.id === 'esquema_16pp')!;
 
-  const eightUpFolds: Fold[] = [H('bottom-over-top'), V('right-over-left')];
-  const sixteenUpFolds: Fold[] = [H('bottom-over-top'), H('bottom-over-top'), V('right-over-left')];
+  /** The folds Chris read the sixteen-page signature off, and one short. */
+  const sixteenUpFolds: Fold[] = [H('bottom-over-top'), V('left-over-right'), H('top-over-bottom')];
+  const eightUpFolds: Fold[] = sixteenUpFolds.slice(0, 2);
+  const inOrder = (pages: number) => Array.from({ length: pages }, (_, index) => index + 1);
 
-  it('reads the 8-page scheme with the pages of two leaves swapped', () => {
-    expect(readByFolding(eightUp, eightUpFolds, 'back')).toEqual([1, 2, 4, 3, 6, 5, 7, 8]);
+  it('folds the 8-page scheme back into its pages, in order', () => {
+    expect(readByFolding(eightUp, eightUpFolds, 'back')).toEqual(inOrder(8));
   });
 
-  it('reads the 16-page scheme with the pages of four leaves swapped', () => {
-    expect(readByFolding(sixteenUp, sixteenUpFolds, 'back')).toEqual(
-      [1, 2, 4, 3, 5, 6, 8, 7, 10, 9, 11, 12, 14, 13, 15, 16]
-    );
+  it('folds the 16-page scheme back into its pages, in order', () => {
+    expect(readByFolding(sixteenUp, sixteenUpFolds, 'back')).toEqual(inOrder(16));
   });
 
   /**
-   * They are wrong in one way and right in every other: the leaves are in the
-   * right places in the packet, so the derived scheme differs from the shipped
-   * one only by which side of the sheet each of those pages is printed on.
+   * And the file holds the derivation itself, not a grid that happens to fold
+   * correctly: every cell, every page, every rotation. Reading in order is a
+   * weaker claim — it says nothing about which way up a page is printed,
+   * because folding a sheet back up does not turn its pages the right way
+   * round for you.
    */
-  it('puts every leaf in the cell the derivation puts it in', () => {
-    const derived = foldingSchemeFromFolds(eightUpFolds);
-    if (!derived.ok) throw new Error(derived.reason);
+  it('holds exactly what the folds derive, rotations included', () => {
+    for (const [scheme, folds] of [[eightUp, eightUpFolds], [sixteenUp, sixteenUpFolds]] as const) {
+      const derived = foldingSchemeFromFolds(folds);
+      if (!derived.ok) throw new Error(derived.reason);
 
-    const leafAt = (scheme: { cols: number; sides: { front: { page: number }[] } }, index: number) =>
-      Math.ceil(scheme.sides.front[index].page / 2);
-
-    for (let index = 0; index < eightUp.cols * eightUp.rows; index += 1) {
-      expect(leafAt(derived.scheme, index)).toBe(leafAt(eightUp, index));
+      expect(derived.outward, scheme.id).toBe('back');
+      expect(derived.scheme.cols, scheme.id).toBe(scheme.cols);
+      expect(derived.scheme.rows, scheme.id).toBe(scheme.rows);
+      expect(derived.scheme.pagesPerSignature, scheme.id).toBe(scheme.pagesPerSignature);
+      expect(derived.scheme.sides.front, scheme.id).toEqual(scheme.sides.front);
+      expect(derived.scheme.sides.back, scheme.id).toEqual(scheme.sides.back);
     }
+  });
+
+  /** The numbers Chris read off the folded sheet, cell by cell. */
+  it('lays the sixteen-page signature out the way the folded sheet reads', () => {
+    expect(sixteenUp.sides.front.map(slot => slot.page)).toEqual([8, 1, 9, 16, 12, 13, 5, 4]);
+    expect(sixteenUp.sides.back.map(slot => slot.page)).toEqual([2, 7, 15, 10, 14, 11, 3, 6]);
   });
 });

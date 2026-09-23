@@ -678,6 +678,7 @@ Es exactamente el tipo de error que la nota de `esquemas.json` anticipaba: «deb
 **No se ha tocado `public/config/esquemas.json`.**
 Corregirlo es decisión de Chris y conviene confirmarlo antes doblando un papel, porque lo que hay aquí es un modelo contra otro modelo.
 Los dos esquemas corregidos son los que devuelve `foldingSchemeFromFolds` para `HB VR` y `HB HB VR`.
+(Chris dobló el papel el 2026-09-23 y la secuencia resultó ser otra: ver «El pliego doblado, por fin».)
 
 ### Sobre la fuerza de las pruebas
 
@@ -1099,6 +1100,33 @@ La fila se parte antes de encoger nada porque el `<summary>` lleva `flex-wrap: w
 Lo que se parte es lo que no cabe, y lo que no cabía era la llamada.
 
 Verificación: una prueba de navegador que compara el centro vertical del título con el de la llamada en los cinco pasos, y falla en cuanto la columna vuelve a 372.
+
+## El pliego doblado, por fin — R-27
+
+Chris dobló un pliego el 2026-09-23 y leyó la firma de 16 páginas: **8 1 9 16 12 13 5 4** de frente y **2 7 15 10 14 11 3 6** de dorso, de izquierda a derecha y luego hacia abajo.
+
+Esos números no se teclearon en el archivo.
+Se buscó qué secuencia de dobleces los produce, entre las doce que hacen una rejilla de 2×4, y hay exactamente una: **de abajo hacia arriba, la izquierda sobre la derecha, de arriba hacia abajo**, con el dorso del pliego hacia fuera del paquete.
+`public/config/esquemas.json` guarda ahora lo que `foldingSchemeFromFolds` deriva de esos tres dobleces, giros incluidos —que Chris no dio, y que el motor sí sabe—.
+
+La secuencia que R-12 había supuesto, `HB HB VR`, no era esta.
+Tenía los dos dobleces horizontales seguidos y en el mismo sentido; el real los tiene separados por el vertical y en sentidos opuestos.
+Es la diferencia entre doblar una hoja dos veces hacia el mismo lado y doblarla como se dobla de verdad, y no se podía adivinar desde un modelo.
+
+El esquema de 8 páginas es la misma secuencia un doblez más corta.
+Se lee 1–8, así que es una imposición correcta; cuál de los dos dobleces se salta un taller para hacer una firma de 8 es lo que queda por confirmar, y el `source` del archivo lo dice.
+Las dos alternativas se leen las dos en orden y ponen las páginas en huecos distintos:
+
+| | frente | dorso |
+|---|---|---|
+| saltando el último doblez | `1 8 / 4 5` | `7 2 / 6 3` |
+| saltando el primero | `4 1 / 5 8` | `2 3 / 7 6` |
+
+Verificación: el archivo entregado, plegado por su propia secuencia, se lee 1–16 y 1–8; y además es celda por celda lo que la derivación devuelve, giros incluidos, que es lo más fuerte —leerse en orden no dice nada de con qué giro se imprime cada página—.
+Saboteado con un giro cambiado, que el validador del catálogo sí acepta y la prueba no.
+
+De paso, dos pruebas de interfaz que fijaban números de página del catálogo pasan a leerlos del esquema que el plan eligió.
+Fijaban el dato del catálogo en un archivo de pruebas, así que corregir el catálogo rompía pruebas que no iban de eso.
 
 ## Decisiones pendientes
 

@@ -873,26 +873,47 @@ describe('Signature imposition preview', () => {
     expect(screen.getByText('1')).toBeTruthy();
   });
 
+  /**
+   * Asserted against the scheme the plan chose rather than against page
+   * numbers written here: which page lands in which cell is the catalog's
+   * own data, and pinning it in a test file means that correcting the
+   * catalog — as R-27 did, with a sheet Chris actually folded — breaks tests
+   * that were never about the catalog.
+   */
+  const numbersOnScreen = () => Array
+    .from(document.querySelectorAll('.imposition-svg .page-number'))
+    .map(node => Number(node.textContent));
+  const chosenScheme = () => useBookStore.getState().signaturePlan!.selected!.scheme;
+
   it("switches to the back's numbers with the side toggle", () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     render(<ImpositionVisualizerScreen />);
 
-    expect(screen.queryByText('9')).toBeNull();
+    const scheme = chosenScheme();
+    expect(new Set(numbersOnScreen())).toEqual(new Set(scheme.sides.front.map(slot => slot.page)));
+
     fireEvent.change(screen.getByLabelText('Cara mostrada'), { target: { value: 'back' } });
-    expect(screen.getByText('9')).toBeTruthy();
-    expect(screen.queryByText('16')).toBeNull();
+
+    expect(new Set(numbersOnScreen())).toEqual(new Set(scheme.sides.back.map(slot => slot.page)));
+    // The two sides share no page: every page is printed once.
+    expect(scheme.sides.front.some(slot => scheme.sides.back.some(other => other.page === slot.page))).toBe(false);
   });
 
   it('changes the numbers when a different folding scheme is chosen', () => {
     useBookStore.getState().setSheetSize('pliego_70x100');
     render(<ImpositionVisualizerScreen />);
-    const svg = () => document.querySelector('.imposition-svg') as HTMLElement;
 
-    expect(within(svg()).queryByText('8')).toBeNull();
+    const sixteenUp = new Set(numbersOnScreen());
+    expect(sixteenUp.size).toBe(chosenScheme().cols * chosenScheme().rows);
+
     chooseCard('folding-scheme', 'esquema_8pp');
 
     expect(useBookStore.getState().signaturePlan?.selected?.scheme.id).toBe('esquema_8pp');
-    expect(within(svg()).getByText('8')).toBeTruthy();
+    const eightUp = new Set(numbersOnScreen());
+    expect(eightUp).toEqual(new Set(chosenScheme().sides.front.map(slot => slot.page)));
+    // A smaller signature carries fewer pages a side, so the sheet is redrawn
+    // and not merely relabelled.
+    expect(eightUp.size).toBeLessThan(sixteenUp.size);
   });
 
   it('shows an accessible message instead of an empty preview when nothing fits', () => {
