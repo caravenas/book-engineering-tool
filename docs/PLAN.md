@@ -991,10 +991,29 @@ Verificación: el guardián de inventario recorre ahora las tres vistas además 
 
 ### R-23 — Los resultados dibujados
 
-Pendiente.
-Los resultados se quedan por ahora con la forma que les dio R-21, centrados en el ancho de una columna dentro de la vista central.
-R-23 les da la forma del tablero v2: el libro a escala arriba —página, lomo y pila de pliegos a la misma escala—, seis pictogramas con su cifra grande, y las fórmulas al pie.
-Las diecinueve filas que el motor calcula se quedan, como se decidió en R-19: se adopta la forma, no el recorte.
+La vista de resultados toma la forma del tablero v2, en cuatro bandas: el libro a escala, las seis cifras dibujadas, el desglose y las fórmulas.
+
+**El libro a escala.**
+Tres cosas dibujadas a la misma escala y medidas igual: la página tal como se va a cortar, el canto del bloque visto de punta y la pila de pliegos de prensa que cuesta un ejemplar.
+Solo el canto va exagerado, ×8, porque a escala real un lomo de dos milímetros es una línea; el factor va escrito debajo, no deducido.
+Al lado, la ficha: el formato y las páginas en grande, y debajo el papel, el método, la tapa, la prensa y el pliego.
+
+**Las seis cifras dibujadas.**
+Lomo final, peso del papel, pliegos de prensa, firmas, aprovechamiento del pliego y tapa extendida.
+Cada una lleva la imagen que la hace legible: el lomo medido contra lomos de 5, 10, 20 y 40 mm; el peso contra 100 g, 500 g, 1 kg y 1,5 kg; los pliegos como pliegos, con el último lleno solo hasta donde el libro lo llena; las firmas apiladas como en un banco de taller; el aprovechamiento sobre el pliego pequeño, con las páginas donde `layoutSide` las pone, no con una rejilla redibujada aparte.
+
+**El desglose.**
+Lo que hay debajo de esas seis, y lo que un dibujo no puede decir: las hojas, el gramaje, el aporte de la encuadernación, el corrimiento, las páginas en blanco, la orientación, los cartones de una tapa dura y las cinco secciones del pliego de una blanda.
+
+Ninguna cifra se fue de la pantalla.
+Cinco etiquetas pasaron a ser tres y los dos sumandos de cada una siguen impresos: los dos pesos dentro del peso que los suma, el ancho y el alto del pliego de tapa dentro de la medida que da los dos.
+Sí se fue una etiqueta: «Lomo del papel interior» repetía `thickness_mm` del motor del lomo, el mismo número que «Lomo estimado», y desde R-22 los dos quedaban en la misma rejilla a dos columnas de distancia.
+
+Las seis cifras dibujadas llevan la misma clase `stat-label` que las filas.
+Un resultado al que se le dio un dibujo sigue siendo un resultado, y el guardián de inventario cuenta los resultados de la página por esa clase: si dejaran de llevarla, se podría borrar un tercio de ellos sin que nada fallara.
+
+Verificación: seis pruebas de unidad, saboteadas una a una —el peso suma los dos papeles y los nombra; la tapa dura avisa de que el cartón no está contado; el lomo se llama según lo que el método hace; se dibuja un pliego por pliego; con una cuenta de páginas inservible no queda ninguna cifra; y el canto suma los dos cartones—.
+Y tres de navegador, también saboteadas, porque un dibujo es una afirmación sobre proporciones y en jsdom todo mide cero: el lomo está a la misma escala que los lomos con que se compara, la barra de aprovechamiento se llena exactamente lo que dice, y la página se dibuja en la proporción que tiene la ficha.
 
 ## Decisiones pendientes
 

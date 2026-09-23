@@ -336,27 +336,34 @@ const CALIPER_LABEL = 'Calibre declarado';
  * Since R-21 a label is the name of the figure and nothing else: the unit
  * moved out of the parentheses and next to the figure, where it belongs to
  * the number rather than to what the number is called.
+ *
+ * Since R-23 six of them are drawn rather than listed, and carry the same
+ * class so they are still counted here. Five of the old labels became three
+ * on the way, and no number left the page with them: the two weights are
+ * printed inside the one weight that adds them, and the cover sheet's width
+ * and height inside the one measurement that gives both. One label did go —
+ * «Lomo del papel interior», which restated the spine engine's own
+ * `thickness_mm` beside «Lomo estimado», the same number under two names.
  */
 const EXPECTED_RESULT_LABELS = [
+  // Drawn, since R-23.
+  'Grosor del papel en el pliegue',
+  'Peso del papel por ejemplar',
+  'Pliegos de prensa por ejemplar',
+  'Firmas por ejemplar',
+  'Aprovechamiento del pliego',
+  'Tapa extendida',
+  // Listed: what the six above are made of, and what a drawing cannot show.
   'Lomo estimado',
-  'Peso estimado del papel interior',
   'Hojas de papel (interior)',
   'Gramaje',
-  'Lomo del papel interior',
   'Aporte de la encuadernación',
-  'Grosor del papel en el pliegue',
   'Corrimiento máx.',
   'Páginas / cara del pliego',
-  'Firmas por ejemplar',
   'Páginas en blanco',
-  'Pliegos de prensa por ejemplar',
-  'Área imprimible no utilizada',
   'Orientación de página',
-  'Ancho del pliego de tapa',
-  'Alto del pliego de tapa',
-  'Peso del papel de tapa',
 ] as const;
-const EXPECTED_RESULT_LABEL_COUNT = 17;
+const EXPECTED_RESULT_LABEL_COUNT = 14;
 
 test.describe('page-wide inventory of controls and results, at 1440x900', () => {
   test.beforeEach(async ({ page }) => {
@@ -529,27 +536,28 @@ test.describe('page-wide inventory of controls and results, at 1440x900', () => 
     await page.locator('#cover-dura_estandar').click();
 
     expect(new Set(await resultLabels(page))).toEqual(new Set([
+      // The boards, which only a hard cover has. Its wrap and its weight are
+      // in the two drawn figures below, as a soft cover's sheet is.
       'Ancho del cartón lateral',
       'Alto del cartón',
       'Ancho del cartón de lomo',
-      'Ancho del forro',
-      'Alto del forro',
-      'Peso del forro',
       'Área de cartón lateral',
       'Área de cartón de lomo',
       'Área total de cartón',
+      // Drawn: a flat spine is named for the spine it makes, and a hotmelt
+      // does not nest its sheets, so it reports no creep.
+      'Lomo final con encuadernación',
+      'Peso del papel por ejemplar',
+      'Pliegos de prensa por ejemplar',
+      'Firmas por ejemplar',
+      'Aprovechamiento del pliego',
+      'Tapa extendida',
       'Lomo estimado',
-      'Peso estimado del papel interior',
       'Hojas de papel (interior)',
       'Gramaje',
-      'Lomo del papel interior',
       'Aporte de la encuadernación',
-      'Lomo final con encuadernación',
       'Páginas / cara del pliego',
-      'Firmas por ejemplar',
       'Páginas en blanco',
-      'Pliegos de prensa por ejemplar',
-      'Área imprimible no utilizada',
       'Orientación de página',
     ]));
   });

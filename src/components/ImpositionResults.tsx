@@ -1,5 +1,4 @@
 import { useBookStore } from '../store/useBookStore';
-import { roundTo } from '../engine/units';
 import { ResultList, ResultRow } from './ResultList';
 
 /**
@@ -28,12 +27,11 @@ export function ImpositionResults() {
   }
 
   return (
+    /* The signatures, the press sheets and the waste are three of R-23's six
+       drawn figures; what stays here is what those drawings cannot show. */
     <ResultList>
       <ResultRow label="Páginas / cara del pliego">{selected.cols * selected.rows}</ResultRow>
-      <ResultRow label="Firmas por ejemplar">{selected.signatures}</ResultRow>
       <ResultRow label="Páginas en blanco">{selected.blankPages}</ResultRow>
-      <ResultRow label="Pliegos de prensa por ejemplar">{selected.sheetsPerCopy}</ResultRow>
-      <ResultRow label="Área imprimible no utilizada" unit="%">{roundTo(selected.wastePercentage, 1)}</ResultRow>
       <ResultRow label="Orientación de página">{selected.pageRotated ? 'Rotada' : 'Normal'}</ResultRow>
     </ResultList>
   );

@@ -15,6 +15,7 @@ import { SubstrateSelector } from '../components/SubstrateSelector';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
 import { StepOptions } from '../components/StepOptions';
 import { HowItIsCalculated } from '../components/HowItIsCalculated';
+import { ResultFigures } from '../components/ResultFigures';
 
 /**
  * A panel's controls, its drawing and its results are three components that
@@ -30,6 +31,12 @@ import { HowItIsCalculated } from '../components/HowItIsCalculated';
  * the margin of the step's title rather than beside each field: mounting the
  * panel without it would leave a screen the catalog cannot be reached from,
  * and half these tests are about what the catalog does to the step.
+ *
+ * They also carry the six drawn figures, because since R-23 six of the
+ * results are drawn rather than listed — the final spine, the paper weight,
+ * the press sheets, the signatures, the waste and the flat cover — and a
+ * screen that mounted only the rows would be a screen missing a third of
+ * what the step produces.
  *
  * They can drift from App without failing: drop a component from App and these
  * tests keep passing, because they mount it themselves. That is deliberate,
@@ -55,6 +62,7 @@ export function SpineCalculatorScreen() {
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <SpineView />
+      <ResultFigures />
       <SpineResults />
       <HowItIsCalculated />
     </CatalogPanelProvider>
@@ -73,6 +81,8 @@ export function PagesAndBindingScreen() {
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <BindingPanel />
+      <ResultFigures />
+      <SpineResults />
       <BindingSpineResults />
       <HowItIsCalculated />
     </CatalogPanelProvider>
@@ -84,6 +94,10 @@ export function BindingPanelScreen() {
     <CatalogPanelProvider>
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <BindingPanel />
+      <ResultFigures />
+      {/* The paper's own thickness, which since R-23 is read from the spine
+          engine's row: the binding's row is what the method adds to it. */}
+      <SpineResults />
       <BindingSpineResults />
       <HowItIsCalculated />
     </CatalogPanelProvider>
@@ -96,6 +110,7 @@ export function ImpositionVisualizerScreen() {
       <StepOptions catalog="presses" label="imposición" />
       <ImpositionVisualizer />
       <SheetPreview />
+      <ResultFigures />
       <ImpositionResults />
     </CatalogPanelProvider>
   );
@@ -107,6 +122,7 @@ export function CoverPanelScreen() {
       <StepOptions catalog="covers" label="tapa" />
       <CoverPanel />
       <CoverPreview />
+      <ResultFigures />
       <CoverResults />
     </CatalogPanelProvider>
   );

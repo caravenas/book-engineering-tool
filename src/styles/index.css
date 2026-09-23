@@ -249,12 +249,17 @@ body::before {
   background: var(--color-bg-primary);
 }
 
-/* The figures keep a column's width and take the centre of the middle: a name
-   and its figure are read as a pair, and a pair stretched a metre apart stops
-   being one. What the middle's width is for is the drawings and the catalog. */
+/* The figures take the middle, in the order the canvas puts them: the book
+   itself, the six drawn figures, what those are made of, how it is worked
+   out. Capped, because a row of a breakdown is a name and a number read as a
+   pair, and a pair stretched a metre apart stops being one. */
 .results-view {
-  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-width: 1080px;
   margin: 0 auto;
+  padding-bottom: var(--space-6);
 }
 
 /* The notices span what the grid spans, so their text starts where the spec
@@ -2645,4 +2650,425 @@ select.form-input {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+
+/* ─── The Book at Scale, and the Figures Drawn (R-23) ───────────────── */
+
+/*
+ * The hero: the page, the edge of the block and the stack of press sheets,
+ * all at one scale, with what the book is beside them. Only the spine is
+ * exaggerated, and it says so under itself.
+ */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: var(--space-10);
+  align-items: flex-end;
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--color-text-primary);
+}
+
+.hero-drawings {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.hero-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.hero-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.hero-caption {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.hero-page {
+  position: relative;
+  display: block;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-text-primary);
+  box-shadow: 4px 4px 0 var(--color-border);
+}
+
+/* The bound edge: the strip of a page nobody ever sees lying flat. */
+.hero-hinge {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-right: 1px solid var(--color-text-primary);
+  background: repeating-linear-gradient(180deg, transparent 0 3px, var(--color-border) 3px 4px);
+}
+
+.hero-spine {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Board is solid; paper is a stack of sheets, so it is drawn as one. */
+.hero-board {
+  display: block;
+  background: var(--color-text-primary);
+}
+
+.hero-block {
+  flex: 1;
+  background: var(--color-bg-input);
+  border-top: 1px solid var(--color-text-primary);
+  border-bottom: 1px solid var(--color-text-primary);
+  background-image: repeating-linear-gradient(90deg, var(--color-border) 0 1px, transparent 1px 3px);
+}
+
+.hero-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  width: 56px;
+}
+
+.hero-sheet {
+  display: block;
+  border: 1px solid var(--color-text-primary);
+  background: var(--color-bg-input);
+}
+
+/* The topmost bar stands for every sheet the drawing had no room for. */
+.hero-sheet.more {
+  background: repeating-linear-gradient(90deg, var(--color-text-primary) 0 2px, transparent 2px 5px);
+}
+
+.hero-spec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.hero-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hero-lines {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.8;
+  color: var(--color-text-secondary);
+}
+
+.hero-scale {
+  font-style: italic;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── The six drawn figures ── */
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: var(--space-8) var(--space-10);
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.figure-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.figure-aside {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* Every drawing gets the same band, so six figures line up as six and not as
+   a ragged column of whatever each one happened to need. */
+.figure-drawing {
+  display: flex;
+  align-items: flex-end;
+  height: 72px;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.figure-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.figure-value .stat-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xl);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.figure-unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  min-width: 0;
+}
+
+/* ── Spine, against spines you already know ── */
+
+.spine-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.spine-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.spine-bar-label {
+  /* Kept even when empty, so the bar it belongs to stands on the same line
+     as the ones that do carry a number. */
+  min-height: 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.spine-bar-mark {
+  display: block;
+  height: 22px;
+  border: 1px solid var(--color-text-primary);
+}
+
+.spine-bar.current .spine-bar-mark {
+  height: 38px;
+  background: var(--color-text-primary);
+}
+
+.spine-bar.current .spine-bar-label {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+/* ── Weight, against weights you have carried ── */
+
+.weight-scale {
+  position: relative;
+  width: 100%;
+  align-self: flex-end;
+}
+
+.weight-track {
+  position: relative;
+  height: 10px;
+  border: 1px solid var(--color-text-primary);
+}
+
+.weight-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-text-primary);
+}
+
+/* Where the interior ends and the cover begins, inside the filled bar. */
+.weight-split {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-left: 1px dashed var(--color-bg-primary);
+}
+
+.weight-ticks {
+  position: relative;
+  height: 20px;
+  margin-top: var(--space-1);
+}
+
+.weight-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  padding-top: 8px;
+  border-left: 1px solid var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Press sheets, one icon apiece ── */
+
+.sheet-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  gap: 4px;
+  max-height: 100%;
+}
+
+.sheet-icon {
+  display: block;
+  border: 1px solid var(--color-text-primary);
+}
+
+/* ── Signatures, stacked the way they sit on a bench ── */
+
+.signature-fan {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.signature-leaf {
+  position: absolute;
+  width: 56px;
+  height: 40px;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-text-primary);
+  /* The folded edge, which is what makes a signature a signature. */
+  border-left: 3px solid var(--color-text-primary);
+}
+
+.signature-more {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── What the press actually prints on ── */
+
+.waste-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.waste-sheet {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-text-primary);
+  background: repeating-linear-gradient(45deg, var(--color-border) 0 1px, transparent 1px 4px);
+}
+
+.waste-cell {
+  position: absolute;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-text-primary);
+}
+
+.waste-bar {
+  display: block;
+  flex: 1;
+  height: 8px;
+  border: 1px solid var(--color-text-primary);
+}
+
+.waste-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-text-primary);
+}
+
+/* ── The cover opened out flat ── */
+
+.flat-cover {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-text-primary);
+  background: var(--color-bg-input);
+}
+
+.flat-panel {
+  display: block;
+}
+
+.flat-spine {
+  display: block;
+  border-left: 1px solid var(--color-text-primary);
+  border-right: 1px solid var(--color-text-primary);
+  background: var(--color-text-primary);
+}
+
+.flat-flap {
+  display: block;
+  border-right: 1px dashed var(--color-text-primary);
+}
+
+.flat-flap:last-child {
+  border-right: 0;
+  border-left: 1px dashed var(--color-text-primary);
+}
+
+/* ── The breakdown under the figures ── */
+
+.result-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6) var(--space-10);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-group {
+  min-width: 0;
+}
+
+/* The name of a block rather than of a figure — the ficha, the list of creases
+   — set like a figure's name but deliberately not carrying its class: the
+   inventory guard counts the page's results by `stat-label`. */
+.detail-caption,
+.hero-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.detail-caption {
+  margin-bottom: var(--space-2);
+}
+
+/* An empty group takes no room: a soft cover leaves nothing here but its
+   creases, and a grid cell with nothing in it would still hold a column. */
+.detail-group:empty {
+  display: none;
 }

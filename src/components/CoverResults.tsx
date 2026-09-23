@@ -1,5 +1,5 @@
 import { useBookStore, getPlannedCover } from '../store/useBookStore';
-import { formatMm, formatWeightParts, formatArea } from '../engine/units';
+import { formatMm, formatArea } from '../engine/units';
 import { ResultList, ResultRow } from './ResultList';
 
 /**
@@ -14,14 +14,16 @@ export function CoverResults() {
   const plan = getPlannedCover(coverPlan);
 
   if (plan && plan.kind === 'blanda') {
+    /* The sheet's two measurements are R-23's «Tapa extendida», and its weight
+       is in the paper weight beside it; what stays here is the breakdown of
+       the sheet into the panels it is creased into. */
     return (
       <>
-        <ResultList>
-          <ResultRow label="Ancho del pliego de tapa" unit="mm">{formatMm(plan.sheetWidth_mm)}</ResultRow>
-          <ResultRow label="Alto del pliego de tapa" unit="mm">{formatMm(plan.sheetHeight_mm)}</ResultRow>
-          <ResultRow label="Peso del papel de tapa" unit={formatWeightParts(plan.paperWeight_g).unit}>{formatWeightParts(plan.paperWeight_g).value}</ResultRow>
-        </ResultList>
-
+        {/* Named in the open since R-23 put the breakdown in a grid, where a
+            list of five measurements with no caption belongs to nothing. Not
+            a `stat-label`: it is the name of a list, not of a figure, and the
+            inventory guard counts figures by that class. */}
+        <span className="detail-caption">Secciones del pliego de tapa</span>
         <ul className="cover-sections-list" aria-label="Secciones del pliego de tapa">
           <li>Solapa: {formatMm(plan.sections.flapLeft_mm)} mm</li>
           <li>Contratapa: {formatMm(plan.sections.back_mm)} mm</li>
@@ -46,9 +48,8 @@ export function CoverResults() {
           <ResultRow label="Ancho del cartón lateral" unit="mm">{formatMm(plan.boardWidth_mm)}</ResultRow>
           <ResultRow label="Alto del cartón" unit="mm">{formatMm(plan.boardHeight_mm)}</ResultRow>
           <ResultRow label="Ancho del cartón de lomo" unit="mm">{formatMm(plan.spineBoardWidth_mm)}</ResultRow>
-          <ResultRow label="Ancho del forro" unit="mm">{formatMm(plan.wrapWidth_mm)}</ResultRow>
-          <ResultRow label="Alto del forro" unit="mm">{formatMm(plan.wrapHeight_mm)}</ResultRow>
-          <ResultRow label="Peso del forro" unit={formatWeightParts(plan.paperWeight_g).unit}>{formatWeightParts(plan.paperWeight_g).value}</ResultRow>
+          {/* The wrap's two measurements are R-23's «Tapa extendida», and its
+              weight is in the paper weight beside it. */}
           <ResultRow label="Área de cartón lateral" unit="m²">{formatArea(plan.sideBoardArea_m2)}</ResultRow>
           <ResultRow label="Área de cartón de lomo" unit="m²">{formatArea(plan.spineBoardArea_m2)}</ResultRow>
           <ResultRow label="Área total de cartón" unit="m²">{formatArea(plan.boardArea_m2)}</ResultRow>

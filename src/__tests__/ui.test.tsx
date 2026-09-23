@@ -482,12 +482,20 @@ describe('Binding selector', () => {
   });
 
   it('renders the spine split into interior paper, binding allowance, and total', () => {
-    render(<BindingPanelScreen />);
+    const { container } = render(<BindingPanelScreen />);
 
-    // grapa nests, so the third figure is labeled as the fold thickness, not a flat spine.
-    expect(screen.getByText('Lomo del papel interior').nextSibling?.textContent).toBe('1.92 mm');
+    /*
+     * Since R-23 the paper's own thickness is read from the spine engine's
+     * row and the sum is the drawn figure; the binding's row is what the
+     * method adds. The row that used to restate `interior_mm` here said the
+     * same 1.92 as «Lomo estimado» two columns away.
+     */
+    expect(screen.getByText('Lomo estimado').nextSibling?.textContent).toBe('1.92 mm');
     expect(screen.getByText('Aporte de la encuadernación').nextSibling?.textContent).toBe('0 mm');
-    expect(screen.getByText('Grosor del papel en el pliegue').nextSibling?.textContent).toBe('1.92 mm');
+    // grapa nests, so the sum is labeled as the fold thickness, not a flat spine.
+    const spine = screen.getByText('Grosor del papel en el pliegue').closest('.figure') as HTMLElement;
+    expect(spine.querySelector('.stat-value')?.textContent).toBe('1.92');
+    expect(container.textContent).not.toContain('Lomo del papel interior');
   });
 
   it('reports creep as a figure, explains it in the drawer, and drops both for a method without it', () => {
@@ -919,14 +927,21 @@ describe('Cover panel', () => {
     expect([...cardIds('cover')].sort()).toEqual(['blanda_simple', 'blanda_solapas', 'dura_estandar']);
     expect((document.getElementById('cover-dura_estandar') as HTMLButtonElement).disabled).toBe(true);
     expect(chosenCardId('cover')).toBe('blanda_simple');
-    // grapa (the shipped default binding) has no flat spine, so blanda_simple's
-    // sheet is 2*0 + 2*140 + 0 + 2*3 = 286.
-    expect(screen.getByText('Ancho del pliego de tapa').nextSibling?.textContent).toBe('286 mm');
+    /*
+     * grapa (the shipped default binding) has no flat spine, so
+     * blanda_simple's sheet is 2*0 + 2*140 + 0 + 2*3 = 286 wide. Since R-23
+     * the sheet's two measurements are one drawn figure, «Tapa extendida»,
+     * instead of a row apiece.
+     */
+    const extended = () => document.querySelector('.figure-value .stat-value')
+      && (screen.getByText('Tapa extendida').closest('.figure') as HTMLElement)
+        .querySelector('.stat-value')?.textContent;
+    expect(extended()).toBe('286 × 216');
 
     chooseCard('cover', 'blanda_solapas');
 
     expect(useBookStore.getState().coverId).toBe('blanda_solapas');
-    expect(screen.getByText('Ancho del pliego de tapa').nextSibling?.textContent).not.toBe('286 mm');
+    expect(extended()).not.toBe('286 × 216');
   });
 
   it('offers all three covers as selectable with a flat-spine binding', () => {
@@ -997,8 +1012,9 @@ describe('Cover panel', () => {
     expect(screen.getByText('Ancho del cartón lateral')).toBeTruthy();
     expect(screen.getByText('Alto del cartón')).toBeTruthy();
     expect(screen.getByText('Ancho del cartón de lomo')).toBeTruthy();
-    expect(screen.getByText('Ancho del forro')).toBeTruthy();
-    expect(screen.getByText('Alto del forro')).toBeTruthy();
+    // The wrap is R-23's «Tapa extendida», width and height in one figure.
+    expect((screen.getByText('Tapa extendida').closest('.figure') as HTMLElement)
+      .querySelector('.stat-value')?.textContent).toBe('324.92 × 246');
     expect(screen.getByText('Área de cartón lateral')).toBeTruthy();
     expect(screen.getByText('Área de cartón de lomo')).toBeTruthy();
     expect(screen.getByText('Área total de cartón')).toBeTruthy();
