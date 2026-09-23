@@ -501,6 +501,7 @@ Cierra los cuatro puntos que `docs/UI-REDESIGN.md` dejaba sin construir tras R-5
 - **El distintivo «Datos de ejemplo» es una afirmación escrita a mano, no derivada de los datos.**
   La línea de cada catálogo y el aviso de los esquemas sí salen del `source` del JSON, pero el distintivo no: si una imprenta reemplaza `public/config/` por sus datos reales, el distintivo miente hasta que alguien lo borre.
   Cerrarlo bien exige un campo declarado en la configuración, que es una decisión de Chris y no una que tome este incremento.
+  (Chris eligió el campo el 2026-09-23: ver «El distintivo pasa a ser un dato».)
 - **La barra repite en móvil tres cifras que también están en la columna de abajo.**
   La propuesta dice «y, debajo, el resto de los resultados», lo que sugiere quitarlas de la lista; ocultar filas concretas por CSS es frágil y la repetición no confunde, así que se dejaron.
 - **El orden en móvil sigue siendo ficha → vista previa → resultados**, y el canvas dibuja la vista previa encima de la ficha.
@@ -1143,6 +1144,26 @@ Decía «fijado por 2:3» solo en el alto, que se lee como «esto no se puede ca
 Ahora las dos medidas llevan el nombre de la proporción, porque cualquiera de las dos mueve a la otra.
 
 Verificación: siete pruebas de store, saboteadas —el ancho deja de mover al alto, el factor al revés, el apaisado conservando la razón vertical, y teclear un lado volviendo a tirar la proporción—; y dos de navegador, una para la proporción viva y otra para Manual.
+
+## El distintivo pasa a ser un dato — R-30
+
+Decisión de Chris el 2026-09-23, entre tres opciones: derivarlo de los `source` que ya hay, un campo por archivo, o un archivo de identidad de la instalación.
+Eligió el campo por archivo, que es el único de los tres que no se puede falsear por accidente.
+
+Los seis archivos que declaran `source` declaran ahora también `provisional`, `true` o `false`.
+Es obligatorio y no opcional: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son los de una imprenta real, que es justo el fallo que el campo existe para impedir.
+Un archivo que no se pueda leer cuenta como `true`, porque la respuesta segura a «¿esto son datos reales?» es no, y un distintivo que desapareciera porque un archivo falló al cargar elegiría el peor momento posible para afirmar que los datos son buenos.
+
+`formatos.json` no lo lleva, y tampoco lleva `source`: una razón no tiene procedencia. 2:3 es 2:3 en cualquier taller.
+
+El distintivo lee esos seis booleanos: los seis y dice «Datos de ejemplo» a secas, algunos y dice cuántos, ninguno y no aparece.
+El `title` nombra cuáles, que es más de lo que cabe en una pastilla de cabecera.
+El pie del tablero del catálogo dice lo mismo desde el mismo sitio.
+
+De paso, los nombres de los siete catálogos salen de `catalogNames.ts` en vez de estar escritos dos veces: la navegación del editor y el distintivo nombran los mismos catálogos, y dos listas de siete nombres son dos listas libres de separarse el día que uno se renombre.
+
+Verificación: cinco pruebas del distintivo —los seis, algunos, uno, ninguno, y a cuáles nombra— y cuatro del validador, incluida la que recorre los seis archivos con `provisional` ausente, texto, número y nulo.
+Saboteadas: el distintivo volviendo a ser un literal, el filtro ignorando el campo, y el validador aceptando su ausencia.
 
 ## Decisiones pendientes
 

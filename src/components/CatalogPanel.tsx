@@ -14,6 +14,7 @@ import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { CatalogEntryForm } from './CatalogEntryForm';
 import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor, useSubstrateEditor, useCoverEditor } from './catalogEditors';
 import { useCentralView } from './CentralView';
+import { CATALOG_TITLES } from './catalogNames';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
@@ -118,7 +119,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'proportions',
         group: 'Formato',
-        title: 'Proporciones',
+        title: CATALOG_TITLES.proportions,
         description: 'La relación entre ancho y alto de la página.',
         file: 'config/formatos.json',
         source: null,
@@ -137,7 +138,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'substrates',
         group: 'Papel',
-        title: 'Papeles',
+        title: CATALOG_TITLES.substrates,
         description: 'Los papeles del interior, con los gramajes que cada uno ofrece.',
         file: 'config/sustratos.json',
         source: catalog.substratesSource,
@@ -152,7 +153,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'bindings',
         group: 'Producción',
-        title: 'Encuadernaciones',
+        title: CATALOG_TITLES.bindings,
         description: 'El método, con las páginas que admite y lo que aporta al lomo.',
         file: 'config/encuadernaciones.json',
         source: catalog.bindingsSource,
@@ -167,7 +168,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'presses',
         group: 'Producción',
-        title: 'Prensas',
+        title: CATALOG_TITLES.presses,
         description: 'Definen el pliego máximo y los márgenes que la imposición descuenta.',
         file: 'config/maquinas.json',
         source: catalog.pressesSource,
@@ -182,7 +183,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'sheetSizes',
         group: 'Producción',
-        title: 'Pliegos',
+        title: CATALOG_TITLES.sheetSizes,
         description: 'El papel tal como llega a la prensa, antes de cortar.',
         file: 'config/pliegos.json',
         source: catalog.sheetSizesSource,
@@ -197,7 +198,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'foldingSchemes',
         group: 'Producción',
-        title: 'Esquemas de plegado',
+        title: CATALOG_TITLES.foldingSchemes,
         description: 'Cómo se dobla un pliego y en qué orden quedan sus páginas.',
         file: 'config/esquemas.json',
         source: catalog.foldingSchemesSource,
@@ -212,7 +213,7 @@ function useCatalogs(): CatalogDescriptor[] {
       {
         id: 'covers',
         group: 'Producción',
-        title: 'Tapas',
+        title: CATALOG_TITLES.covers,
         description: 'El tipo de tapa, con sus solapas, cejas y dobleces.',
         file: 'config/tapas.json',
         source: catalog.coversSource,

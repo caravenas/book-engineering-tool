@@ -11,6 +11,7 @@ import {
 } from '../store/useBookStore';
 import { planSignatures, sheetFitsPress } from '../engine/signatures';
 import { useCatalogPanel, type CatalogId } from './CatalogPanel';
+import { useProvisionalCatalogs } from './catalogNames';
 import type { Binding, Cover, FoldingScheme, Press, SheetSize, Substrate } from '../types';
 
 /**
@@ -180,6 +181,7 @@ export function CatalogBoard() {
   const covers = catalog ? getAllCovers(catalog, customCovers, coverPatches, hiddenCoverIds) : customCovers;
   const schemes = catalog?.foldingSchemes ?? [];
   const press = presses.find(item => item.id === pressId) ?? null;
+  const provisional = useProvisionalCatalogs();
 
   /*
    * The columns of the paper grid: every weight any paper sells, in order.
@@ -505,10 +507,12 @@ export function CatalogBoard() {
         * Whose numbers these are, said where they are read. The header says it
         * once for the whole tool; here it names the directory, because the
         * board is where someone decides a value is wrong and goes looking for
-        * the file that holds it.
+        * the file that holds it. Which catalogs are still the repository's is
+        * read from the files themselves, so replacing them changes this line.
         */}
       <p className="board-foot">
-        Datos de ejemplo, de <span className="catalog-file">public/config/</span>. Cada «editar» abre el catálogo que los cambia.
+        {provisional.length > 0 && <>Datos de ejemplo en {provisional.join(', ')}. </>}
+        Todo sale de <span className="catalog-file">public/config/</span>. Cada «editar» abre el catálogo que los cambia.
       </p>
     </div>
   );

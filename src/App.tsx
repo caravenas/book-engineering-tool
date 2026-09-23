@@ -14,6 +14,7 @@ import {
   CentralViewProvider, CentralViewTabs, useCentralView, CENTRAL_VIEW_LABEL,
 } from './components/CentralView';
 import { ResultsBar } from './components/ResultsBar';
+import { SampleDataBadge } from './components/SampleDataBadge';
 
 type LoadState =
   | { status: 'loading' }
@@ -148,7 +149,7 @@ export default function App() {
             * its own words, is at the foot of the spec sheet and inside each
             * catalog.
             */}
-          {loadState.status === 'ready' && <span className="header-badge">Datos de ejemplo</span>}
+          {loadState.status === 'ready' && <SampleDataBadge />}
           {/* What the middle of the screen is showing. It sits between the name
               of the tool and what the book currently is, because it belongs to
               neither: it changes the whole of the screen below. */}

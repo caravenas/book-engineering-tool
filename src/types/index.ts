@@ -192,7 +192,28 @@ export interface CatalogDefaults {
   coverId: string;
 }
 
+/**
+ * Which catalogs still hold the example data this repository ships, read
+ * from each file's own `provisional` field.
+ *
+ * The header used to carry a badge saying «Datos de ejemplo» whatever the
+ * files said: the one claim in the interface that could not be contradicted
+ * by changing the data. A print shop that replaced `public/config/` with its
+ * own numbers went on being told its data was an example until somebody
+ * edited the code. `formatos.json` is not in here because a ratio has no
+ * provenance: 2:3 is 2:3 in every shop.
+ */
+export interface ProvisionalCatalogs {
+  substrates: boolean;
+  sheetSizes: boolean;
+  presses: boolean;
+  foldingSchemes: boolean;
+  bindings: boolean;
+  covers: boolean;
+}
+
 export interface Catalog {
+  provisional: ProvisionalCatalogs;
   substrates: Substrate[];
   substratesSource: string;
   sheetSizes: SheetSize[];

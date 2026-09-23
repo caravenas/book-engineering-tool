@@ -1,11 +1,42 @@
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "sheetSizes": [
-    { "id": "carta", "name": "Carta (Letter)", "width_mm": 216, "height_mm": 279 },
-    { "id": "oficio", "name": "Oficio (Legal)", "width_mm": 216, "height_mm": 356 },
-    { "id": "tabloide", "name": "Doble Carta (Tabloid)", "width_mm": 432, "height_mm": 279 },
-    { "id": "pliego_sra3", "name": "SRA3 (320×450mm)", "width_mm": 320, "height_mm": 450 },
-    { "id": "pliego_70x100", "name": "Pliego 70×100cm", "width_mm": 700, "height_mm": 1000 },
-    { "id": "pliego_77x110", "name": "Pliego 77×110cm", "width_mm": 770, "height_mm": 1100 }
+    {
+      "id": "carta",
+      "name": "Carta (Letter)",
+      "width_mm": 216,
+      "height_mm": 279
+    },
+    {
+      "id": "oficio",
+      "name": "Oficio (Legal)",
+      "width_mm": 216,
+      "height_mm": 356
+    },
+    {
+      "id": "tabloide",
+      "name": "Doble Carta (Tabloid)",
+      "width_mm": 432,
+      "height_mm": 279
+    },
+    {
+      "id": "pliego_sra3",
+      "name": "SRA3 (320×450mm)",
+      "width_mm": 320,
+      "height_mm": 450
+    },
+    {
+      "id": "pliego_70x100",
+      "name": "Pliego 70×100cm",
+      "width_mm": 700,
+      "height_mm": 1000
+    },
+    {
+      "id": "pliego_77x110",
+      "name": "Pliego 77×110cm",
+      "width_mm": 770,
+      "height_mm": 1100
+    }
   ]
 }

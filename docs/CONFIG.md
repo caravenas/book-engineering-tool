@@ -24,6 +24,7 @@ Contiene la lista de sustratos (tipos de papel y cartulina) disponibles.
 ```json
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "substrates": [
     {
       "id": "couche_matte",
@@ -40,6 +41,10 @@ Contiene la lista de sustratos (tipos de papel y cartulina) disponibles.
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al calibre declarado en el panel de sustrato, como "Fuente: `<source>` (config/sustratos.json)", para que la interfaz nunca presente estos valores como datos certificados sin decir de dónde salieron.
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `substrates`: arreglo no vacío de sustratos.
 - `id`: identificador único del sustrato, usado como referencia desde `formatos.json` y desde el store.
 - `name`: nombre visible en el selector de sustrato.
@@ -58,6 +63,7 @@ Contiene los tamaños de pliego de máquina disponibles para la imposición.
 ```json
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "sheetSizes": [
     { "id": "tabloide", "name": "Doble Carta (Tabloid)", "width_mm": 432, "height_mm": 279 }
   ]
@@ -66,6 +72,10 @@ Contiene los tamaños de pliego de máquina disponibles para la imposición.
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al selector de pliego, como "Fuente: `<source>` (config/pliegos.json)".
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `sheetSizes`: arreglo no vacío de pliegos.
   El orden importa: `sheetSizes[0]` es el pliego al que la aplicación vuelve si se elimina el pliego personalizado que estaba seleccionado.
 - `id`: identificador único del pliego, usado como referencia desde `formatos.json` y desde el store.
@@ -80,6 +90,7 @@ Contiene las prensas disponibles para la imposición por firmas: su formato máx
 ```json
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "presses": [
     {
       "id": "prensa_70x100",
@@ -97,6 +108,10 @@ Contiene las prensas disponibles para la imposición por firmas: su formato máx
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al selector de prensa, como "Fuente: `<source>` (config/maquinas.json)".
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `presses`: arreglo no vacío de prensas.
 - `id`: identificador único de la prensa, usado como referencia desde `formatos.json` (`defaults.pressId`) y desde el store.
 - `name`: nombre visible en el selector de prensa.
@@ -115,7 +130,8 @@ Contiene los esquemas de plegado disponibles: cuántas páginas caben en una fir
 
 ```json
 {
-  "source": "Esquemas de plegado construidos a mano como ejemplo; deben confirmarse contra un pliego doblado real antes de usarse en producción.",
+  "source": "Esquema de 16 páginas confirmado por Chris el 2026-09-23 contra un pliego doblado real (se dobla de abajo hacia arriba, luego la izquierda sobre la derecha, luego de arriba hacia abajo). El de 8 páginas es la misma secuencia con un pliegue menos y está pendiente de confirmar.",
+  "provisional": true,
   "foldingSchemes": [
     {
       "id": "esquema_8pp",
@@ -144,6 +160,10 @@ Contiene los esquemas de plegado disponibles: cuántas páginas caben en una fir
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al selector de esquema de plegado, como "Fuente: `<source>` (config/esquemas.json)".
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `foldingSchemes`: arreglo no vacío de esquemas de plegado.
 - `id`: identificador único del esquema, usado como referencia desde el store (la selección manual de esquema) y, potencialmente, desde otra configuración futura.
 - `name`: nombre visible en el selector de esquema de plegado.
@@ -166,6 +186,7 @@ Contiene los métodos de encuadernación disponibles: sus límites de páginas, 
 ```json
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "bindings": [
     {
       "id": "grapa",
@@ -183,6 +204,10 @@ Contiene los métodos de encuadernación disponibles: sus límites de páginas, 
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al selector de encuadernación, como "Fuente: `<source>` (config/encuadernaciones.json)".
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `bindings`: arreglo no vacío de métodos de encuadernación.
 - `id`: identificador único del método, usado como referencia desde `formatos.json` (`defaults.bindingId`) y desde el store.
 - `name`: nombre visible en el selector de encuadernación.
@@ -207,6 +232,7 @@ Contiene los tipos de tapa disponibles, blandos y duros, con las medidas que el 
 ```json
 {
   "source": "Valores de ejemplo; reemplazar por datos reales de la imprenta.",
+  "provisional": true,
   "covers": [
     {
       "id": "blanda_simple",
@@ -226,6 +252,10 @@ Contiene los tipos de tapa disponibles, blandos y duros, con las medidas que el 
 
 - `source`: texto no vacío que describe el origen de estos datos.
   La aplicación lo muestra tal cual, junto al selector de tapa, como "Fuente: `<source>` (config/tapas.json)".
+- `provisional`: `true` o `false`.
+  Dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.
+  Es obligatorio: un archivo que lo omitiera estaría afirmando, por no decir nada, que sus datos son reales.
+  El distintivo de la cabecera cuenta exactamente estos seis campos, y desaparece cuando los seis son `false`.
 - `covers`: arreglo no vacío de tipos de tapa.
 - `id`: identificador único del tipo de tapa, usado como referencia desde `formatos.json` (`defaults.coverId`) y desde el store.
 - `name`: nombre visible en el selector de tapa.
@@ -304,6 +334,7 @@ Reglas aplicadas:
 
 - Los arreglos de sustratos, pliegos, prensas, esquemas de plegado, encuadernaciones, tapas, proporciones y opciones de gramaje no pueden estar vacíos.
 - El campo `source` de `sustratos.json`, `pliegos.json`, `maquinas.json`, `esquemas.json`, `encuadernaciones.json` y `tapas.json` no puede estar vacío.
+- Esos mismos seis archivos deben declarar `provisional` como `true` o `false`; omitirlo es un error, y un archivo que no se pueda leer cuenta como `true`.
 - Los campos de texto libres (nombre, tipo, descripción) no pueden estar vacíos.
 - Los identificadores y etiquetas (id de sustrato, id de pliego, id de prensa, id de esquema, id de encuadernación, id de tapa, etiqueta de proporción, y las referencias `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId`, `defaults.coverId`) no pueden estar vacíos ni tener espacios al inicio o al final.
 - Los id de sustrato, los id de pliego, los id de prensa, los id de esquema, los id de encuadernación, los id de tapa y las etiquetas de proporción deben ser únicos dentro de su archivo; un id se considera visto para efectos de duplicado y de referencia en cuanto está bien formado, aunque otro campo de esa misma entrada sea inválido.

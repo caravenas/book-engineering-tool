@@ -14,6 +14,7 @@ function assertError(errors: ConfigError[], file: string, path: string): ConfigE
 function validSustratos() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     substrates: [
       {
         id: 'bond',
@@ -29,6 +30,7 @@ function validSustratos() {
 function validPliegos() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     sheetSizes: [
       { id: 'carta', name: 'Carta', width_mm: 216, height_mm: 279 },
     ],
@@ -38,6 +40,7 @@ function validPliegos() {
 function validMaquinas() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     presses: [
       {
         id: 'prensa1',
@@ -56,6 +59,7 @@ function validMaquinas() {
 function validEsquemas() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     foldingSchemes: [
       {
         id: 'esquema1',
@@ -85,6 +89,7 @@ function validEsquemas() {
 function validEncuadernaciones() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     bindings: [
       {
         id: 'grapa',
@@ -103,6 +108,7 @@ function validEncuadernaciones() {
 function validTapas() {
   return {
     source: 'Datos de prueba.',
+    provisional: true,
     covers: [
       {
         id: 'blanda',
@@ -205,6 +211,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{ id: 'bond', name: 'Bond', type: 'bond', options: [{ grammage: 90, caliper: 115 }] }],
     };
 
@@ -242,6 +249,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{
         id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
         options: [{ grammage: Number.NaN, caliper: -5 }],
@@ -249,6 +257,7 @@ describe('validateCatalog', () => {
     };
     input['pliegos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       sheetSizes: [{ id: 'carta', name: 'Carta', width_mm: Infinity, height_mm: 0 }],
     };
 
@@ -265,6 +274,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [null, 'not an object', { id: 'bond', name: 'Bond', type: 'bond', description: 'P', options: [null, 42] }],
     };
     input['pliegos.json'] = { source: 'Datos de prueba.', sheetSizes: [null, 7] };
@@ -287,6 +297,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [
         { id: 'bond', name: 'Bond', type: 'bond', description: 'P', options: 'not an array' },
         { id: 'opalina', name: 'Opalina', type: 'opalina', description: 'P', options: [] },
@@ -325,6 +336,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{ id: '   ', name: 'Bond', type: 'bond', description: 'Papel', options: [{ grammage: 90, caliper: 115 }] }],
     };
 
@@ -338,10 +350,12 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{ id: ' bond', name: 'Bond', type: 'bond', description: 'Papel', options: [{ grammage: 90, caliper: 115 }] }],
     };
     input['pliegos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       sheetSizes: [{ id: 'carta ', name: 'Carta', width_mm: 216, height_mm: 279 }],
     };
     input['formatos.json'] = {
@@ -362,6 +376,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [
         { id: 'bond', name: 'Bond', type: 'bond', description: 'Papel', options: [{ grammage: 90, caliper: 115 }] },
         { id: 'bond', name: 'Bond otra vez', type: 'bond', description: 'Papel', options: [{ grammage: 90, caliper: 115 }] },
@@ -369,6 +384,7 @@ describe('validateCatalog', () => {
     };
     input['pliegos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       sheetSizes: [
         { id: 'carta', name: 'Carta', width_mm: 216, height_mm: 279 },
         { id: 'carta', name: 'Carta duplicada', width_mm: 216, height_mm: 279 },
@@ -394,6 +410,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{
         id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
         options: [{ grammage: 90, caliper: 115 }, { grammage: 90, caliper: 120 }],
@@ -410,6 +427,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{
         id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
         // First copy has an invalid caliper; the second is a real duplicate of its grammage.
@@ -428,6 +446,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [{
         id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
         // The default grammage (90) exists here, but its caliper is invalid.
@@ -568,12 +587,87 @@ describe('validateCatalog', () => {
       'formatos.json:defaults.substrateId',
       'formatos.json:defaults.totalPages',
       'formatos.json:proportions',
+      'pliegos.json:provisional',
       'pliegos.json:sheetSizes',
       'pliegos.json:source',
+      'sustratos.json:provisional',
       'sustratos.json:source',
       'sustratos.json:substrates',
       'tapas.json:covers[0].substrateId',
     ]);
+  });
+
+  /**
+   * Every catalog that declares where its numbers come from also declares
+   * whether they are still the repository's examples, and it is required
+   * rather than optional: a file that left it out would be claiming to hold
+   * a print shop's real data by saying nothing. The header's badge reads
+   * exactly these six booleans.
+   */
+  describe('provisional (R-30)', () => {
+    const FILES_WITH_PROVENANCE = [
+      'sustratos.json', 'pliegos.json', 'maquinas.json',
+      'esquemas.json', 'encuadernaciones.json', 'tapas.json',
+    ] as const;
+
+    it('reads it from every file that declares a source', () => {
+      const result = validateCatalog(validInput());
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      expect(result.catalog.provisional).toEqual({
+        substrates: true, sheetSizes: true, presses: true,
+        foldingSchemes: true, bindings: true, covers: true,
+      });
+    });
+
+    it('carries a false through, which is what replacing the data says', () => {
+      const input = validInput();
+      input['maquinas.json'] = { ...validMaquinas(), provisional: false };
+
+      const result = validateCatalog(input);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      expect(result.catalog.provisional.presses).toBe(false);
+      expect(result.catalog.provisional.substrates).toBe(true);
+    });
+
+    it('refuses a file that leaves it out, and one that puts anything but a boolean in it', () => {
+      for (const file of FILES_WITH_PROVENANCE) {
+        for (const value of [undefined, 'sí', 1, null]) {
+          const input = validInput();
+          const raw = { ...(input[file] as Record<string, unknown>) };
+          if (value === undefined) delete raw.provisional;
+          else raw.provisional = value;
+          input[file] = raw;
+
+          const result = validateCatalog(input);
+          expect(result.ok, `${file} con provisional = ${String(value)}`).toBe(false);
+          if (result.ok) continue;
+          assertError(result.errors, file, 'provisional');
+        }
+      }
+    });
+
+    /**
+     * The safe answer to "is this a print shop's real data?" is no. A file
+     * that could not be read says nothing about itself, and a badge that
+     * disappeared because a file failed to load would pick the worst possible
+     * moment to claim the data is real. It is not an error either: the loader
+     * has already reported that the file is missing, and a second complaint
+     * about a field inside it would be noise.
+     */
+    it('treats an unreadable file as an example, without complaining about it', () => {
+      const input = validInput();
+      input['tapas.json'] = undefined;
+
+      const result = validateCatalog(input, new Set(['tapas.json']));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+
+      expect(result.catalog.provisional.covers).toBe(true);
+    });
   });
 
   it('does not report a false "no está entre las tres primeras" error when another entry before index 3 is invalid', () => {
@@ -599,6 +693,7 @@ describe('validateCatalog', () => {
     const input = validInput();
     input['sustratos.json'] = {
       source: 'Datos de prueba.',
+      provisional: true,
       substrates: [
         { id: 'bond', name: 'Bond', type: 'bond', description: 'Papel', options: [{ grammage: 90, caliper: 115 }] },
         { id: 'bond', name: 'Bond duplicado', type: 'bond', description: 'Papel', options: [{ grammage: 200, caliper: 300 }] },
@@ -633,6 +728,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['maquinas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         presses: [{
           id: 'prensa1',
           name: 'Prensa 1',
@@ -660,6 +756,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['maquinas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         presses: [{
           id: 'prensa1',
           name: 'Prensa 1',
@@ -683,6 +780,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['maquinas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         presses: [
           validMaquinas().presses[0],
           { ...validMaquinas().presses[0], name: 'Prensa duplicada' },
@@ -699,6 +797,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['maquinas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         presses: [null, 'not an object', validMaquinas().presses[0]],
       };
 
@@ -713,6 +812,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['maquinas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         presses: [{ ...validMaquinas().presses[0], name: '' }],
       };
 
@@ -730,6 +830,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{ ...scheme, pagesPerSignature: 6 }],
       };
 
@@ -744,6 +845,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{ ...scheme, cols: 3, rows: 1 }],
       };
 
@@ -758,6 +860,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -788,6 +891,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -818,6 +922,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -848,6 +953,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -871,6 +977,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -896,6 +1003,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -920,6 +1028,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: { front: scheme.sides.front.slice(0, 3), back: scheme.sides.back },
@@ -936,6 +1045,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [null, 42, validEsquemas().foldingSchemes[0]],
       };
 
@@ -951,6 +1061,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [
           { ...scheme, id: 'esquema-a', sides: 'not an object' },
           { ...scheme, id: 'esquema-b', sides: { front: 'not an array', back: scheme.sides.back } },
@@ -969,6 +1080,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: { ...scheme.sides, front: [{ page: 1.5, rotation: 0 }, ...scheme.sides.front.slice(1)] },
@@ -986,6 +1098,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: { ...scheme.sides, front: [{ page: 9, rotation: 0 }, ...scheme.sides.front.slice(1)] },
@@ -1003,6 +1116,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [scheme, { ...scheme, name: 'Duplicado' }],
       };
 
@@ -1017,6 +1131,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{ ...scheme, pagesPerSignature: 16000000 }],
       };
 
@@ -1034,6 +1149,7 @@ describe('validateCatalog', () => {
       const scheme = validEsquemas().foldingSchemes[0];
       input['esquemas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         foldingSchemes: [{
           ...scheme,
           sides: {
@@ -1056,6 +1172,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], minPages: 64, maxPages: 8 }],
       };
 
@@ -1069,6 +1186,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], pageMultiple: 3 }],
       };
 
@@ -1082,6 +1200,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], pageMultiple: 4, minPages: 9 }],
       };
 
@@ -1095,6 +1214,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], spineAllowance_mm: -1 }],
       };
 
@@ -1108,6 +1228,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], requiresSignatureMultiple: 'yes' }],
       };
 
@@ -1122,6 +1243,7 @@ describe('validateCatalog', () => {
       const binding = validEncuadernaciones().bindings[0];
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [binding, { ...binding, name: 'Grapa duplicada' }],
       };
 
@@ -1158,6 +1280,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         // pageMultiple: 2 is valid on its own (even, and minPages/maxPages
         // are valid multiples of it), but nests: true requires a multiple of
         // 4, because nesting folds four pages into each sheet.
@@ -1174,6 +1297,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['encuadernaciones.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         bindings: [{ ...validEncuadernaciones().bindings[0], name: '' }],
       };
 
@@ -1216,6 +1340,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ flapWidth_mm: -1 })],
       };
 
@@ -1229,6 +1354,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ substrateId: 'missing-substrate' })],
       };
 
@@ -1242,6 +1368,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ grammage: 999 })],
       };
 
@@ -1255,6 +1382,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ kind: 'blanda', boardThickness_mm: 2 })],
       };
 
@@ -1268,6 +1396,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({
           kind: 'dura', squares_mm: 3, hingeGap_mm: 0, turnIn_mm: 15, boardThickness_mm: 2.5,
         })],
@@ -1283,6 +1412,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({
           kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5, flapWidth_mm: 80,
         })],
@@ -1311,6 +1441,7 @@ describe('validateCatalog', () => {
       const input = validInput();
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ name: '' })],
       };
 
@@ -1403,6 +1534,7 @@ describe('validateCatalog', () => {
       // hard case needs a flat, square spine.
       input['tapas.json'] = {
         source: 'Datos de prueba.',
+        provisional: true,
         covers: [makeCover({ kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5 })],
       };
 
@@ -1417,6 +1549,7 @@ describe('validateCatalog', () => {
         const input = validInput();
         input['tapas.json'] = {
           source: 'Datos de prueba.',
+          provisional: true,
           covers: [makeCover({ kind: 'blanda', [field]: 1 })],
         };
 
@@ -1432,6 +1565,7 @@ describe('validateCatalog', () => {
         const input = validInput();
         input['tapas.json'] = {
           source: 'Datos de prueba.',
+          provisional: true,
           covers: [makeCover({
             kind: 'dura', squares_mm: 3, hingeGap_mm: 6, turnIn_mm: 15, boardThickness_mm: 2.5, [field]: 0,
           })],

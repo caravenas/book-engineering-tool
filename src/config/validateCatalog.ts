@@ -1407,6 +1407,37 @@ function validateDefaultsReferences(
  * without being listed in `unavailableFiles` is a real validation error: this
  * function never returns `ok: true` for an incomplete `input` on its own.
  */
+/**
+ * Whether a catalog file still holds the example data the repository ships.
+ *
+ * Declared rather than assumed, and required rather than optional: a file
+ * that simply left it out would be claiming to hold a print shop's real data
+ * by saying nothing, which is the failure this field exists to rule out.
+ * Anything unreadable counts as an example for the same reason — the safe
+ * answer to "is this real data?" is no.
+ */
+function validateProvisional(
+  file: CatalogFileName,
+  raw: unknown,
+  available: boolean,
+  errors: ConfigError[]
+): boolean {
+  if (!available) return true;
+  if (!isPlainObject(raw)) return true;
+
+  const { provisional } = raw;
+  if (typeof provisional !== 'boolean') {
+    errors.push({
+      file,
+      path: 'provisional',
+      message: 'El campo "provisional" debe ser true o false: dice si el archivo sigue trayendo los datos de ejemplo del repositorio o ya son los de la imprenta.',
+    });
+    return true;
+  }
+
+  return provisional;
+}
+
 export function validateCatalog(
   input: CatalogFiles,
   unavailableFiles: ReadonlySet<CatalogFileName> = new Set()
@@ -1469,6 +1500,15 @@ export function validateCatalog(
     );
   }
 
+  const provisional = {
+    substrates: validateProvisional(SUSTRATOS_FILE, input[SUSTRATOS_FILE], substratesAvailable, errors),
+    sheetSizes: validateProvisional(PLIEGOS_FILE, input[PLIEGOS_FILE], sheetSizesAvailable, errors),
+    presses: validateProvisional(MAQUINAS_FILE, input[MAQUINAS_FILE], pressesAvailable, errors),
+    foldingSchemes: validateProvisional(ESQUEMAS_FILE, input[ESQUEMAS_FILE], foldingSchemesAvailable, errors),
+    bindings: validateProvisional(ENCUADERNACIONES_FILE, input[ENCUADERNACIONES_FILE], bindingsAvailable, errors),
+    covers: validateProvisional(TAPAS_FILE, input[TAPAS_FILE], coversAvailable, errors),
+  };
+
   if (errors.length > 0) {
     return { ok: false, errors };
   }
@@ -1477,6 +1517,7 @@ export function validateCatalog(
   return {
     ok: true,
     catalog: {
+      provisional,
       substrates: sustratos.substrates,
       substratesSource: sustratos.source as string,
       sheetSizes: pliegos.sheetSizes,

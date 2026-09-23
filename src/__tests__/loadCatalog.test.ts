@@ -12,6 +12,7 @@ function jsonResponse(body: unknown, init: { ok?: boolean; status?: number; cont
 
 const validSustratos = {
   source: 'Datos de prueba.',
+  provisional: true,
   substrates: [{
     id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
     options: [{ grammage: 90, caliper: 115 }],
@@ -19,10 +20,12 @@ const validSustratos = {
 };
 const validPliegos = {
   source: 'Datos de prueba.',
+  provisional: true,
   sheetSizes: [{ id: 'carta', name: 'Carta', width_mm: 216, height_mm: 279 }],
 };
 const validMaquinas = {
   source: 'Datos de prueba.',
+  provisional: true,
   presses: [{
     id: 'prensa1', name: 'Prensa 1',
     maxSheetWidth_mm: 500, maxSheetHeight_mm: 700,
@@ -31,6 +34,7 @@ const validMaquinas = {
 };
 const validEsquemas = {
   source: 'Datos de prueba.',
+  provisional: true,
   foldingSchemes: [{
     id: 'esquema1', name: 'Esquema 1', pagesPerSignature: 8, cols: 2, rows: 2,
     sides: {
@@ -47,6 +51,7 @@ const validEsquemas = {
 };
 const validEncuadernaciones = {
   source: 'Datos de prueba.',
+  provisional: true,
   bindings: [{
     id: 'grapa', name: 'Grapa', pageMultiple: 4, minPages: 8, maxPages: 64,
     spineAllowance_mm: 0, nests: true, requiresSignatureMultiple: false,
@@ -54,6 +59,7 @@ const validEncuadernaciones = {
 };
 const validTapas = {
   source: 'Datos de prueba.',
+  provisional: true,
   covers: [{
     id: 'blanda', name: 'Tapa blanda', kind: 'blanda', substrateId: 'bond', grammage: 90,
     flapWidth_mm: 0, squares_mm: 0, hingeGap_mm: 0, turnIn_mm: 0, boardThickness_mm: 0,
@@ -348,6 +354,7 @@ describe('loadCatalog', () => {
       if (url.endsWith('sustratos.json')) {
         return jsonResponse({
           source: 'Datos de prueba.',
+          provisional: true,
           substrates: [{
             id: 'bond', name: 'Bond', type: 'bond', description: 'Papel',
             options: [{ grammage: 90, caliper: -1 }],
