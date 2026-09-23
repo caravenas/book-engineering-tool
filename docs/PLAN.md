@@ -1065,6 +1065,23 @@ Al entrar se funde mientras entra, que disimula que el tablero acaba de irse; al
 
 Verificación: tres pruebas de navegador, saboteadas una a una —el panel se lleva el teclado, lo devuelve, y Escape lo cierra; el tablero deja su sitio al editor y lo recupera al cerrar; y la llamada de un paso lleva al catálogo sin plegar el paso—.
 
+## La tarjeta elegida desaparecía bajo el puntero
+
+Reportado por Chris el 2026-09-23.
+En la ficha de la izquierda, al pasar el puntero por encima, las letras y los dibujos quedaban blancos y se perdían.
+
+La regla que ilumina una tarjeta al señalarla está escrita para una tarjeta que no está elegida, pero se aplicaba también a la elegida, que va rellena de tinta con texto blanco encima.
+Gana en especificidad `(0,3,0)` contra `(0,2,0)`, así que repintaba el relleno de blanco y dejaba el texto blanco —y el dibujo, que va en `currentColor`— de pie encima: **1:1 de contraste**, ocho tarjetas del estado inicial.
+La tarjeta elegida se queda ahora con sus dos colores, como ya hacían las celdas del tablero y el conmutador de la cabecera: señalar la respuesta no tiene nada que ofrecer.
+
+La reproducción es la parte que cuesta.
+Una tarjeta se funde con su color de hover en 150 ms, así que un color leído en el instante en que llega el puntero es un color por el que solo está pasando: la primera versión de la prueba pasaba con el fallo en pantalla.
+Se quita la transición en vez de esperarla treinta veces, y se comprueba además que el número de tarjetas medidas es el de tarjetas señaladas, porque no medir nada no es aprobar: es un selector que dejó de encajar.
+
+La misma medida cubre el tablero del catálogo, que marca su celda elegida igual y podría perderla igual.
+Hoy no lo hace, porque todas sus reglas de hover se escribieron con `:not(.selected)` desde el principio; la prueba está para que siga siendo verdad.
+Las dos saboteadas.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

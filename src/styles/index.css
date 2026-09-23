@@ -860,7 +860,15 @@ select.form-input {
   text-align: left;
 }
 
-.option-card:hover:not(:disabled) {
+/*
+ * Not the chosen one. The rule lights up a card that is merely being pointed
+ * at, and applied to the card already filled with ink it repainted the fill
+ * white and left the white text and the white drawing standing on it: a card
+ * that disappeared under the pointer, at 1:1. The chosen card keeps its own
+ * two colours, as the board's cells and the header's switch already do —
+ * pointing at the answer has nothing to offer.
+ */
+.option-card:hover:not(:disabled):not(.selected) {
   background: var(--color-bg-card-hover);
 }
 
