@@ -13,28 +13,42 @@ import {
 import { getCatalogOrigin, ORIGIN_LABEL } from './CatalogOrigin';
 import { CatalogEntryForm } from './CatalogEntryForm';
 import { usePressEditor, useSheetSizeEditor, useBindingEditor, useProportionEditor, useGrammageEditor, useSubstrateEditor, useCoverEditor } from './catalogEditors';
+import { useCentralView } from './CentralView';
 
 /**
  * One place for everything the catalogs hold, instead of an "edit", an "add"
  * and a "hide" seeded through the steps in eleven-pixel links, each catalog
  * offering them a little differently.
  *
- * Built on <dialog> and showModal(), for the reason the steps are built on
- * <details>: the platform already traps focus, closes on Escape and makes the
- * rest of the page inert, and those are exactly the parts that get written
- * badly by hand.
+ * It was a modal <dialog> from R-4a to R-24, for the reason the steps are
+ * built on <details>: the platform traps focus, closes on Escape and makes
+ * the rest of the page inert, and those are the parts that get written badly
+ * by hand. R-24 makes the catalog a view of its own and this the other half
+ * of it — the board reads and applies, this edits — so a sheet of glass over
+ * the whole tool is the wrong thing: it hid the view its own «editar» was
+ * pressed in. It slides in over the board instead, and Escape still closes
+ * it, because that is the one thing a dialog gave that a panel has to be
+ * told.
  */
 
 export type CatalogId = 'proportions' | 'substrates' | 'bindings' | 'presses' | 'sheetSizes' | 'foldingSchemes' | 'covers';
 
 interface CatalogPanelApi {
-  /** Opens the panel showing one catalog. */
+  /** Which catalog the editor is on. It keeps the last one while closed, so
+   *  the panel still has something to draw while it slides away. */
+  catalog: CatalogId;
+  /** Whether the editor is the thing the catalog view is showing. */
+  isOpen: boolean;
+  /** Shows the editor on one catalog, switching to the catalog view first. */
   open: (catalog: CatalogId) => void;
+  /** Moves the editor to another catalog without closing it. */
+  select: (catalog: CatalogId) => void;
+  close: () => void;
 }
 
 const CatalogPanelContext = createContext<CatalogPanelApi | null>(null);
 
-/** Lets a control anywhere in the tree open the panel at its own catalog. */
+/** Lets a control anywhere in the tree open the editor at its own catalog. */
 export function useCatalogPanel(): CatalogPanelApi {
   const api = useContext(CatalogPanelContext);
   if (!api) throw new Error('useCatalogPanel used outside CatalogPanelProvider');
@@ -231,9 +245,60 @@ function LockIcon() {
 }
 
 export function CatalogPanelProvider({ children }: { children: ReactNode }) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [selected, setSelected] = useState<CatalogId>('presses');
+  const { show } = useCentralView();
+  const [catalog, setCatalog] = useState<CatalogId>('presses');
   const [isOpen, setIsOpen] = useState(false);
+  /*
+   * Where the keyboard was when the editor took over. A modal gave this for
+   * free; a panel has to be told, and without it a reader who opened the
+   * editor from a step's own call came back to the top of the document.
+   *
+   * It is remembered here rather than in the view, because the view is not
+   * always there to remember it: opening the editor from a step switches the
+   * middle of the screen, so the catalog view mounts with the editor already
+   * open and never sees the moment the focus left.
+   */
+  const cameFrom = useRef<HTMLElement | null>(null);
+
+  /*
+   * Opening the editor from a step's own call means leaving whatever the
+   * middle of the screen was showing: the editor lives in the catalog view
+   * now, so the way in has to take you there.
+   */
+  const open = useCallback((id: CatalogId) => {
+    cameFrom.current = document.activeElement as HTMLElement | null;
+    setCatalog(id);
+    setIsOpen(true);
+    show('catalog');
+  }, [show]);
+
+  const select = useCallback((id: CatalogId) => setCatalog(id), []);
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    const previous = cameFrom.current;
+    cameFrom.current = null;
+    /*
+     * Only if it is still on the page. A board section's «editar» is covered
+     * by the very panel it opened, so by now it is gone; a step's call is
+     * beside the panel and survives, which is the case worth handling.
+     */
+    if (previous?.isConnected) previous.focus();
+  }, []);
+  const api = useMemo(
+    () => ({ catalog, isOpen, open, select, close }),
+    [catalog, isOpen, open, select, close]
+  );
+
+  return <CatalogPanelContext.Provider value={api}>{children}</CatalogPanelContext.Provider>;
+}
+
+/**
+ * The editor itself: the seven catalogs, the entries of the one in view, and
+ * the form that adds, patches and hides them.
+ */
+export function CatalogEditor() {
+  const { catalog: selected, select, close } = useCatalogPanel();
   /*
    * Which entry the form is pointed at. Deliberately not the book's own
    * selection: opening the catalog to fix a typo in a press nobody is using
@@ -297,58 +362,31 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const open = useCallback((id: CatalogId) => {
-    setSelected(id);
-    setEditingKey(null);
-    setEditingGrammage(null);
-    const element = dialog.current;
-    if (!element) return;
-    /*
-     * showModal brings the focus trap, the inert backdrop and Escape with it,
-     * but it is not everywhere: an environment without it, jsdom among them,
-     * still gets a panel that opens, without those three. Better than a panel
-     * that throws.
-     */
-    if (typeof element.showModal === 'function') element.showModal();
-    else element.open = true;
-    setIsOpen(true);
-  }, []);
-
-  const api = useMemo(() => ({ open }), [open]);
-
-  const close = useCallback(() => {
-    const element = dialog.current;
-    if (!element) return;
-    if (typeof element.close === 'function') element.close();
-    else element.open = false;
-    setIsOpen(false);
-  }, []);
-
   /*
-   * A panel left open by an unmounting tree would keep the rest of the page
-   * inert with nothing to close it. The element is captured while it still
-   * exists: by the time the cleanup runs, React has already emptied the ref.
+   * Escape used to belong to the dialog. A panel has to be told, and it is
+   * the one thing about the dialog worth carrying over: it is how anyone who
+   * opened the editor by mistake gets out of it without hunting for a button.
    */
   useEffect(() => {
-    const element = dialog.current;
-    return () => {
-      if (element && typeof element.close === 'function' && element.open) element.close();
-    };
-  }, []);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') close();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [close]);
+
+  /*
+   * The panel takes the keyboard when it arrives, the way a dialog did. It is
+   * the panel and not its close button that is focused, so what a reader
+   * hears first is where they now are rather than the way back out.
+   */
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => { panel.current?.focus(); }, []);
 
   return (
-    <CatalogPanelContext.Provider value={api}>
-      {children}
-
-      <dialog
-        ref={dialog}
-        className="catalog-dialog"
-        aria-label="Catálogo"
-        // Escape closes a dialog without going through anything of ours.
-        onClose={() => setIsOpen(false)}
-      >
+      <div className="catalog-editor-panel" aria-label="Editar catálogo" tabIndex={-1} ref={panel}>
         <div className="catalog-header">
-          <h2 className="catalog-title">Catálogo</h2>
+          <h2 className="catalog-title">Editar catálogo</h2>
           {/*
             * Where whether your changes survive belongs: beside the changes,
             * rather than as a notice floating above a page that may not be
@@ -367,13 +405,6 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/*
-          * Only while open: a closed dialog still renders its children, so the
-          * seven catalogs would be computed on every keystroke elsewhere in
-          * the app, and their entries would sit in the accessibility tree
-          * where nobody asked for them.
-          */}
-        {isOpen && (
         <div className="catalog-body">
           <nav className="catalog-nav" aria-label="Catálogos">
             {GROUPS.map(group => (
@@ -393,7 +424,7 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
                       item.readOnly ? 'solo lectura' : null,
                     ].filter(Boolean).join(', ')}
                     aria-current={item.id === selected ? 'page' : undefined}
-                    onClick={() => { setSelected(item.id); setEditingKey(null); setEditingGrammage(null); }}
+                    onClick={() => { select(item.id); setEditingKey(null); setEditingGrammage(null); }}
                   >
                     <span className="catalog-nav-name">{item.title}</span>
                     {item.readOnly && <LockIcon />}
@@ -522,8 +553,6 @@ export function CatalogPanelProvider({ children }: { children: ReactNode }) {
             })()}
           </div>
         </div>
-        )}
-      </dialog>
-    </CatalogPanelContext.Provider>
+      </div>
   );
 }

@@ -53,7 +53,7 @@ function controlNameCounts(
     const controls = Array.from(scope.querySelectorAll('button, input, select, textarea'))
       .filter(control => !visibleOnly || (control as HTMLElement).getClientRects().length > 0)
       .filter(control => !outsideSteps || !control.closest('.spec-step-body'))
-      .filter(control => !outsideCatalog || !control.closest('.catalog-dialog'))
+      .filter(control => !outsideCatalog || !control.closest('.catalog-editor'))
       /*
        * A row of a catalog list is a control — it chooses which entry the
        * form edits — but its accessible name is the shipped catalog's own
@@ -162,12 +162,14 @@ async function reachableControlNameCounts(page: Page): Promise<Record<string, nu
   add(await controlNameCounts(page, '.catalog-board', { outsideBoardEntries: true }));
 
   /*
-   * The editing dialog is a modal, so nothing inside it is reachable until it
-   * opens, and it shows one catalog at a time for the same reason the steps
-   * do. Its navigation is counted once; each catalog's own controls are
-   * counted as the walk arrives at them.
+   * The editor slides in over the board, so nothing inside it is reachable
+   * until it is opened, and it shows one catalog at a time for the same
+   * reason the steps do. Its navigation is counted once; each catalog's own
+   * controls are counted as the walk arrives at them.
    */
   await page.getByRole('button', { name: 'Opciones de imposición' }).click();
+  // It slides in, so the walk waits for it rather than counting an empty box.
+  await expect(page.locator('.catalog-editor .catalog-header')).toBeVisible();
   add(await controlNameCounts(page, '.catalog-header'));
   add(await controlNameCounts(page, '.catalog-nav'));
   const catalogs = page.locator('.catalog-nav-item');
@@ -237,8 +239,8 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   'Editar el catálogo de encuadernaciones': 1,
   'Editar el catálogo de tapas': 1,
 
-  // The editing dialog, added by R-4a: the way out, one entry per catalog,
-  // and the press form that moved in from the imposition step.
+  // The editor, added by R-4a: the way out, one entry per catalog, and the
+  // press form that moved in from the imposition step.
   'Cerrar catálogo': 1,
   // One per step since R-19, named for the step rather than for the catalog
   // it opens: the rest are reached from the catalog's own navigation.
@@ -622,7 +624,7 @@ test('every control is big enough to hit, in the catalog and on the way to it', 
   const catalogs = page.locator('.catalog-nav-item');
   for (let index = 0; index < await catalogs.count(); index += 1) {
     await catalogs.nth(index).click();
-    tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.catalog-dialog button, .catalog-dialog input, .catalog-dialog select'));
+    tooSmall.push(...await page.evaluate(MEASURE_TOO_SMALL, '.catalog-editor button, .catalog-editor input, .catalog-editor select'));
   }
 
   expect(tooSmall).toEqual([]);

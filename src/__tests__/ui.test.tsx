@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, describe, expect, it } from 'vitest';
 import { SpecSteps } from '../components/SpecSteps';
 import { CatalogPanelProvider } from '../components/CatalogPanel';
+import { CentralViewProvider } from '../components/CentralView';
 
 /**
  * Editing a catalog lives in the catalog panel; a step only opens it.
@@ -63,7 +64,7 @@ describe('Spec steps (R-3b)', () => {
   // Six panels became five steps, and the titles were renamed with them:
   // pages and binding are one decision, so they are one step.
   it('names the five steps in order', () => {
-    const { container } = render(<CatalogPanelProvider><SpecSteps /></CatalogPanelProvider>);
+    const { container } = render(<CentralViewProvider><CatalogPanelProvider><SpecSteps /></CatalogPanelProvider></CentralViewProvider>);
 
     const titles = Array.from(container.querySelectorAll('.panel-title'))
       .map(title => title.textContent?.trim());
@@ -78,7 +79,7 @@ describe('Spec steps (R-3b)', () => {
   });
 
   it('shows what each closed step currently says, so the sheet reads without opening it', () => {
-    const { container } = render(<CatalogPanelProvider><SpecSteps /></CatalogPanelProvider>);
+    const { container } = render(<CentralViewProvider><CatalogPanelProvider><SpecSteps /></CatalogPanelProvider></CentralViewProvider>);
 
     const values = Array.from(container.querySelectorAll('.spec-step-value'))
       .map(value => value.textContent?.trim());
@@ -220,13 +221,20 @@ describe('Honest and recoverable UI', () => {
     // the step carries one call that says where the rest went.
     expect(chosenCardId('sheet')).toBe('pliego_70x100');
 
+    /*
+     * Since R-24 the editor is not a dialog: it is the catalog view's other
+     * half, and the call switches the middle of the screen to it. So the
+     * button no longer claims to pop one up — a claim about what happens on
+     * a click is worth more than a class name, which is why it is asserted.
+     */
     const options = screen.getByRole('button', { name: 'Opciones de imposición' });
-    expect(options.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(options.getAttribute('aria-haspopup')).toBeNull();
 
     // Since R-19 the call belongs to the step, so it opens the catalog this
     // step leans on most and the sheets are one click further in.
     openCatalogFor('pliego');
-    // The step keeps its choice while the catalog is open over it.
+    // The step keeps its choice while the catalog is being edited: the spec
+    // sheet is beside the middle of the screen, not underneath it.
     expect(chosenCardId('sheet')).toBe('pliego_70x100');
     expect(screen.getByRole('button', { name: '+ Nuevo pliego' })).toBeTruthy();
   });

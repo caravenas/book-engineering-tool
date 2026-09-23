@@ -18,7 +18,6 @@ export function StepOptions({ catalog, label }: { catalog: CatalogId; label: str
       type="button"
       className="step-options"
       aria-label={`Opciones de ${label}`}
-      aria-haspopup="dialog"
       onClick={event => {
         /*
          * The call sits inside the step's own <summary>, where a click could
@@ -26,6 +25,10 @@ export function StepOptions({ catalog, label }: { catalog: CatalogId; label: str
          * not run the summary's toggle when the click lands on an interactive
          * descendant — e2e/sheet.spec.ts holds it to that — and this says so
          * rather than leaning on it, since no other engine is tested here.
+         *
+         * Since R-24 the editor is not a dialog but the catalog view's other
+         * half, so this switches the middle of the screen to it rather than
+         * opening something over the top of whatever was there.
          */
         event.stopPropagation();
         open(catalog);

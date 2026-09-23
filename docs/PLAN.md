@@ -445,6 +445,7 @@ una entrada de fábrica ofrece «Volver a fábrica» y «Ocultar», y una entrad
 y los gramajes no son un catálogo hermano sino una lista dentro de un papel, porque cuelgan de él y no tienen identidad propia.
 
 El panel se construye sobre `<dialog>` y `showModal()`, por la misma razón que el acordeón sobre `<details>`: la plataforma ya trae el foco atrapado, el cierre con Escape y el fondo inerte, y escribir eso a mano es la parte que se hace mal.
+(R-25 lo saca del modal: ver «El editor entra deslizándose».)
 
 Exportar e importar siguen sin sitio, y siguen anotados: cuando UX-8 se retome, su lugar es la cabecera de este panel.
 
@@ -1037,6 +1038,32 @@ Lo que hay dentro se reparte en más columnas en vez de estirarse: las seis cifr
 Verificación: una prueba de navegador por ancho —1024, 1440 y 2560— que mide, en cada celda, la tinta y no la caja: un `<svg>` puede llenar su celda mientras el dibujo de dentro se encoge hasta un sello.
 Comprueba que cada dibujo ocupa más de la mitad de uno de los dos ejes de su celda y que nada se sale de ella, porque un dibujo centrado al que le sobra tamaño se desborda por arriba y por abajo a la vez y se lleva sus propias acotaciones fuera de la vista.
 Las dos cosas saboteadas: tirar la medida y quedarse con el valor de reserva, y darle a la página la celda entera sin descontar sus acotaciones.
+
+## El editor entra deslizándose — R-25
+
+Decisión de Chris el 2026-09-23: el catálogo deja de editarse en un modal.
+Al pulsar «editar», la vista de edición toma el lugar del tablero deslizándose de derecha a izquierda; al cerrar, se va de izquierda a derecha y el tablero vuelve a su sitio.
+
+El modal era lo correcto en R-4a, cuando el catálogo no tenía sitio propio en la pantalla.
+Desde R-22 lo tiene, y el modal pasó a ser una lámina de cristal sobre toda la herramienta abierta por un «editar» que estaba en la vista que él mismo tapaba.
+Ahora son las dos mitades de una misma vista: el tablero lee y aplica, el panel edita.
+
+**Lo que el modal daba gratis, y qué se hace con ello.**
+Tres cosas.
+El cierre con Escape se conserva, porque es como sale de ahí quien entró por error sin ponerse a buscar un botón.
+El foco se conserva: el panel se lo lleva al llegar y lo devuelve al salir, si lo que lo tenía sigue en la página —el «editar» de una sección del tablero no sobrevive a que el panel lo tape; la llamada de un paso, que está al lado y no debajo, sí—.
+Lo que no se conserva es el fondo inerte, que es justo en lo que el modal se equivocaba: la ficha técnica que hay al lado es exactamente lo que está mirando quien edita un catálogo.
+
+**Dónde se recuerda de dónde vino el foco.**
+En el proveedor, no en la vista.
+La vista no siempre está ahí para verlo: abrir el editor desde un paso cambia lo que muestra el centro de la pantalla, así que la vista del catálogo se monta con el editor ya abierto y nunca ve el momento en que el foco se fue.
+Costó un intento darse cuenta.
+
+**El panel se quita cuando termina su animación.**
+Donde no hay animación no hay final que esperar —jsdom, y quien haya pedido menos movimiento—, así que ahí se quita y ya.
+Al entrar se funde mientras entra, que disimula que el tablero acaba de irse; al salir va opaco, porque debajo ya está el tablero y un panel que se desvaneciera mostraría los dos encima del otro en vez de uno descubriendo al otro.
+
+Verificación: tres pruebas de navegador, saboteadas una a una —el panel se lleva el teclado, lo devuelve, y Escape lo cierra; el tablero deja su sitio al editor y lo recupera al cerrar; y la llamada de un paso lleva al catálogo sin plegar el paso—.
 
 ## Decisiones pendientes
 

@@ -8,7 +8,7 @@ import { SpecSteps } from './components/SpecSteps';
 import { SpecSummary } from './components/specSummaries';
 import { PreviewGrid } from './components/PreviewGrid';
 import { CatalogPanelProvider } from './components/CatalogPanel';
-import { CatalogBoard } from './components/CatalogBoard';
+import { CatalogSection } from './components/CatalogSection';
 import { ResultsView } from './components/ResultsView';
 import {
   CentralViewProvider, CentralViewTabs, useCentralView, CENTRAL_VIEW_LABEL,
@@ -59,7 +59,7 @@ function CentralColumn() {
     <section className="app-column column-main" aria-label={CENTRAL_VIEW_LABEL[view]}>
       {view === 'results' && <ResultsView />}
       {view === 'visual' && <PreviewGrid />}
-      {view === 'catalog' && <CatalogBoard />}
+      {view === 'catalog' && <CatalogSection />}
     </section>
   );
 }
@@ -133,8 +133,8 @@ export default function App() {
   }, [initialize]);
 
   return (
-    <CatalogPanelProvider>
     <CentralViewProvider>
+    <CatalogPanelProvider>
     <div className="page-wrapper">
       <div className="header-section">
         <header className="app-header">
@@ -272,7 +272,7 @@ export default function App() {
         </main>
       </div>
     </div>
-    </CentralViewProvider>
     </CatalogPanelProvider>
+    </CentralViewProvider>
   );
 }

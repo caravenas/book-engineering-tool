@@ -43,12 +43,17 @@ test('the call in a step title opens its catalog without closing the step', asyn
 
   await page.getByRole('button', { name: 'Opciones de formato' }).click();
 
-  await expect(page.locator('.catalog-dialog')).toBeVisible();
+  // Since R-24 the call takes the middle of the screen to the catalog view
+  // and slides its editor in, rather than covering the tool with a dialog.
+  await expect(page.locator('.catalog-editor')).toBeVisible();
+  await expect(page.locator('.central-tab.active')).toHaveText('Catálogo');
+  await expect(page.getByRole('heading', { name: 'Proporciones', exact: true })).toBeVisible();
   // The call sits inside the step's own summary, so a plain click on it would
   // have folded the step away behind the catalog it just opened.
   await expect(step).toHaveAttribute('open', '');
 
   await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
+  await expect(page.locator('.catalog-editor')).toHaveCount(0);
   await expect(step).toHaveAttribute('open', '');
 });
 
@@ -65,4 +70,46 @@ test('each step carries its own way into the catalog', async ({ page }) => {
     'Opciones de imposición',
     'Opciones de tapa',
   ]);
+});
+
+/**
+ * R-24 takes the catalog editor out of its modal and puts it in the catalog
+ * view, sliding in over the board. The modal brought three things with it
+ * that a plain panel does not, and two of them are worth keeping: Escape, and
+ * the keyboard going with the panel instead of being left on the page behind
+ * it. (The third, making the rest of the page inert, is the one the modal was
+ * wrong about: the spec sheet beside it is exactly what someone editing a
+ * catalog is looking at.)
+ */
+test('the editor takes the keyboard, gives it back, and closes on Escape', async ({ page }) => {
+  await openTheApp(page);
+  const call = page.getByRole('button', { name: 'Opciones de formato' });
+  await call.focus();
+  await call.press('Enter');
+
+  const panel = page.locator('.catalog-editor-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.catalog-editor')).toHaveCount(0);
+  // Back where it was: the call is still on the page, because the spec sheet
+  // was never covered.
+  await expect(call).toBeFocused();
+});
+
+/** The board is what the catalog view goes back to, and it is never gone. */
+test('closing the editor gives the board its place back', async ({ page }) => {
+  await openTheApp(page);
+  await page.locator('.central-tab', { hasText: 'Catálogo' }).click();
+  await expect(page.locator('.catalog-board')).toBeVisible();
+
+  await page.locator('.board-section-edit').first().click();
+  await expect(page.locator('.catalog-editor')).toBeVisible();
+  // It takes the board's place rather than floating over the whole tool.
+  await expect(page.locator('.catalog-board')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Cerrar catálogo' }).click();
+  await expect(page.locator('.catalog-editor')).toHaveCount(0);
+  await expect(page.locator('.catalog-board')).toBeVisible();
 });

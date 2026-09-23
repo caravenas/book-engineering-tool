@@ -12,7 +12,8 @@ import { CoverPanel } from '../components/CoverPanel';
 import { CoverPreview } from '../components/CoverPreview';
 import { CoverResults } from '../components/CoverResults';
 import { SubstrateSelector } from '../components/SubstrateSelector';
-import { CatalogPanelProvider } from '../components/CatalogPanel';
+import { CatalogPanelProvider, CatalogEditor, useCatalogPanel } from '../components/CatalogPanel';
+import { CentralViewProvider } from '../components/CentralView';
 import { StepOptions } from '../components/StepOptions';
 import { HowItIsCalculated } from '../components/HowItIsCalculated';
 import { ResultFigures } from '../components/ResultFigures';
@@ -32,6 +33,11 @@ import { ResultFigures } from '../components/ResultFigures';
  * panel without it would leave a screen the catalog cannot be reached from,
  * and half these tests are about what the catalog does to the step.
  *
+ * Since R-24 they also carry the catalog editor and the provider that owns
+ * which view the middle of the screen is showing: the editor is no longer a
+ * dialog the provider renders for everyone, it is the catalog view's other
+ * half, and a step's call into it switches to that view.
+ *
  * They also carry the six drawn figures, because since R-23 six of the
  * results are drawn rather than listed — the final spine, the paper weight,
  * the press sheets, the signatures, the waste and the flat cover — and a
@@ -46,26 +52,36 @@ import { ResultFigures } from '../components/ResultFigures';
  * guard is ever removed, this file becomes a way to be wrong quietly.
  */
 
+/**
+ * The editor only while it is open, which is what the catalog view does with
+ * it: closed, it renders nothing at all. Mounted unconditionally it would put
+ * seven catalogs and every entry of one of them in front of every test.
+ */
+function CatalogEditorIfOpen() {
+  const { isOpen } = useCatalogPanel();
+  return isOpen ? <CatalogEditor /> : null;
+}
+
 export function CanvasDesignerScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="proportions" label="formato" />
       <CanvasDesigner />
       <PagePreview />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
 export function SpineCalculatorScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <SpineView />
       <ResultFigures />
       <SpineResults />
       <HowItIsCalculated />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
@@ -77,7 +93,7 @@ export function SpineCalculatorScreen() {
  */
 export function PagesAndBindingScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <SpineCalculator />
       <BindingPanel />
@@ -85,13 +101,13 @@ export function PagesAndBindingScreen() {
       <SpineResults />
       <BindingSpineResults />
       <HowItIsCalculated />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
 export function BindingPanelScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="bindings" label="páginas y encuadernación" />
       <BindingPanel />
       <ResultFigures />
@@ -100,39 +116,39 @@ export function BindingPanelScreen() {
       <SpineResults />
       <BindingSpineResults />
       <HowItIsCalculated />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
 export function ImpositionVisualizerScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="presses" label="imposición" />
       <ImpositionVisualizer />
       <SheetPreview />
       <ResultFigures />
       <ImpositionResults />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
 export function CoverPanelScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="covers" label="tapa" />
       <CoverPanel />
       <CoverPreview />
       <ResultFigures />
       <CoverResults />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }
 
 export function SubstrateSelectorScreen() {
   return (
-    <CatalogPanelProvider>
+    <CentralViewProvider><CatalogPanelProvider>
       <StepOptions catalog="substrates" label="papel" />
       <SubstrateSelector />
-    </CatalogPanelProvider>
+    <CatalogEditorIfOpen /></CatalogPanelProvider></CentralViewProvider>
   );
 }

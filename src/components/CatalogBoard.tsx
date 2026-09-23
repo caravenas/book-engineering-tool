@@ -57,7 +57,6 @@ function Section({
           type="button"
           className="board-section-edit"
           aria-label={editLabel}
-          aria-haspopup="dialog"
           onClick={() => open(catalog)}
         >
           editar
