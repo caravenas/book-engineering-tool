@@ -1128,6 +1128,22 @@ Saboteado con un giro cambiado, que el validador del catálogo sí acepta y la p
 De paso, dos pruebas de interfaz que fijaban números de página del catálogo pasan a leerlos del esquema que el plan eligió.
 Fijaban el dato del catálogo en un archivo de pruebas, así que corregir el catálogo rompía pruebas que no iban de eso.
 
+## Editar una medida ya no tira la proporción — R-28
+
+Elegir 2:3 y luego teclear un ancho es pedir la página 2:3 que mide eso de ancha, no pedir dejar de tener proporción.
+Hasta aquí las dos medidas pasaban por `setPageDimensions`, que fija las dos a la vez y por eso deja la proporción en Manual: teclear cualquiera de ellas la tiraba en silencio.
+
+Ahora hay `setPageWidth` y `setPageHeight`, y las dos pasan por el mismo sitio, porque una proporción es simétrica —resuelve el alto desde el ancho igual que el ancho desde el alto— y escribir los dos casos aparte es escribir la misma regla dos veces para que se separe una.
+El factor es el mismo que aplican `setProportion` y `setFormat`, así que un ancho tecleado y un ancho al que se llega eligiendo 2:3 dan la misma página; hay una prueba que lo dice en vez de confiar en que dos sitios sigan de acuerdo.
+
+`setPageDimensions` se queda para lo que significa: dar las dos medidas a la vez es una página que no decide ninguna proporción.
+
+La nota del margen cambia de sitio y de texto.
+Decía «fijado por 2:3» solo en el alto, que se lee como «esto no se puede cambiar» y significaba «cambiar esto tira 2:3».
+Ahora las dos medidas llevan el nombre de la proporción, porque cualquiera de las dos mueve a la otra.
+
+Verificación: siete pruebas de store, saboteadas —el ancho deja de mover al alto, el factor al revés, el apaisado conservando la razón vertical, y teclear un lado volviendo a tirar la proporción—; y dos de navegador, una para la proporción viva y otra para Manual.
+
 ## Decisiones pendientes
 
 - 2026-09-19, decisión de Chris: el repo lleva arnés de navegador.

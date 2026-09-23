@@ -42,7 +42,8 @@ test('dragging a measurement by its unit changes it, and redraws the page', asyn
    */
   await page.locator('.central-tab', { hasText: 'Visualización' }).click();
   await expect(page.locator('.page-figure')).toContainText('150 mm');
-  await expect(page.locator('.page-figure')).toContainText('210 mm');
+  // 2:3 is on, so the height came with it: 150 × 3/2.
+  await expect(page.locator('.page-figure')).toContainText('225 mm');
 });
 
 test('a drag that leaves the handle keeps changing the measurement', async ({ page }) => {
@@ -107,20 +108,49 @@ test('the bleed drags at its own scale', async ({ page }) => {
 });
 
 /**
- * Editing a measurement by hand drops the proportion, which is what the note
- * in the height's margin is there to warn about before it happens. The note
- * has to go when the thing it describes does, or it becomes a claim about a
- * proportion nothing is applying any more.
+ * Editing a measurement by hand keeps the proportion and moves the other side
+ * with it. Until R-28 it dropped the proportion to Manual, which is the
+ * opposite of what a proportion is for: choosing 2:3 and then typing a width
+ * is asking for the 2:3 page that is this wide, not asking to stop having a
+ * proportion. The note in the margin said «fijado por 2:3» on the height
+ * alone, which read as "you cannot change this" and meant "changing this
+ * throws 2:3 away".
  */
-test('changing a measurement turns the proportion to Manual, and the note goes with it', async ({ page }) => {
+test('a measurement keeps its proportion and moves the other side', async ({ page }) => {
   await openTheApp(page);
 
-  const heightField = page.locator('.measure-field:has(#input-height)');
-  await expect(heightField.locator('.field-marginalia')).toHaveText('fijado por 2:3');
+  const width = page.locator('#input-width');
+  const height = page.locator('#input-height');
+  await expect(width).toHaveValue('140');
+  await expect(height).toHaveValue('210');
+  // The note belongs to both measurements now, because either one moves the
+  // other: it names the proportion rather than claiming a side is frozen.
+  await expect(page.locator('.measure-field:has(#input-width) .field-marginalia')).toHaveText('2:3');
+  await expect(page.locator('.measure-field:has(#input-height) .field-marginalia')).toHaveText('2:3');
 
-  await page.locator('#input-width').focus();
+  await width.focus();
   await page.keyboard.press('ArrowUp');
 
-  await expect(page.locator('#proportion-custom')).toHaveAttribute('aria-pressed', 'true');
-  await expect(heightField.locator('.field-marginalia')).toHaveCount(0);
+  await expect(width).toHaveValue('141');
+  // 141 × 3/2, which is the same arithmetic choosing 2:3 does.
+  await expect(height).toHaveValue('211.5');
+  await expect(page.locator('#proportion-2\\:3')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#proportion-custom')).toHaveAttribute('aria-pressed', 'false');
+
+  // And the other way round: the height settles the width just the same.
+  await height.fill('300');
+  await expect(width).toHaveValue('200');
+  await expect(page.locator('#proportion-2\\:3')).toHaveAttribute('aria-pressed', 'true');
+});
+
+/** Manual is what asks for a page no proportion decides. */
+test('Manual lets the two measurements move on their own', async ({ page }) => {
+  await openTheApp(page);
+  await page.locator('#proportion-custom').click();
+  await expect(page.locator('.measure-field:has(#input-height) .field-marginalia')).toHaveCount(0);
+
+  await page.locator('#input-width').fill('180');
+
+  await expect(page.locator('#input-width')).toHaveValue('180');
+  await expect(page.locator('#input-height')).toHaveValue('210');
 });

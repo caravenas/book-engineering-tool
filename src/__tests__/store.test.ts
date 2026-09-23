@@ -1443,3 +1443,87 @@ describe('What the review of the catalog layer found', () => {
     expect(withoutIt.getState().customCovers).toEqual([]);
   });
 });
+
+/**
+ * A proportion is a relation between the two measurements, so giving it one
+ * of them settles the other. Until R-28 typing either side went through
+ * `setPageDimensions`, which sets both at once and therefore means a page no
+ * proportion decides: choosing 2:3 and then typing a width silently threw
+ * 2:3 away, which is the opposite of what choosing it asked for.
+ */
+describe('One side of the page, with the proportion deciding the other (R-28)', () => {
+  beforeEach(() => {
+    useBookStore.getState().initialize(loadShippedCatalog());
+  });
+
+  it('settles the height from a typed width, and keeps the proportion', () => {
+    expect(useBookStore.getState().proportionId).toBe('2:3');
+
+    useBookStore.getState().setPageWidth(100);
+
+    expect(useBookStore.getState().pageWidth_mm).toBe(100);
+    expect(useBookStore.getState().pageHeight_mm).toBe(150);
+    expect(useBookStore.getState().proportionId).toBe('2:3');
+  });
+
+  it('settles the width from a typed height, by the same factor', () => {
+    useBookStore.getState().setPageHeight(150);
+
+    expect(useBookStore.getState().pageWidth_mm).toBe(100);
+    expect(useBookStore.getState().pageHeight_mm).toBe(150);
+    expect(useBookStore.getState().proportionId).toBe('2:3');
+  });
+
+  /**
+   * The same page, reached two ways. A width typed with 2:3 on and a width
+   * arrived at by choosing 2:3 are the same arithmetic, and this says so
+   * rather than trusting that two call sites stayed in step.
+   */
+  it('reaches the page choosing the proportion reaches', () => {
+    useBookStore.getState().setPageWidth(123);
+    const typed = useBookStore.getState();
+
+    useBookStore.getState().setProportion(null);
+    useBookStore.getState().setPageDimensions(123, 999);
+    useBookStore.getState().setProportion('2:3');
+    const chosen = useBookStore.getState();
+
+    expect(chosen.pageWidth_mm).toBe(typed.pageWidth_mm);
+    expect(chosen.pageHeight_mm).toBe(typed.pageHeight_mm);
+  });
+
+  it('follows the orientation, turning the ratio over for a landscape page', () => {
+    useBookStore.getState().setFormat('landscape');
+    useBookStore.getState().setPageWidth(150);
+
+    expect(useBookStore.getState().pageWidth_mm).toBe(150);
+    expect(useBookStore.getState().pageHeight_mm).toBe(100);
+  });
+
+  it('makes a square from either side, whatever the ratio says', () => {
+    useBookStore.getState().setFormat('square');
+    useBookStore.getState().setPageHeight(170);
+
+    expect(useBookStore.getState().pageWidth_mm).toBe(170);
+    expect(useBookStore.getState().pageHeight_mm).toBe(170);
+  });
+
+  it('moves only the side it was given once the proportion is Manual', () => {
+    useBookStore.getState().setProportion(null);
+    const before = useBookStore.getState().pageHeight_mm;
+
+    useBookStore.getState().setPageWidth(180);
+
+    expect(useBookStore.getState().pageWidth_mm).toBe(180);
+    expect(useBookStore.getState().pageHeight_mm).toBe(before);
+    expect(useBookStore.getState().proportionId).toBeNull();
+  });
+
+  /** Both sides at once still means a page no proportion decides. */
+  it('drops the proportion when both sides are given together', () => {
+    useBookStore.getState().setPageDimensions(140, 999);
+
+    expect(useBookStore.getState().proportionId).toBeNull();
+    expect(useBookStore.getState().pageHeight_mm).toBe(999);
+  });
+});

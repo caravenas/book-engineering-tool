@@ -509,7 +509,16 @@ export interface BookStore extends BookConfig {
   initialize: (catalog: Catalog, userLayer?: UserLayer) => void;
   setFormat: (format: BookFormat) => void;
   setProportion: (proportionId: string | null) => void;
+  /** Both sides at once, which can only mean a page of no proportion at all. */
   setPageDimensions: (width_mm: number, height_mm: number) => void;
+  /**
+   * One side, keeping whatever proportion is on: the other side follows it.
+   * That is what a proportion is — typing a width with 2:3 chosen does not
+   * abandon 2:3, it asks for the 2:3 page that is this wide — and until R-28
+   * both fields went through `setPageDimensions` and dropped it to Manual.
+   */
+  setPageWidth: (width_mm: number) => void;
+  setPageHeight: (height_mm: number) => void;
   setBleed: (bleed_mm: number) => void;
   setUnitSystem: (system: UnitSystem) => void;
   setPageOrientation: (orientation: 'auto' | 'normal' | 'rotated') => void;

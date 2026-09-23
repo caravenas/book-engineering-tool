@@ -830,28 +830,92 @@ function withUpdatedCalculations(
 }
 
 /**
+ * One side of the page, with the proportion in force deciding the other.
+ *
+ * Both measurements go through here, because a proportion is symmetric: it
+ * settles the height from the width exactly as it settles the width from the
+ * height, and writing the two cases apart would be writing the same rule
+ * twice for it to drift once. With no proportion on, the side given is the
+ * only one that moves, which is what Manual means.
+ */
+function setPageSide(state: BookStore, side: 'width' | 'height', value: number): Partial<BookStore> {
+  if (!state.catalog) return state;
+
+  const field = side === 'width' ? 'pageWidth_mm' : 'pageHeight_mm';
+  if (!state.proportionId) {
+    return withUpdatedCalculations(state, state.catalog, { [field]: value });
+  }
+
+  const dimensions = dimensionsFromProportionSide(
+    getAllProportions(state.catalog, state.customProportions, state.proportionPatches, state.hiddenProportionLabels),
+    state.proportionId,
+    state.format,
+    side,
+    value
+  );
+  return withUpdatedCalculations(state, state.catalog, {
+    pageWidth_mm: dimensions.width,
+    pageHeight_mm: dimensions.height,
+  });
+}
+
+/**
  * Calculate page dimensions from a proportion and base dimension.
  */
+/**
+ * How many times taller than wide a proportion makes a page in this
+ * orientation, or null when the proportion is not one the catalog has. A
+ * square is 1 whatever its ratio says, because the orientation decides.
+ */
+function proportionFactor(
+  proportions: Proportion[],
+  proportionId: string,
+  format: BookFormat
+): number | null {
+  const prop = proportions.find(p => p.label === proportionId);
+  if (!prop) return null;
+  if (format === 'square') return 1;
+
+  const [rw, rh] = prop.ratio;
+  return format === 'vertical' ? rh / rw : rw / rh;
+}
+
 function dimensionsFromProportion(
   proportions: Proportion[],
   proportionId: string,
   format: BookFormat,
   baseWidth: number
 ): { width: number; height: number } {
-  const prop = proportions.find(p => p.label === proportionId);
-  if (!prop) return { width: baseWidth, height: baseWidth };
+  const factor = proportionFactor(proportions, proportionId, format);
+  if (factor === null) return { width: baseWidth, height: baseWidth };
+  return { width: baseWidth, height: baseWidth * factor };
+}
 
-  const [rw, rh] = prop.ratio;
-
-  if (format === 'square') {
-    return { width: baseWidth, height: baseWidth };
+/**
+ * The page a proportion makes when one of its two sides is given and the
+ * other is asked to follow.
+ *
+ * A proportion is a relation between the two measurements, so giving it one
+ * of them settles the other; the factor is the same one `setProportion` and
+ * `setFormat` apply, so a width typed here and a width arrived at by choosing
+ * 2:3 produce the same page.
+ */
+function dimensionsFromProportionSide(
+  proportions: Proportion[],
+  proportionId: string,
+  format: BookFormat,
+  side: 'width' | 'height',
+  value: number
+): { width: number; height: number } {
+  const factor = proportionFactor(proportions, proportionId, format);
+  // A proportion the catalog no longer has cannot decide anything, so the
+  // side that was given decides both, which is what a square is.
+  if (factor === null || !(factor > 0) || !Number.isFinite(factor)) {
+    return { width: value, height: value };
   }
-
-  if (format === 'vertical') {
-    return { width: baseWidth, height: baseWidth * (rh / rw) };
-  }
-
-  return { width: baseWidth, height: baseWidth * (rw / rh) };
+  return side === 'width'
+    ? { width: value, height: value * factor }
+    : { width: value / factor, height: value };
 }
 
 /**
@@ -1079,10 +1143,14 @@ export function createBookStore(storage: Storage | null = getDefaultUserLayerSto
       return withUpdatedCalculations(state, state.catalog, {
         pageWidth_mm: width_mm,
         pageHeight_mm: height_mm,
+        // Two sides given at once is a page no proportion decides.
         proportionId: null,
       });
     });
   },
+
+  setPageWidth: (width_mm) => set(state => setPageSide(state, 'width', width_mm)),
+  setPageHeight: (height_mm) => set(state => setPageSide(state, 'height', height_mm)),
 
   setBleed: (bleed_mm) => {
     set(state => {

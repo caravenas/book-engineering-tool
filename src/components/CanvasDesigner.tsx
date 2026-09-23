@@ -63,7 +63,7 @@ export function CanvasDesigner() {
     format, proportionId, pageWidth_mm, pageHeight_mm,
     bleed_mm, unitSystem, catalog,
     customProportions, proportionPatches, hiddenProportionLabels, userLayerStorageAvailable,
-    setFormat, setProportion, setPageDimensions, setBleed,
+    setFormat, setProportion, setPageWidth, setPageHeight, setBleed,
   } = useBookStore();
 
 
@@ -168,8 +168,15 @@ export function CanvasDesigner() {
           value={displayW}
           unit={unit}
           step={dimensionStep}
-          marginalia={isFactoryWidth ? ORIGIN_LABEL.factory : null}
-          onChange={value => setPageDimensions(toMm(value), pageHeight_mm)}
+          /*
+           * While a proportion is on, the two measurements are one decision:
+           * typing either moves the other, and the note says so on both
+           * rather than on the height alone. Until R-28 it said «fijado por
+           * 2:3» on the height, which read as "you cannot change this" and
+           * meant the opposite — changing it silently dropped the proportion.
+           */
+          marginalia={proportionId ?? (isFactoryWidth ? ORIGIN_LABEL.factory : null)}
+          onChange={value => setPageWidth(toMm(value))}
         />
         <MeasureField
           label="Alto"
@@ -177,12 +184,8 @@ export function CanvasDesigner() {
           value={displayH}
           unit={unit}
           step={dimensionStep}
-          /* The store derives the height from the width while a proportion is
-             on, so the field says who is deciding it. Typing here is still
-             allowed, and turns the proportion to Manual — which is what the
-             note is warning about. */
-          marginalia={proportionId === null ? null : `fijado por ${proportionId}`}
-          onChange={value => setPageDimensions(pageWidth_mm, toMm(value))}
+          marginalia={proportionId}
+          onChange={value => setPageHeight(toMm(value))}
         />
         <MeasureField
           label="Sangrado"
