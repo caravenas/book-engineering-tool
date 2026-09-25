@@ -12,12 +12,17 @@
 ## Estado actual
 
 - Los incrementos 1, 2, 3 y 4 están cerrados; el siguiente es el incremento 5, tirada, merma y costo.
-- El 2026-09-17 se verificó con Node v22.22.2, sobre `f8f3473`, que `npm test` (273 tests) y `npm run build` terminan con código 0, sin dependencias nuevas.
+  Entre el 4 y el 5 se ejecutaron los seis primeros incrementos de `docs/UX-REVIEW.md`, que quedó en pausa tras UX-6, y el rediseño de la interfaz completo, de R-1 a R-31.
+- El 2026-09-24 se verificó con Node v22.22.2, sobre `2ddcc6b`, que `npx tsc --noEmit`, `npm test` (490 tests en 20 archivos), `npm run build` y `npm run test:browser` (46 pruebas en Chromium) terminan con código 0, sin dependencias nuevas.
+  Las afirmaciones sobre lo que la página mide viven en el arnés de navegador y no en Vitest, que corre en jsdom y no maqueta.
 - Todo el catálogo y los valores por defecto se leen en runtime desde siete archivos de `public/config/`, validados al iniciar y documentados en `docs/CONFIG.md`.
 - La imposición por firmas vive en `src/engine/signatures.ts`: respeta pinza, márgenes y calles de la máquina, numera las páginas según el esquema de plegado y calcula firmas, blancos y pliegos por ejemplar.
 - La encuadernación vive en `src/engine/binding.ts`: restringe el número de páginas por método, suma el aporte del método al lomo del papel interior y calcula el corrimiento solo para los métodos con `nests: true`.
 - La tapa vive en `src/engine/cover.ts`: para tapa blanda calcula el ancho y alto del pliego con lomo, sangrado y solapas opcionales, y para tapa dura las medidas de los cartones laterales, el cartón de lomo y el forro con sus canales y dobleces.
 - El peso cubre el papel interior y el papel de tapa, mostrados por separado; en tapa dura se devuelve la superficie de cartón pero no su peso, porque el catálogo no declara su densidad.
+- La pantalla son dos columnas: la ficha técnica a la izquierda, con sus 404px, y una vista central que alterna resultados, visualización y catálogo con un conmutador en la cabecera.
+  A 1024px o menos las dos se apilan, la ficha arranca plegada y una barra pegada arriba mantiene a la vista tres cifras.
+- Los seis archivos de `public/config/` que declaran `source` declaran también `provisional`, y mientras alguno siga en `true` la cabecera lo dice: los datos que trae el repo son de ejemplo, no de una imprenta real.
 - Siguen sin existir cálculo de tirada, merma ni costos.
 
 ## Principios comunes a todos los incrementos
@@ -519,7 +524,7 @@ Cierra los cuatro puntos que `docs/UI-REDESIGN.md` dejaba sin construir tras R-5
 Petición de Chris el 2026-09-21: que la herramienta ocupe todo el ancho en escritorio, con las columnas laterales pegadas a los bordes de la pantalla.
 Con el tope de 1440 px, una pantalla ancha dibujaba la herramienta como una losa flotando entre dos márgenes vacíos, con los filetes de las columnas laterales en el aire en vez de enmarcando la pantalla.
 
-**Cerrado el 2026-09-21.**
+**Cerrado el 2026-09-21** en `81aff96`.
 
 - Se quita el tope de 1440 px de la rejilla, la cabecera y los dos avisos.
   Las columnas laterales conservan sus anchos, así que cada píxel que añade una pantalla más ancha es del centro.
@@ -569,10 +574,10 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
 
 ### Los incrementos
 
-- **R-8 — Editar una entrada tuya.**
+- **R-8 — Editar una entrada tuya. Cerrado el 2026-09-21 en `4ca88a8`.**
   Hoy se elimina y se vuelve a añadir, y el formulario ofrece los campos en gris.
   Exige una acción de store por catálogo, construida sobre los validadores que ya existen (`isValidPress` y compañía), con la misma comprobación de nombre duplicado que hace el alta.
-- **R-9 — Elegir en la lista qué entrada editar. Cerrado el 2026-09-21.**
+- **R-9 — Elegir en la lista qué entrada editar. Cerrado el 2026-09-21 en `2b26f5d`.**
   Cada fila del catálogo es un control: elegirla apunta el formulario a esa entrada.
   **La decisión, que es lo que este incremento realmente zanja: elegir en el catálogo no cambia de qué está hecho el libro.**
   Abrir el catálogo para corregir una errata en una prensa que nadie usa no debe reimprimir el libro en ella.
@@ -580,7 +585,7 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
   La fila sobre la que está el formulario va marcada con un filete a la izquierda, presente en todas las filas como hueco para que elegir una no desplace su nombre.
   La elección se deshace al cambiar de catálogo o al volver a abrir el panel, y una entrada que se oculta o se elimina deja de ser elegible, con lo que el formulario vuelve a la del libro en vez de quedarse sobre algo que ya no está.
   Los gramajes van detrás: la lista de abajo y su formulario cuelgan del papel que se está editando, no del que usa el libro.
-- **R-10 — Los papeles, catálogo completo. Cerrado el 2026-09-21.**
+- **R-10 — Los papeles, catálogo completo. Cerrado el 2026-09-21 en `726b96b`.**
   Añadir, editar, ocultar y eliminar un papel, con sus gramajes dentro.
   Es el que cierra «materiales».
   Un papel se da de alta con el único gramaje con el que se compra, porque un papel que no se vende en ningún gramaje no es un papel: seleccionarlo dejaría al lomo sin calibre del que salir.
@@ -588,7 +593,7 @@ Eso es lo que falta para «materiales con configuraciones nuevas».
   Dos campos del formulario se piden solo al dar de alta (`onlyWhenAdding`), porque ofrecerlos al editar sugeriría editar esa lista desde el sitio equivocado.
   Al borrar un papel tuyo se van con él sus gramajes: sueltos nombrarían un papel que ya no existe.
   `type` se rellena con el id del propio papel, que es lo que hacen los siete de fábrica: el esquema del catálogo lo exige y no lo lee nadie.
-- **R-11 — Las tapas, catálogo completo. Cerrado el 2026-09-21.**
+- **R-11 — Las tapas, catálogo completo. Cerrado el 2026-09-21 en `6560e6c`.**
   Una tapa es la única entrada hecha de otra: nombra el papel con el que se imprime y el gramaje de ese papel, así que su material se elige entre los papeles que la herramienta tiene y no se teclea.
   Es también la única cuyos campos significan cosas distintas según lo que sea: una tapa blanda no lleva cartón y una dura no lleva solapas, y las medidas que su tipo prohíbe tienen que valer exactamente cero o el motor dibuja una plantilla que nadie puede cortar.
   El formulario ofrece las medidas que el tipo elegido usa y ninguna más, y el editor pone los ceros.
@@ -652,7 +657,8 @@ R-8 lo comprueba en las acciones nuevas; corregir las de parche es un arreglo ap
 
 Decisión de Chris el 2026-09-21: en vez de un formulario donde teclear las 16 casillas, la app deriva el esquema de los dobleces, que es el dato que un taller sí tiene.
 
-**Motor cerrado el 2026-09-21.** `src/engine/folding.ts`, función pura, sin importar configuración.
+**Motor cerrado el 2026-09-21** en `21dfeda`, con el pareado de caras corregido en `6674847`.
+`src/engine/folding.ts`, función pura, sin importar configuración.
 
 - `foldingSchemeFromFolds(folds)` recibe la secuencia de dobleces — eje y qué mitad se levanta, nombrado por lo que hace la mano: «llevo la derecha sobre la izquierda» — y devuelve el esquema.
 - `readByFolding(scheme, folds, outward)` hace el camino contrario: toma un pliego ya impreso y dice en qué orden salen las páginas al plegarlo.
@@ -702,6 +708,8 @@ Con el motor roto, el folio horizontal pone las páginas 1 y 3 en la misma cara 
 Decisión de Chris el 2026-09-21: antes de publicar, revisión independiente del rango que nunca la tuvo, `bf05fed..HEAD`.
 Cinco revisores en otra familia de modelos (agy, Gemini 3.1 Pro), uno por área, cada uno con su diff acotado y prohibición de explorar el repo.
 El candado de pre-push sigue cerrado: esto revisa el código, no escribe la aprobación que el hook busca, que exige `review_diff` desde Pi.
+
+**Cerrada el 2026-09-21** en `148324d`.
 
 ### Lo que encontró, verificado y corregido
 
@@ -799,12 +807,16 @@ Del store solo cambia lo que haga falta para el gramaje y la orientación; `setP
 
 ### R-13 — El vocabulario, y el paso 01 como primer caso
 
+**Cerrado el 2026-09-22** en `08ae4d6`.
+
 Un componente `OptionGroup`/`OptionCard` con la semántica de radiogroup, los seis estados y la ranura de marginalia, y sus clases en `src/styles/index.css`.
 Migra los dos grupos del paso 01 que no dependen del catálogo ni de una medida: orientación con siluetas y proporción con rectángulos a escala sobre el 1:1.
 
 Verificación: pruebas de unidad de los estados del grupo, incluida la opción deshabilitada con motivo; y el guardián `e2e/inventory.spec.ts` reestructurado para que los grupos cuyas opciones vienen del catálogo se comprueben por estructura —una opción por entrada efectiva, exactamente una marcada— en vez de por nombre, como ya se hizo con las filas del Catálogo en la revisión de R-5 a R-11.
 
 ### R-14 — Las medidas en línea
+
+**Cerrado el 2026-09-22** en `8adef62`.
 
 Ancho, alto y sangrado pasan a ser la cifra en línea sobre una línea de base, con la unidad a su derecha como tirador: arrastrar sobre `mm ⇔` ajusta el valor, y las flechas mueven ±1, o ±10 con mayúsculas.
 El sangrado lleva la línea punteada, que es la de corte.
@@ -822,6 +834,8 @@ Queda anotado abajo como decisión abierta en vez de resuelto a medias.
 
 ### R-15 — Papel y gramaje
 
+**Cerrado el 2026-09-22** en `6282065`.
+
 El papel pasa a fichas de muestrario con su nombre y su descripción; el gramaje, a la escala de muescas, con la muesca de cada gramaje creciendo con el peso y el calibre declarado como la cifra grande al lado.
 La escala se construye con las opciones del papel elegido, que son distintas en cada papel, no con una lista fija.
 
@@ -835,6 +849,8 @@ Una escala común para todo el catálogo no sirve: va de un estucado de 70 µm a
 
 ### R-16 — Páginas y encuadernación
 
+**Cerrado el 2026-09-22** en `116d085`.
+
 Las páginas pasan al contador por firmas: `−` y `+` mueven un múltiplo del paso que impone la encuadernación, la cifra grande sigue siendo el dato, y debajo va un icono por cuadernillo con el texto de firmas.
 La encuadernación pasa a fichas con el lomo visto de canto, dibujado con lo que declara `encuadernaciones.json` —si anida, cuánto aporta al lomo, qué múltiplo exige—, y una encuadernación que el número de páginas actual no admite se muestra deshabilitada con el motivo.
 
@@ -846,6 +862,8 @@ Verificación: cinco pruebas en `ui.test.tsx`, cada una saboteada antes de darla
 El contador se mueve de cuatro en cuatro con grapa y de dieciséis en dieciséis al pasar a cosido; desde 320 páginas una pulsación vuelve a 64; los iconos son uno por cuadernillo y la frase dice cuántos y de qué tamaño; la grapa queda deshabilitada con «hasta 64 págs.» cuando no es la que está en uso; y cada lomo se dibuja de lo que declara el método.
 
 ### R-17 — Imposición y tapa
+
+**Cerrado el 2026-09-22** en `ddaad69`.
 
 La prensa pasa a una fila por prensa con su rectángulo y la pinza dibujada como el borde superior grueso; el pliego, a rectángulos a escala comparables entre sí, deshabilitando el que no entra en la prensa elegida; el esquema, a fichas con la retícula de la firma; la tapa, a la tapa extendida en plano, con solapas punteadas y el cartón como un trazo más grueso.
 La advertencia de que un esquema debe confirmarse contra un pliego doblado se queda donde está.
@@ -860,6 +878,8 @@ Verificación: seis pruebas en `ui.test.tsx`, saboteadas una a una.
 El pliego que no cabe queda deshabilitado y el clic no lo elige; el que está en uso nunca se deshabilita; los seis pliegos se dibujan a una sola escala, comprobado por la razón entre dos de ellos; cada prensa lleva su tamaño y su pinza; el esquema se dibuja con la forma de su propia retícula; y la tapa dibuja las solapas y los cartones que declara.
 
 ### R-18 — La barra superior
+
+**Cerrado el 2026-09-22** en `1fc0fd0`.
 
 La cabecera lleva el resumen corrido de la ficha en mono: formato, papel y gramaje, y páginas.
 Es el mismo resumen que ya calculan los pasos, leído una sola vez desde donde vive.
@@ -903,6 +923,8 @@ Detrás hay altas, parches y ocultamientos de seis catálogos, que se quedan.
 
 ### R-19 — El marco
 
+**Cerrado el 2026-09-22** en `895b98f`.
+
 Las columnas pasan a 372 / resto / 336, que son las del tablero, y la cabecera a su banda de 64px con el nombre y `book engineering tool · v2` al lado.
 
 La ficha deja de ser un acordeón exclusivo.
@@ -915,6 +937,8 @@ Son cinco en vez de seis, uno por paso, y cada uno abre el catálogo por el que 
 Verificación: el guardián de inventario, que cuenta los controles alcanzables uno a uno, más una prueba de que dos secciones pueden estar abiertas a la vez —que es justo lo que el acordeón excluyente impedía— y otra de que cada paso tiene su llamada al catálogo.
 
 ### R-20 — La columna del dibujo
+
+**Cerrado el 2026-09-22** en `d21f120`, con el control de cara redimensionado después en `9e26438`.
 
 Las pestañas pasan de un control segmentado a cuatro píldoras sueltas, como en el tablero.
 
@@ -932,6 +956,8 @@ Verificación: cuatro pruebas, una por dibujo, saboteadas una a una.
 La página dice lo que el store tiene y cambia al girar la orientación; el lomo se dibuja a la escala que declara y nombra el calibre declarado del papel; la pinza ocupa sobre el pliego la misma fracción que ocupa en la prensa; y el pie de la tapa se lee del catálogo y del lomo calculado.
 
 ### R-21 — La columna de resultados
+
+**Cerrado el 2026-09-22** en `f1d9212`.
 
 La fila pasa a la forma del tablero: la etiqueta en versalitas a la izquierda, la cifra en mono a la derecha con su unidad más pequeña al lado, y una línea punteada entre filas.
 
@@ -972,6 +998,8 @@ La rejilla tiene huecos donde un papel no vende un gramaje, y el hueco es parte 
 
 ### R-22 — El marco y el catálogo dibujado
 
+**Cerrado el 2026-09-22** en `06ddcd7`.
+
 La rejilla pasa a `372px minmax(0, 1fr)` y la cabecera gana el conmutador de tres vistas, entre el nombre de la herramienta y el resumen del libro.
 
 El catálogo deja de ser solo un diálogo y gana un tablero: cinco secciones —proporciones, papeles, pliegos y prensas, encuadernación y plegado, tapas— dibujadas a escala, donde cada celda se aplica al libro con un clic.
@@ -994,6 +1022,8 @@ Y el segundo renglón de cada papel mostraba `type`, que en los archivos entrega
 Verificación: el guardián de inventario recorre ahora las tres vistas además de los cinco pasos y del diálogo, y sigue cuadrando control a control; dos pruebas nuevas dicen que cada sección del tablero ofrece su catálogo y marca una sola elección, y que elegir en el tablero cambia la ficha; y las pruebas de disposición pasan a dos columnas.
 
 ### R-23 — Los resultados dibujados
+
+**Cerrado el 2026-09-22** en `8ac2423`.
 
 La vista de resultados toma la forma del tablero v2, en cuatro bandas: el libro a escala, las seis cifras dibujadas, el desglose y las fórmulas.
 
@@ -1021,6 +1051,8 @@ Y tres de navegador, también saboteadas, porque un dibujo es una afirmación so
 
 ### R-24 — Las cuatro vistas a la vez, y el ancho entero
 
+**Cerrado el 2026-09-23** en `01b233d`.
+
 Decisión de Chris el 2026-09-23: la visualización muestra los cuatro dibujos al mismo tiempo, en una cuadrícula, y las dos vistas centrales aprovechan todo el espacio disponible.
 
 **Los cuatro dibujos.**
@@ -1043,6 +1075,8 @@ Comprueba que cada dibujo ocupa más de la mitad de uno de los dos ejes de su ce
 Las dos cosas saboteadas: tirar la medida y quedarse con el valor de reserva, y darle a la página la celda entera sin descontar sus acotaciones.
 
 ## El editor entra deslizándose — R-25
+
+**Cerrado el 2026-09-23** en `ea34572`.
 
 Decisión de Chris el 2026-09-23: el catálogo deja de editarse en un modal.
 Al pulsar «editar», la vista de edición toma el lugar del tablero deslizándose de derecha a izquierda; al cerrar, se va de izquierda a derecha y el tablero vuelve a su sitio.
@@ -1070,6 +1104,8 @@ Verificación: tres pruebas de navegador, saboteadas una a una —el panel se ll
 
 ## La tarjeta elegida desaparecía bajo el puntero
 
+**Arreglado el 2026-09-23** en `049e2ba`.
+
 Reportado por Chris el 2026-09-23.
 En la ficha de la izquierda, al pasar el puntero por encima, las letras y los dibujos quedaban blancos y se perdían.
 
@@ -1086,6 +1122,8 @@ Hoy no lo hace, porque todas sus reglas de hover se escribieron con `:not(.selec
 Las dos saboteadas.
 
 ## La ficha se ensancha lo que mide su título más largo
+
+**Cerrado el 2026-09-23** en `470019c`, y el canalón derecho en `6a0043f`.
 
 Pedido por Chris el 2026-09-23: la columna de la izquierda unos 8px más ancha, para que quepa el `···` de «Páginas y encuadernación» en la línea de su título, y el margen inferior del `h2` de los títulos a `--space-4`.
 
@@ -1104,6 +1142,8 @@ Lo que se parte es lo que no cabe, y lo que no cabía era la llamada.
 Verificación: una prueba de navegador que compara el centro vertical del título con el de la llamada en los cinco pasos, y falla en cuanto la columna vuelve a 372.
 
 ## El pliego doblado, por fin — R-27
+
+**Cerrado el 2026-09-23** en `833c63a`.
 
 Chris dobló un pliego el 2026-09-23 y leyó la firma de 16 páginas: **8 1 9 16 12 13 5 4** de frente y **2 7 15 10 14 11 3 6** de dorso, de izquierda a derecha y luego hacia abajo.
 
@@ -1132,6 +1172,8 @@ Fijaban el dato del catálogo en un archivo de pruebas, así que corregir el cat
 
 ## Editar una medida ya no tira la proporción — R-28
 
+**Cerrado el 2026-09-23** en `5b1354e`.
+
 Elegir 2:3 y luego teclear un ancho es pedir la página 2:3 que mide eso de ancha, no pedir dejar de tener proporción.
 Hasta aquí las dos medidas pasaban por `setPageDimensions`, que fija las dos a la vez y por eso deja la proporción en Manual: teclear cualquiera de ellas la tiraba en silencio.
 
@@ -1146,7 +1188,24 @@ Ahora las dos medidas llevan el nombre de la proporción, porque cualquiera de l
 
 Verificación: siete pruebas de store, saboteadas —el ancho deja de mover al alto, el factor al revés, el apaisado conservando la razón vertical, y teclear un lado volviendo a tirar la proporción—; y dos de navegador, una para la proporción viva y otra para Manual.
 
+## La hoja de estilos suelta lo que dejó de usarse
+
+**Cerrado el 2026-09-23** en `0a24678`.
+
+41 líneas de `.segment-group` y `.segment-btn`: el control segmentado que R-13 dejó atrás al pasar todos los grupos a `OptionGroup`, y que desde entonces no seleccionaba nada.
+Las únicas menciones que quedaban estaban en este propio plan, describiendo lo que la app hacía antes.
+Los demás restos de la mudanza se habían ido con su propio incremento —`.preview-switch` y `.view-tab` en R-24, `.catalog-open` y `.column-results-title` en R-22—, así que esto era lo último que sobraba.
+
+La razón para no dejarlas ahí, más allá de que no se usen: eran la última regla del archivo con la forma que el arreglo de `049e2ba` tuvo que corregir en otro sitio, un `:hover` y un `.active` fijando la misma propiedad con la misma especificidad.
+Un ejemplo muerto de un fallo recién arreglado es el peor sitio donde copiar.
+
+Verificación en su momento: tsc 0, 481 tests unitarios, build 0, 40 pruebas de navegador.
+
+Ni este arreglo ni los dos de más arriba llevan número: R-26 y R-29 son dos turnos que nunca se asignaron, y no falta nada entre R-25 y R-27 ni entre R-28 y R-30.
+
 ## El distintivo pasa a ser un dato — R-30
+
+**Cerrado el 2026-09-23** en `31aa63f`.
 
 Decisión de Chris el 2026-09-23, entre tres opciones: derivarlo de los `source` que ya hay, un campo por archivo, o un archivo de identidad de la instalación.
 Eligió el campo por archivo, que es el único de los tres que no se puede falsear por accidente.
@@ -1167,6 +1226,8 @@ Verificación: cinco pruebas del distintivo —los seis, algunos, uno, ninguno, 
 Saboteadas: el distintivo volviendo a ser un literal, el filtro ignorando el campo, y el validador aceptando su ausencia.
 
 ## El teléfono, primera pasada — R-31
+
+**Cerrado el 2026-09-23** en `f8f30d3`.
 
 Decisión de Chris el 2026-09-23: se continúa con móvil; accesibilidad se deja para el final.
 
