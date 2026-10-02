@@ -47,14 +47,14 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Equipamiento**: offset plano Heidelberg Speedmaster XL, KBA y Heidelberg 10P; rotativas Heidelberg Web 2, Heidelberg Web 1, Manroland Harris M 600 y Lithoman; digital HP Indigo 7600.
   Son 7 prensas offset y una digital; la hoja decía «7 prensas».
   Dice ser la única imprenta en Chile con una rotativa que imprime pliegos de 64 páginas A4 con encuadernación en línea; el sitio no dice cuál de las cuatro es.
-  Formatos, márgenes y área imprimible: no publicados.
+  Formatos, márgenes y área imprimible: no aparecen en las páginas consultadas.
 - **Encuadernación**: corchete, hilo, hotmelt, PUR y tapa dura; líneas Muller Martini (Prima, dos 321, Trendbinder, Normbinder, Corona), espiraladora Kugler-Womako y Ventura MC.
 - **Productos**: libros, revistas, catálogos, folletería, calendarios, cuadernos, agendas y productos digitales.
   Publica logos de clientes, entre ellos editoriales, empresas y una universidad; qué tipo de libro imprime para cada una no lo dice.
 - **Datos públicos**: su formulario «Imprime tu libro» se llama, en el código de la página, «Impresión Libros Taller Digital».
   Ofrece solo tapa blanda, 21×14 cm cerrado, interior en blanco y negro y papel ahuesado de 80 g.
   «Desde 25 a 1.000» ejemplares y «Desde 48 a 608» páginas son textos de ejemplo de campos de texto libre, no límites que el formulario imponga.
-  No publica reglas de preparación del archivo: sangrado, múltiplos de página o lomo.
+  Las páginas consultadas no traen reglas de preparación del archivo: sangrado, múltiplos de página o lomo.
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: perfiles de máquina, cálculo de cuadernillos y ruta de producción.
 - **Pregunta de validación**: validar las reglas de imposición por prensa y el umbral entre offset y digital.
@@ -67,16 +67,25 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Ronda**: dentro.
 - **Prioridad**: Alta.
 - **Comuna**: Providencia, RM.
-- **Perfil**: editorial industrial.
-- **Procesos**: offset y digital; CTP.
-- **Equipamiento**: Heidelberg Speedmaster; declara 15.000 pliegos por hora.
-- **Encuadernación**: hilo, alambre, hotmelt, tapa dura, corte trilateral.
-- **Datos públicos**: publica su flujo de preprensa, la creación de cuadernillos, papeles hasta 300 g y terminaciones.
+- **Perfil**: editorial industrial, según la hoja.
+  Declara imprimir en la misma ubicación de Providencia desde 1913, con su nombre actual desde 1979, y se dirige a empresas, creativos, diseñadores, editores y artistas.
+- **Procesos**: offset y digital; CTP en preprensa; pruebas digitales de color por tiro y retiro.
+- **Equipamiento**: prensas Heidelberg Speedmaster; declara 15.000 pliegos por hora y 6 torres de color más barniz por prensa, en un layout en tándem.
+  Digital: formatos banner de hasta 100 cm y estándar de hasta 46,9 cm; cartulina dúplex de hasta 240 g y couché de hasta 300 g.
+  Cuántas prensas, sus formatos, márgenes y área imprimible: no aparecen en las páginas consultadas.
+- **Encuadernación**: costura hilo, costura alambre (corchete tradicional y loop), hotmelt, entapado, corte trilateral, troquelado, folia y cuño.
+  Costura hilo con equipos Muller Martini; declara 200 ciclos de cuadernillos por minuto.
+  Tapa dura con una confeccionadora de tapas duras QFM-460B, que aplica cola caliente o hidrogel, posiciona el material y dobla los cantos del forro.
+  En la línea digital: creación de cuadernillos, encuadernación térmica y multitaladro GBC.
+- **Datos públicos**: la descripción de sus etapas en la página de servicios.
+  Las páginas consultadas no traen formulario, reglas de preparación del archivo ni formatos de pliego.
+  El boletín «Panorama Libros» que enlaza el menú del sitio es de verano de 2020; si el resto del sitio está al día, no se sabe.
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: plan de cuadernillos, compatibilidad con terminaciones y hojas de trabajo.
 - **Pregunta de validación**: pedir un trabajo real con doblez y cosido para modelar sus restricciones.
-- **Fuentes**: https://www.ograma.cl/servicios/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: si la tapa dura la arma esa confeccionadora, las tolerancias entre cartón y forro (`SUP-2`) deberían ser ajustes de una máquina, que una entrevista puede pedir como cifras.
+- **Fuentes**: https://www.ograma.cl/servicios/, https://www.ograma.cl/quienes-somos/ y https://www.ograma.cl/panorama-verano-2020.html, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Andros Impresores
 

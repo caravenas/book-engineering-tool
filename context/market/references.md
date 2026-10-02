@@ -116,10 +116,11 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 ### REF-11. Ograma: ruta industrial
 
 - **Dato público**: CTP, Speedmaster, creación de cuadernillos, costura y corte trilateral.
+  En el sitio, la creación de cuadernillos aparece en la línea digital; la costura hilo, la costura alambre y el corte trilateral, en terminaciones.
 - **Aplicación posible**: un modelo de estados y de compatibilidad entre etapas.
 - **Límite a confirmar**: los rendimientos publicados pueden no reflejar una orden concreta.
-- **Fuente**: https://www.ograma.cl/servicios/, citada por la hoja.
-- **Estado**: por confirmar.
+- **Fuente**: https://www.ograma.cl/servicios/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ### REF-12. Donnebaum: aprobación previa
 
