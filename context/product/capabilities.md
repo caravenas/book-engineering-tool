@@ -39,6 +39,19 @@ Todo se recalcula a la vez cuando cambia cualquier dato, y cada resultado que no
 - **Catálogo**: el editor de los catálogos.
 - En un ancho de pantalla pequeño, una barra fija arriba mantiene a la vista lomo, pliegos y peso interior.
 
+## Exportar la ficha
+
+El botón «Exportar ficha», al final de la cabecera (en un teléfono, en una fila propia bajo ella), abre una página imprimible con el libro tal como está en ese momento.
+La página reemplaza a la herramienta en pantalla, con una barra para volver y otra para imprimir o guardar como PDF.
+Al volver, la herramienta sigue donde estaba.
+
+- **Contenido**: formato, papel y gramaje, páginas y encuadernación, imposición (prensa, pliego y esquema), tapa y las cifras (lomo del papel, de la encuadernación y final, pesos, firmas, páginas en blanco, pliegos por ejemplar, aprovechamiento y desperdicio, corrimiento cuando el método anida pliegos).
+- **Unidades**: como en pantalla, y con unidades imperiales añade los milímetros de la página y del sangrado.
+- **Lo que no se puede calcular** sale con su razón y sin cifra.
+  Un total que depende de dos partes, como el peso por ejemplar, no sale si falta una.
+- **Origen**: marca las entradas elegidas que son propias o editadas, declara los datos de ejemplo y cita el origen de cada catálogo.
+- Al imprimir, solo sale la ficha: sin barra ni controles de la herramienta.
+
 ## El catálogo y los datos propios
 
 - Siete archivos de datos, que se leen al cargar la página y se pueden reemplazar sin recompilar.
@@ -53,8 +66,10 @@ Todo se recalcula a la vez cuando cambia cualquier dato, y cada resultado que no
 
 - **Tirada, merma ni costo.**
   Se rechazó construirlo antes de hablar con una imprenta, porque depende de precios y mermas que solo ella conoce.
-- **Exportar ni importar nada**: ni la ficha técnica, ni el resultado, ni los catálogos propios.
+- **Importar ni exportar los catálogos propios.**
   Para llevar sus datos a otro equipo, el usuario no tiene hoy ningún camino.
+- **Generar el PDF por sí misma.**
+  La ficha se imprime o se guarda como PDF con el diálogo de impresión del navegador.
 - **Generar un PDF de imposición, líneas de troquel ni nada que lea una máquina.**
 - **Dar de alta esquemas de plegado nuevos.**
   El cálculo que los derivaría existe, pero no tiene pantalla.

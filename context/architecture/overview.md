@@ -62,6 +62,10 @@ src/components/        la interfaz
   - *Resultados*: el libro, las seis cifras principales dibujadas, el desglose de lomo, encuadernación, imposición y tapa, y la sección «Cómo se calcula».
   - *Visualización*: los cuatro dibujos a la vez: la página, el lomo, el pliego y la tapa.
   - *Catálogo*: el editor de los catálogos de proporciones, papeles, encuadernaciones, prensas, pliegos y tapas, más la lista de esquemas de plegado, que es de solo lectura.
+- **Exportar ficha** (`SpecSheetPage`): un botón al final de la cabecera cambia `App` a una página imprimible con el libro actual.
+  El estado `sheetOpen` es local de `App`; la herramienta sigue montada pero oculta (`hidden`), así que al volver conserva la vista, los pasos abiertos y el desplazamiento.
+  No es una ruta ni una pestaña porque la selección no se guarda: una pestaña nueva imprimiría el libro por defecto.
+  `useSpecSheet` (`specSheet.ts`) arma el contenido como datos a partir de las mismas derivaciones que la pantalla (`useBookFigures`, los `getAll*` y los textos de error de los motores), y el componente solo lo maqueta; los estilos de impresión están en `index.css`.
 - **Avisos**: uno si el almacenamiento del navegador no está disponible o falla una escritura, y otro si hay cambios guardados que ya no corresponden a ninguna entrada del catálogo (huérfanos).
 - A 1024 px de ancho o menos (un teléfono, una tableta o una ventana estrecha) la página es una columna y la ficha arranca con sus cinco pasos cerrados; el criterio se lee una sola vez, al montar.
 

@@ -52,7 +52,7 @@ import {
  * target no longer exists among them — that patch is an orphan, handled
  * separately by `computeOrphanedUserLayerEntries`, not silently applied),
  * exclude hidden entries, and append the user's own additions ("altas").
- * Order matters, per UX-6 (`docs/UX-REVIEW.md` §3.2-3.3): patch, then hide,
+ * Order matters, per UX-6 (`docs/legacy/UX-REVIEW.md` §3.2-3.3): patch, then hide,
  * then add — an alta can never be hidden or patched, and a hide always wins
  * over a patch on the same factory entry.
  */
@@ -401,7 +401,7 @@ function extractUserLayer(state: BookConfig): UserLayer {
  * for proportions, a label) no longer present in the loaded catalog. An
  * orphan is never dropped here — it stays in the persisted layer exactly as
  * read — this only reports it so the interface can warn about it once
- * (docs/UX-REVIEW.md §3.3): "un huérfano no se aplica pero tampoco se borra".
+ * (docs/legacy/UX-REVIEW.md §3.3): "un huérfano no se aplica pero tampoco se borra".
  */
 function computeOrphanedUserLayerEntries(catalog: Catalog, userLayer: UserLayer): OrphanedUserLayerEntry[] {
   const knownProportionLabels = new Set(catalog.proportions.map(p => p.label));

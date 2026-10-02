@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * docs/PLAN.md's R-3 reorganizes the page into three columns, which makes
+ * docs/legacy/PLAN.md's R-3 reorganizes the page into three columns, which makes
  * e2e/panels.spec.ts's per-panel heights and panel-to-label mapping obsolete
  * by design: those pin where things render, and R-3's whole point is to move
  * where things render. What must survive that move is R-3's own acceptance
@@ -220,6 +220,8 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   // What the middle of the screen is showing, added by R-22. The header used
   // to carry a way into the catalog instead; the catalog is one of the three
   // views now, so the name stayed and what it does changed.
+  // The way out of the tool, added by UX-8: the printable spec sheet.
+  'Exportar ficha': 1,
   'Resultados': 1,
   'Visualización': 1,
   'Catálogo': 1,

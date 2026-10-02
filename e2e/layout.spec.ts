@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * The three widths docs/UI-INVENTORY.md measured, so a regression is reported
+ * The three widths docs/legacy/UI-INVENTORY.md measured, so a regression is reported
  * by the viewport it appears at rather than by a single anonymous failure.
  */
 const VIEWPORTS = [

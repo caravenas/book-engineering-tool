@@ -6,7 +6,7 @@ import encuadernacionesRaw from '../../public/config/encuadernaciones.json?raw';
 import tapasRaw from '../../public/config/tapas.json?raw';
 import formatosRaw from '../../public/config/formatos.json?raw';
 import { StrictMode } from 'react';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { useBookStore } from '../store/useBookStore';
@@ -173,6 +173,43 @@ describe('App runtime config loading', () => {
     expect(headerSays()).toContain('64 págs');
     expect(headerSays()).toContain('3:4');
     expect(headerSays()).toBe(sheetSays());
+  });
+
+  it('opens the spec sheet of the book as it stands, and goes back to the tool where it was left', async () => {
+    const fetchStub = async (url: string) => {
+      if (url.endsWith('sustratos.json')) return jsonResponse(readConfigFile('sustratos.json'));
+      if (url.endsWith('pliegos.json')) return jsonResponse(readConfigFile('pliegos.json'));
+      if (url.endsWith('maquinas.json')) return jsonResponse(readConfigFile('maquinas.json'));
+      if (url.endsWith('esquemas.json')) return jsonResponse(readConfigFile('esquemas.json'));
+      if (url.endsWith('encuadernaciones.json')) return jsonResponse(readConfigFile('encuadernaciones.json'));
+      if (url.endsWith('tapas.json')) return jsonResponse(readConfigFile('tapas.json'));
+      return jsonResponse(readConfigFile('formatos.json'));
+    };
+    vi.stubGlobal('fetch', fetchStub);
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Formato' });
+    act(() => {
+      useBookStore.getState().setTotalPagesInput('64');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Catálogo' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar ficha' }));
+
+    // The sheet is the page: the book as it stands, and the tool out of the way.
+    expect(screen.getByRole('heading', { name: 'Ficha técnica del libro', level: 1 })).toBeTruthy();
+    const pages = Array.from(document.querySelectorAll('.sheet-row')).find(row => row.querySelector('dt')?.textContent === 'Páginas');
+    expect(pages?.querySelector('dd')?.textContent).toBe('64');
+    expect((document.querySelector('.page-wrapper') as HTMLElement).hidden).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a la herramienta' }));
+
+    expect(screen.queryByRole('heading', { name: 'Ficha técnica del libro' })).toBeNull();
+    expect((document.querySelector('.page-wrapper') as HTMLElement).hidden).toBe(false);
+    // The view the reader left is still the one on show.
+    expect(screen.getByRole('button', { name: 'Catálogo' }).getAttribute('aria-pressed')).toBe('true');
+    await act(async () => {});
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Exportar ficha' }));
   });
 
   it('shows the generic error without a leading colon when loading rejects unexpectedly', async () => {

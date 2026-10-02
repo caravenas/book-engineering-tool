@@ -13,7 +13,7 @@ import type { FoldingScheme, SlotPlacement } from '../types';
  * what was uppermost within it is now lowest. Turning a half over always
  * changes which of its two sides faces up: that is what a fold is, and it is
  * the step the shipped example schemes were built without (see
- * `docs/PLAN.md`).
+ * `docs/legacy/PLAN.md`).
  *
  * Folding about a horizontal line also turns the content upside down relative
  * to the packet, which is where a scheme's 180 degree rotations come from; a
