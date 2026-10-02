@@ -7,7 +7,8 @@ PliegoStack es una herramienta de ingeniería editorial para imprentas y editori
 1. Lee `docs/PLAN.md`: es el único compromiso vigente y dice qué le toca a cada carril.
 2. Trabaja solo en lo que el plan asigna a tu carril, respetando su alcance, sus no objetivos y sus criterios de aceptación.
    Si no tienes carril, no implementes: coordina.
-3. Consulta `docs/CONFIG.md` antes de tocar cualquier archivo de `public/config/`.
+3. Consulta `context/architecture/config.md` antes de tocar cualquier archivo de `public/config/`.
+   El resto de `context/architecture/` explica cómo está construida la aplicación.
 4. `docs/legacy/` es el plan anterior, congelado: es registro y no compromiso.
    Un pendiente suyo solo entra al trabajo cuando Chris lo promueve a `docs/PLAN.md`.
 
@@ -25,7 +26,7 @@ PliegoStack es una herramienta de ingeniería editorial para imprentas y editori
 ## Reglas del proyecto
 
 - Los motores de `src/engine/` son funciones puras: reciben los datos de configuración como argumentos y nunca los importan.
-- Todo dato que dependa de una imprenta, un proveedor o un mercado va en un JSON de `public/config/`, con su campo `source`, y se documenta en `docs/CONFIG.md` como valor de ejemplo.
+- Todo dato que dependa de una imprenta, un proveedor o un mercado va en un JSON de `public/config/`, con su campo `source`, y se documenta en `context/architecture/config.md` como valor de ejemplo.
 - Cada motor rechaza entradas no finitas o fuera de rango con errores explícitos.
 - No añadas dependencias sin aprobación de Chris.
 - Cada incremento termina en un único commit reversible con tests de motor, store e interfaz.

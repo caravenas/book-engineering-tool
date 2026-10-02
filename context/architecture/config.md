@@ -174,10 +174,11 @@ Contiene los esquemas de plegado disponibles: cuántas páginas caben en una fir
   Entre `sides.front` y `sides.back` juntos, cada página de la firma debe aparecer exactamente una vez: ninguna falta y ninguna se repite.
 - `sides.front[].rotation` y `sides.back[].rotation`: rotación de la página impresa en esa posición, en grados, `0` o `180`.
 
-**Advertencia sobre los esquemas de ejemplo:** los esquemas incluidos en el repositorio son construidos a mano para demostrar la estructura del archivo, no esquemas tomados de una imprenta real.
-El orden de páginas de cada firma (qué página va en cada hoja tras el plegado) fue verificado a mano y es correcto.
-La convención de rotación por posición, en cambio, no ha sido confirmada contra una tabla de imposición estándar de la industria ni contra un pliego doblado físicamente.
-Antes de usar estos esquemas para imprimir, hay que doblar un pliego de prueba con el esquema elegido y comprobar que cada página queda del lado y en la orientación correctos.
+**Advertencia sobre los esquemas incluidos:** el esquema de 16 páginas se confirmó el 2026-09-23 contra un pliego doblado de verdad, con los tres dobleces que cita el `source` de `esquemas.json`, y el archivo contiene exactamente lo que derivan esos dobleces: `src/__tests__/folding.test.ts` lo comprueba celda por celda, rotaciones incluidas, y comprueba que doblado se lee 1 a 16.
+El esquema de 8 páginas es la misma secuencia con un doblez menos, y se lee en orden, así que es una imposición correcta; cuál de los dos dobleces se salta una imprenta para hacer una firma de 8 páginas no está confirmado.
+Ninguno de los dos viene de la tabla de imposición de una imprenta.
+Antes de imprimir con el esquema de 8 páginas, hay que doblar un pliego de prueba y comprobar que cada página queda del lado y en la orientación correctos.
+El archivo sigue declarándose `provisional`.
 
 ### `public/config/encuadernaciones.json`
 
@@ -303,7 +304,9 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
 ```
 
 - `proportions`: arreglo no vacío de proporciones de página disponibles.
-  El orden importa: el Canvas Designer solo muestra botones para las tres primeras (`proportions[0]`, `[1]` y `[2]`); el resto queda en el archivo pero no tiene botón propio en la interfaz.
+  La interfaz muestra todas las proporciones del catálogo, en el orden del archivo.
+  El orden también es el de los botones en la interfaz.
+  Para el validador, el orden solo importa en `defaults.proportionId`: debe ser una de las tres primeras (ver más abajo).
 - `proportions[].label`: etiqueta única de la proporción, usada como referencia desde `defaults.proportionId` y desde el store.
 - `proportions[].ratio`: arreglo de exactamente dos números `[ancho, alto]` que define la proporción, sin unidad (es una razón).
 - `proportions[].description`: texto explicativo mostrado como `title` del botón de proporción.
@@ -314,7 +317,8 @@ Contiene las proporciones de página disponibles y los valores iniciales con los
 - `defaults.pageWidth_mm`: ancho inicial de página cerrada, en milímetros.
   Este ancho se mantiene tal cual; el alto se deriva de él aplicando `defaults.proportionId`.
 - `defaults.proportionId`: etiqueta de una de las tres primeras proporciones de `proportions`, usada para derivar el alto de página a partir del ancho.
-  Debe estar entre las tres primeras porque es la única forma de que el usuario pueda volver a seleccionarla desde un botón del Canvas Designer.
+  El validador (`VISIBLE_PROPORTIONS_COUNT` en `validateCatalog.ts`) exige que esté entre las tres primeras, con el argumento de que solo esas tienen botón en el Canvas Designer.
+  Ese argumento ya no es cierto, porque la interfaz muestra todas, pero la regla sigue en vigor.
 - `defaults.bleed_mm`: sangrado inicial, en milímetros, no negativo.
 - `defaults.totalPages`: número inicial de páginas del libro, entero positivo.
 - `defaults.pressId`: id de una prensa existente en `maquinas.json`, usada para la imposición por firmas.
@@ -354,7 +358,7 @@ Reglas aplicadas:
 - `substrateId` de una tapa debe referenciar un id de sustrato existente en `sustratos.json`, y su `grammage` debe existir entre las opciones de ese sustrato.
 - Todos los campos en milímetros de una tapa (`flapWidth_mm`, `squares_mm`, `hingeGap_mm`, `turnIn_mm`, `boardThickness_mm`) deben ser números finitos mayores o iguales que cero; además, una tapa `"blanda"` exige que `squares_mm`, `hingeGap_mm`, `turnIn_mm` y `boardThickness_mm` sean exactamente 0, y una tapa `"dura"` exige que esos mismos cuatro campos sean mayores que cero y que `flapWidth_mm` sea exactamente 0.
 - `defaults.substrateId`, `defaults.sheetSizeId`, `defaults.pressId`, `defaults.proportionId`, `defaults.bindingId` y `defaults.coverId` deben referenciar un id o etiqueta existente en su catálogo correspondiente, y `defaults.grammage` debe existir entre las opciones del sustrato referenciado; una entrada inválida por otro motivo no hace que su id o gramaje, si están bien formados, se reporten como inexistentes.
-- `defaults.proportionId` debe estar además entre las tres primeras proporciones de `proportions`, para que siempre haya un botón visible que la seleccione.
+- `defaults.proportionId` debe estar además entre las tres primeras proporciones de `proportions`; el mensaje de error lo justifica diciendo que el Canvas Designer solo muestra botones para esas tres, algo que ya no es cierto.
 
 Si algún archivo falla al cargarse (fallo de red, tiempo de espera agotado, código distinto de 2xx, HTML en vez de JSON, o JSON inválido) o si la validación encuentra errores, la aplicación muestra un bloque con `role="alert"` que lista cada problema, en vez de quedar en blanco o mostrar datos parciales.
 
