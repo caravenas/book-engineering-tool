@@ -14,7 +14,7 @@ Cada afirmación de esta carpeta lleva uno de tres estados al final de su línea
   Los cinco supuestos que más importan llevan además un identificador, `SUP-1` a `SUP-5`, y son el cuestionario de las primeras entrevistas con imprentas.
 - **[desconocido]**: se sabe que no se sabe; no hay ni una lectura de partida.
 
-Hoy hay una sola afirmación confirmada: el doblez de la firma de 16 páginas, en `signatures.md`.
+Hoy hay una sola afirmación confirmada: el doblez de la firma de 16 páginas, en la página de firmas y plegado.
 No la confirmó una imprenta sino un pliego doblado a mano.
 Una confirmación de una imprenta cambia la etiqueta de la línea y deja anotado qué imprenta y cuándo, sin nombrar a nadie.
 

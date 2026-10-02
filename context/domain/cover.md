@@ -1,7 +1,7 @@
 # Tapa
 
 La cubierta de un libro: la tapa blanda, de una sola hoja, y la tapa dura, de cartón forrado.
-Los estados de cada línea están explicados en `terminology.md`.
+Cada línea lleva un estado, que la página de terminología de esta carpeta explica.
 
 ## Tapa blanda
 

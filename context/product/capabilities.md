@@ -30,7 +30,7 @@ La columna izquierda es la ficha técnica del libro, en cinco pasos plegables qu
 - **Tapa blanda**: el ancho y el alto de la hoja con lomo, sangrado y solapas.
 - **Tapa dura**: las medidas de los cartones laterales, del cartón de lomo y del forro, y la superficie de cartón.
 
-Todo se recalcula a la vez cuando cambia cualquier dato, y cada resultado que no se puede calcular dice por qué.
+Todo se recalcula a la vez cuando cambia cualquier dato, y cada resultado que no se puede calcular dice por qué, salvo el corrimiento, que se omite sin mensaje cuando otro resultado ya explica el problema.
 
 ## Cómo lo muestra
 

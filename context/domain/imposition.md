@@ -1,7 +1,7 @@
 # Imposición
 
 Imponer es decidir en qué lugar de un pliego de prensa va cada página, para que al plegar y cortar el libro quede en orden.
-Los estados de cada línea están explicados en `terminology.md`.
+Cada línea lleva un estado, que la página de terminología de esta carpeta explica.
 
 ## Dos preguntas distintas
 
@@ -11,7 +11,7 @@ Hay dos cálculos que se confunden fácil, porque los dos preguntan «cuántas p
   No mira la máquina ni cómo se pliega: es solo geometría de rectángulos.
   **[supuesto]**
 - **La imposición por firmas**: qué esquema de plegado sirve para este libro, en esta prensa y con este pliego, y cuánto papel se pierde con él.
-  Es el cálculo que importa para producir, y se explica en `signatures.md`.
+  Es el cálculo que importa para producir, y se explica en la página de firmas y plegado.
   **[supuesto]**
 
 ## Cómo entra una página en un pliego
@@ -43,5 +43,5 @@ Hay dos cálculos que se confunden fácil, porque los dos preguntan «cuántas p
 ## Qué se sabe de las prensas y los pliegos reales
 
 - Qué tamaños de pliego y qué márgenes de pinza, cola, lado y calle tiene cada prensa de una imprenta concreta es **[desconocido]**.
-  Los valores que usa la herramienta son de ejemplo, y los datos públicos de fabricantes se juntan en `context/market/` como por confirmar.
+  Los valores que usa la herramienta son de ejemplo, y los datos públicos de fabricantes se juntan aparte como por confirmar.
 - Si una imprenta elige primero el pliego y la prensa, o primero el formato del libro, es **[desconocido]**.

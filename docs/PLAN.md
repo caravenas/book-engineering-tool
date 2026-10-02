@@ -66,7 +66,8 @@ Entender a qué imprentas, clientes y editoriales de Santiago de Chile les sirve
 La ronda se cierra cuando:
 1. Cada imprenta de prioridad alta de la ronda tiene un perfil con fuentes y fecha de consulta.
 2. Cada uno de los cinco supuestos, `SUP-1` a `SUP-5`, está confirmado, refutado, o declarado sin respuesta con su motivo.
-3. Las preguntas 1 a 9 de `context/market/open-questions.md` tienen una respuesta con fuente, o están marcadas sin respuesta con su motivo.
+3. Las preguntas 1 a 15 de `context/market/open-questions.md` (a quién le sirve, cómo lo resuelven hoy, clientes y editoriales, y los datos) tienen una respuesta con fuente, o están marcadas sin respuesta con su motivo.
+   Las preguntas 21 y 22, sobre qué de lo construido sobra o falta, las responde Chris con lo que la ronda entregue, y no cierran la ronda.
 
 ## Promovido desde el legado o desde la investigación
 

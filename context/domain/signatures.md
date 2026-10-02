@@ -1,7 +1,7 @@
 # Firmas y plegado
 
 Una firma es el paquete de páginas que sale de plegar un pliego de prensa impreso por las dos caras.
-Los estados de cada línea están explicados en `terminology.md`.
+Cada línea lleva un estado, que la página de terminología de esta carpeta explica.
 
 ## Qué es un esquema de plegado
 

@@ -1,7 +1,7 @@
 # Papel
 
 Qué se sabe del papel interior y cómo se vuelve grosor y peso de un libro.
-Los estados de cada línea están explicados en `terminology.md`.
+Cada línea lleva un estado, que la página de terminología de esta carpeta explica.
 
 ## Lo que declara cada papel
 
@@ -17,7 +17,7 @@ Los estados de cada línea están explicados en `terminology.md`.
   El número de hojas es la mitad de las páginas, redondeado hacia arriba, porque una última página impar ocupa una hoja entera.
   **[supuesto]**
 - Esa cifra es el lomo del papel solo, que se suma al aporte del método de encuadernación para tener el lomo final.
-  Ver `binding.md`.
+  Ver la página de encuadernación.
   **[supuesto]**
 - Cuánto difiere el lomo real de un libro terminado del que sale de esta cuenta es **[desconocido]**.
 
@@ -27,7 +27,7 @@ Los estados de cada línea están explicados en `terminology.md`.
   El área es la de la página sin sangrado.
   **[supuesto]**
 - Ese peso cubre solo el papel interior; la tapa tiene el suyo, calculado aparte.
-  Ver `cover.md`.
+  Ver la página de tapa.
   **[supuesto]**
 - Esa cuenta no incluye la merma de impresión ni de encuadernación, el adhesivo ni el embalaje.
   Cuánta merma agrega una imprenta es **[desconocido]**.

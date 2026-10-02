@@ -1,7 +1,7 @@
 # Encuadernación
 
 Cómo se unen las hojas en un libro, y qué le cambia eso al lomo y al número de páginas.
-Los estados de cada línea están explicados en `terminology.md`.
+Cada línea lleva un estado, que la página de terminología de esta carpeta explica.
 
 ## Los métodos
 
