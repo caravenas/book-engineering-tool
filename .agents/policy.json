@@ -5,7 +5,7 @@
     "worktree_symlinks vacia: este proyecto no tiene ningun directorio propio, ignorado por git, que un worktree necesite. node_modules ya viene de los defaults globales de workflows/worktree-policy.json, y dist/ se regenera con npm run build.",
     "write_paths no se declara: la territorialidad de este repo es por carril, no por rol.",
     "lanes: los dos carriles del plan de tres capas, que trabajan en paralelo en este mismo repositorio. Una sesion lanzada con `sesion --lane <carril> -- <cli>` solo escribe y commitea dentro de las rutas de su carril; sin carril, nada cambia.",
-    "research escribe la investigacion de producto, clientes e imprentas, y nada que construccion lea: su unico puente a construccion es una propuesta que Chris promueve al plan.",
+    "research escribe la investigacion de producto, clientes e imprentas",
     "build escribe el producto y su plan. docs/decisions y docs/learnings estan en los dos, porque record-decision y record-learning con --record-scope project escriben ahi.",
     "session_budget de build: tope duro de workers que una sesion de construccion puede lanzar."
   ],
