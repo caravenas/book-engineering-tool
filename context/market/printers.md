@@ -174,16 +174,22 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Ronda**: dentro.
 - **Prioridad**: Alta.
 - **Comuna**: Santiago, RM.
-- **Perfil**: editorial / comercial.
-- **Procesos**: offset y digital; salida de planchas.
-- **Equipamiento**: Heidelberg de 102×72 cm y de 72×52 cm, ambas de 4 colores.
-- **Encuadernación**: guillotina Polar y cosedora automática; lo demás no detallado.
-- **Datos públicos**: publica los modelos y formatos de sus prensas y su proceso de preprensa.
+- **Dirección publicada**: Padre Orellana 1920, Santiago.
+- **Perfil**: editorial / comercial, según la hoja.
+  Su página de servicios dice: «Nos enfocamos en la creación de estuches y empaques personalizados de alta calidad»; la impresión de libros aparece como un servicio más, «en distintos formatos y materiales».
+  Dice estar entre los proveedores mejor calificados en Mercado Público.
+- **Procesos**: offset y digital, según sus preguntas frecuentes; preprensa con salida de planchas y pruebas de color; turnos de 24 horas.
+- **Equipamiento**: Heidelberg Speedmaster «(CVP-102)» de 4 colores, formato 102×72 cm, y Heidelberg Speedmaster «V P» de 4 colores, formato 72×52 cm.
+  Equipo digital, márgenes y área imprimible: no aparecen en las páginas consultadas.
+- **Encuadernación**: una guillotina Polar «tamaño Mercurio», una troqueladora de mandíbula de 60×90 cm, una troqueladora «tamaño Mercurio» y una cosedora automática; el sitio no dice si la cosedora es de hilo o de alambre.
+  Tapa dura, hotmelt o PUR: no aparecen en las páginas consultadas.
+- **Datos públicos**: prefiere PDF de alta resolución y acepta AI, EPS o TIFF; su preprensa ayuda a preparar archivos.
 - **Área a entrevistar**: preprensa / cotizaciones.
 - **Oportunidad (hipótesis)**: perfiles de prensa y selección del formato viable.
 - **Pregunta de validación**: pedir el margen de pinza, el área imprimible y los dobleces compatibles.
-- **Fuentes**: https://portalgraf.cl/quienes-somos/ y https://portalgraf.cl/servicios/, citadas por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: es una imprenta comercial con foco en empaques, con dos formatos de prensa publicados; para libros álbum de tapa dura no publica la encuadernación que haría falta.
+- **Fuentes**: https://portalgraf.cl/quienes-somos/ y https://portalgraf.cl/servicios/, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Gráfhika Impresores
 

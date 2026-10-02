@@ -27,8 +27,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: Heidelberg de 102×72 cm y de 72×52 cm, ambas de 4 colores.
 - **Aplicación posible**: comparar las opciones de formato por máquina.
 - **Límite a confirmar**: la orientación, la pinza y el margen útil, con el operador.
-- **Fuente**: https://portalgraf.cl/quienes-somos/, citada por la hoja.
-- **Estado**: por confirmar.
+  El sitio las nombra «Speedmaster (CVP-102)», de 102×72 cm, y «Speedmaster V P», de 72×52 cm.
+- **Fuente**: https://portalgraf.cl/quienes-somos/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ## Firmas
 
