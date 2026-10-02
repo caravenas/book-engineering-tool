@@ -36,8 +36,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: rotativa anunciada para pliegos de 64 páginas A4.
 - **Aplicación posible**: firma y compatibilidad entre rotativa y encuadernación en línea.
 - **Límite a confirmar**: no generalizar las 64 páginas a todas las prensas.
-- **Fuente**: https://www.aimpresores.cl/quienes-somos/, citada por la hoja.
-- **Estado**: por confirmar.
+  El sitio no dice cuál de sus cuatro rotativas es, ni qué encuadernación lleva en línea.
+- **Fuente**: https://www.aimpresores.cl/quienes-somos/, consultada 2026-10-02: dice «pliegos de 64 páginas A4 y con encuadernación en línea».
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ## Solicitud de cotización
 
@@ -45,9 +46,10 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 
 - **Dato público**: de 25 a 1.000 ejemplares, de 48 a 608 páginas, ancho y largo, tapa y papel.
 - **Aplicación posible**: esquema inicial del trabajo que entrega una editorial.
-- **Límite a confirmar**: son límites del formulario publicado, no límites universales.
-- **Fuente**: https://www.aimpresores.cl/imprime-tu-libro/, citada por la hoja.
-- **Estado**: por confirmar.
+- **Límite a confirmar**: no son límites que el formulario imponga, ni límites universales.
+  Son textos de ejemplo de campos libres de un formulario de su taller digital, que ofrece solo tapa blanda, 21×14 cm, blanco y negro y ahuesado de 80 g.
+- **Fuente**: https://www.aimpresores.cl/imprime-tu-libro/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ### REF-9. Allimpresiones: cotizador editorial
 

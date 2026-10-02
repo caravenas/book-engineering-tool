@@ -42,15 +42,25 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Prioridad**: Alta.
 - **Comuna**: Estación Central, RM.
 - **Perfil**: editorial industrial.
+  Declara más de 40 años, unas 300 personas, una planta de más de 50.000 m² con 30.000 m² construidos, y una capacidad de 1.000.000 de pliegos al año.
 - **Procesos**: offset plano y rotativo; digital.
-- **Equipamiento**: rotativa Lithoman de 64 páginas A4; Heidelberg, KBA; HP Indigo.
-- **Encuadernación**: hilo, hotmelt, PUR, corchete, tapa dura.
-- **Datos públicos**: 7 prensas; rotativa de 64 páginas A4; su formulario de libro admite de 25 a 1.000 ejemplares y de 48 a 608 páginas.
+- **Equipamiento**: offset plano Heidelberg Speedmaster XL, KBA y Heidelberg 10P; rotativas Heidelberg Web 2, Heidelberg Web 1, Manroland Harris M 600 y Lithoman; digital HP Indigo 7600.
+  Son 7 prensas offset y una digital; la hoja decía «7 prensas».
+  Dice ser la única imprenta en Chile con una rotativa que imprime pliegos de 64 páginas A4 con encuadernación en línea; el sitio no dice cuál de las cuatro es.
+  Formatos, márgenes y área imprimible: no publicados.
+- **Encuadernación**: corchete, hilo, hotmelt, PUR y tapa dura; líneas Muller Martini (Prima, dos 321, Trendbinder, Normbinder, Corona), espiraladora Kugler-Womako y Ventura MC.
+- **Productos**: libros, revistas, catálogos, folletería, calendarios, cuadernos, agendas y productos digitales.
+  Publica logos de clientes, entre ellos editoriales, empresas y una universidad; qué tipo de libro imprime para cada una no lo dice.
+- **Datos públicos**: su formulario «Imprime tu libro» se llama, en el código de la página, «Impresión Libros Taller Digital».
+  Ofrece solo tapa blanda, 21×14 cm cerrado, interior en blanco y negro y papel ahuesado de 80 g.
+  «Desde 25 a 1.000» ejemplares y «Desde 48 a 608» páginas son textos de ejemplo de campos de texto libre, no límites que el formulario imponga.
+  No publica reglas de preparación del archivo: sangrado, múltiplos de página o lomo.
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: perfiles de máquina, cálculo de cuadernillos y ruta de producción.
 - **Pregunta de validación**: validar las reglas de imposición por prensa y el umbral entre offset y digital.
-- **Fuentes**: https://www.aimpresores.cl/quienes-somos/ y https://www.aimpresores.cl/imprime-tu-libro/, citadas por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: es una planta industrial donde un libro álbum de tapa dura convive con tirajes muy grandes; su formulario público cubre solo un libro digital de tapa blanda, en blanco y negro y de 21×14 cm, así que nada de lo publicado dice cómo prepara un libro álbum.
+- **Fuentes**: https://www.aimpresores.cl/quienes-somos/ y https://www.aimpresores.cl/imprime-tu-libro/, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Ograma Impresores
 
