@@ -10,7 +10,7 @@ Es registro: explica por qué el código y los datos son como son, y de dónde s
 
 - `PLAN.md`: el plan canónico anterior, con los incrementos 1 a 4 y el rediseño R-1 a R-31.
 - `UX-REVIEW.md`: la revisión de UX aprobada el 2026-09-16.
-  Su incremento UX-8, exportar la ficha técnica, es lo que construye el carril `build` según el plan vigente; importar no entra.
+  Su incremento UX-8 define exportar e importar los catálogos propios; el plan vigente no construye eso sino la exportación de la ficha técnica como página imprimible, y lo demás sigue en el backlog.
 - `UI-REDESIGN.md`: el rediseño de la interfaz aprobado el 2026-09-19.
 - `UI-INVENTORY.md`: una medición de la interfaz del 2026-09-19, que no se actualiza.
 - `backlog-heredado.md`: el índice único de lo que el plan anterior dejó abierto, con enlace a la sección donde cada pendiente está explicado.
