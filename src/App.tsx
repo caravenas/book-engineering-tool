@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useBookStore, userLayerStorage } from './store/useBookStore';
 import { loadCatalog } from './config/loadCatalog';
 import { readUserLayer } from './config/userLayer';
@@ -15,6 +15,7 @@ import {
 } from './components/CentralView';
 import { ResultsBar } from './components/ResultsBar';
 import { SampleDataBadge } from './components/SampleDataBadge';
+import { SpecSheetPage } from './components/SpecSheetPage';
 
 type LoadState =
   | { status: 'loading' }
@@ -85,6 +86,12 @@ export default function App() {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
   const [persistenceNoticeDismissed, setPersistenceNoticeDismissed] = useState(false);
   const [orphanNoticeDismissed, setOrphanNoticeDismissed] = useState(false);
+  // The printable spec sheet replaces the tool while it is open. The tool
+  // stays mounted underneath, hidden, so coming back finds the view, the open
+  // steps and the scroll where they were left, and nothing of it is left on
+  // the page to be printed with the sheet.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const exportButtonRef = useRef<HTMLButtonElement>(null);
   const showPersistenceNotice = (!userLayerStorageAvailable || userLayerWriteFailed) && !persistenceNoticeDismissed;
   const showOrphanNotice = orphanedUserLayerEntries.length > 0 && !orphanNoticeDismissed;
 
@@ -136,7 +143,16 @@ export default function App() {
   return (
     <CentralViewProvider>
     <CatalogPanelProvider>
-    <div className="page-wrapper">
+    {loadState.status === 'ready' && sheetOpen && (
+      <SpecSheetPage
+        onBack={() => {
+          setSheetOpen(false);
+          // The button that opened the sheet is where the reader was.
+          queueMicrotask(() => exportButtonRef.current?.focus());
+        }}
+      />
+    )}
+    <div className="page-wrapper" hidden={sheetOpen}>
       <div className="header-section">
         <header className="app-header">
           <img src="/logo.svg" alt="PliegoStack Logo" style={{ height: '2.5rem', width: 'auto' }} />
@@ -157,6 +173,11 @@ export default function App() {
           {/* What the book currently is, read from the same place the steps
               read it, so the header and the sheet cannot say different things. */}
           {loadState.status === 'ready' && <SpecSummary />}
+          {loadState.status === 'ready' && (
+            <button type="button" className="header-export" ref={exportButtonRef} onClick={() => setSheetOpen(true)}>
+              Exportar ficha
+            </button>
+          )}
         </header>
       </div>
 

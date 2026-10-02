@@ -137,6 +137,10 @@ body::before {
 
 /* ─── App Layout ────────────────────────────────────────────────────── */
 
+.page-wrapper[hidden] {
+  display: none;
+}
+
 .page-wrapper {
   display: flex;
   flex-direction: column;
@@ -335,6 +339,31 @@ body::before {
 }
 
 /*
+ * The way out of the tool: an action on the whole book rather than a view of
+ * it, so it stands apart from the switch, at the far end of the row. Drawn in
+ * the switch's own hand (one rectangle, the same type) so it does not look
+ * like a second kind of button.
+ */
+.header-export {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--color-text-primary);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header-export:hover {
+  background: var(--color-bg-card-hover);
+}
+
+/*
  * The switch for the middle of the screen: one segmented control, because the
  * three views are one choice with three positions rather than three separate
  * marks. It reads as a control cut out of a single rectangle — the segments
@@ -492,6 +521,13 @@ body::before {
   .header-summary {
     order: 2;
     margin-left: 0;
+  }
+
+  /* An action rather than something to read: a row of its own, as wide as the
+     switch above it. */
+  .header-export {
+    order: 3;
+    width: 100%;
   }
 
   /* Three uppercase words with this much letter-spacing are wider than a
@@ -1893,6 +1929,171 @@ select.form-input {
 
   .app-column {
     overflow: visible;
+  }
+}
+
+/* ─── Printable spec sheet ──────────────────────────────────────────── */
+
+/*
+ * A sheet of paper on the screen, so what is checked before printing is what
+ * comes out: a column the width of a portrait A4, in the type the rest of the
+ * tool uses. The toolbar is the only part that is not on it.
+ */
+.sheet-page {
+  min-height: 100vh;
+  background: var(--color-bg-secondary);
+  padding: var(--space-4);
+}
+
+.sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  max-width: 210mm;
+  margin: 0 auto var(--space-4);
+}
+
+.sheet-toolbar button {
+  min-height: 40px;
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--color-text-primary);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sheet-toolbar .sheet-print {
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
+}
+
+.sheet-doc {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: var(--space-8);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.sheet-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+}
+
+.sheet-title:focus {
+  outline: none;
+}
+
+.sheet-subtitle {
+  margin: var(--space-1) 0 var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sheet-section {
+  margin-top: var(--space-6);
+  /* A section split across two sheets loses its heading from its rows. */
+  break-inside: avoid;
+}
+
+.sheet-section-title {
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-text-primary);
+  font-family: var(--font-heading);
+  font-size: var(--text-base);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sheet-rows {
+  margin: 0;
+}
+
+.sheet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+.sheet-row dt {
+  color: var(--color-text-secondary);
+}
+
+.sheet-row dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sheet-unit,
+.sheet-note {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+/* Said in words and not by colour alone: a sheet is often printed in black. */
+.sheet-reason-mark {
+  font-weight: 700;
+  color: var(--color-danger-foreground);
+}
+
+.sheet-row-reason dd,
+.sheet-row-source dd {
+  font-weight: 400;
+}
+
+.sheet-example {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .sheet-doc {
+    padding: var(--space-4);
+  }
+
+  .sheet-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+@media print {
+  .sheet-toolbar {
+    display: none;
+  }
+
+  .sheet-page {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .sheet-doc {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .sheet-reason-mark {
+    color: #000;
   }
 }
 

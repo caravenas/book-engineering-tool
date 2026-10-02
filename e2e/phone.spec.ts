@@ -34,7 +34,13 @@ test('the spec sheet starts closed, so what the tool works out is a screen away'
 
   const measured = await page.evaluate(() => ({
     middle: Math.round(document.querySelector('.column-main')!.getBoundingClientRect().top + window.scrollY),
-    header: Math.round(document.querySelector('.app-header')!.getBoundingClientRect().height),
+    // Without the row UX-8 added for «Exportar ficha», an action rather than
+    // part of what the header says: the budget below is for the title page the
+    // header used to be, and the control's row is not part of that.
+    header: Math.round(
+      document.querySelector('.header-export')!.getBoundingClientRect().top
+        - document.querySelector('.app-header')!.getBoundingClientRect().top
+    ),
   }));
 
   // Open, the five steps were 3300px and the middle began below all of them.

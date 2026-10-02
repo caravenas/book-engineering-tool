@@ -220,6 +220,8 @@ const EXPECTED_CONTROL_NAME_COUNTS: Record<string, number> = {
   // What the middle of the screen is showing, added by R-22. The header used
   // to carry a way into the catalog instead; the catalog is one of the three
   // views now, so the name stayed and what it does changed.
+  // The way out of the tool, added by UX-8: the printable spec sheet.
+  'Exportar ficha': 1,
   'Resultados': 1,
   'Visualización': 1,
   'Catálogo': 1,
