@@ -1,3 +1,5 @@
+Congelado el 2026-10-02. Es registro, no compromiso; lo vigente está en `docs/PLAN.md`.
+
 # Inventario de la interfaz — PliegoStack
 
 Levantado el 2026-09-19 sobre el commit `cfaefd0` de `master`, con la app compilada y servida con `npm run preview`.

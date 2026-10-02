@@ -1,3 +1,5 @@
+Congelado el 2026-10-02. Es registro, no compromiso; lo vigente está en `docs/PLAN.md`.
+
 # Plan canónico de PliegoStack
 
 ## Dirección

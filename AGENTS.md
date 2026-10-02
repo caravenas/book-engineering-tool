@@ -4,10 +4,12 @@ PliegoStack es una herramienta de ingeniería editorial para imprentas y editori
 
 ## Por dónde empezar
 
-1. Lee `docs/PLAN.md`: es el plan canónico, dice qué incrementos están cerrados y cuál es el siguiente.
-2. Implementa solo el incremento que el plan marca como siguiente, respetando su alcance, sus no objetivos y sus criterios de aceptación.
+1. Lee `docs/PLAN.md`: es el único compromiso vigente y dice qué le toca a cada carril.
+2. Trabaja solo en lo que el plan asigna a tu carril, respetando su alcance, sus no objetivos y sus criterios de aceptación.
+   Si no tienes carril, no implementes: coordina.
 3. Consulta `docs/CONFIG.md` antes de tocar cualquier archivo de `public/config/`.
-4. `docs/UX-REVIEW.md` está aprobada, pero se ejecuta después del incremento 4; no la mezcles con otro incremento.
+4. `docs/legacy/` es el plan anterior, congelado: es registro y no compromiso.
+   Un pendiente suyo solo entra al trabajo cuando Chris lo promueve a `docs/PLAN.md`.
 
 ## Comandos
 
@@ -33,5 +35,6 @@ PliegoStack es una herramienta de ingeniería editorial para imprentas y editori
 ## Al cerrar un incremento
 
 - Confirma con la salida real de `npm test` y `npm run build`, y con `git status`, antes de declarar el trabajo terminado.
-- Actualiza en `docs/PLAN.md` la sección «Estado actual» y la línea que registra qué incrementos están cerrados y en qué commit.
-- Registra en «Decisiones pendientes» cualquier supuesto que haya que confirmar con una imprenta real.
+- Actualiza en `docs/PLAN.md` el incremento que cerraste y el commit que lo cerró.
+- Si el incremento deja un supuesto que habría que confirmar con una imprenta real, dilo en tu reporte para que Chris lo lleve a la investigación.
+  No lo escribas en `docs/legacy/`, que no se edita.

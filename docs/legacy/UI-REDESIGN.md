@@ -1,3 +1,5 @@
+Congelado el 2026-10-02. Es registro, no compromiso; lo vigente está en `docs/PLAN.md`.
+
 # Rediseño de la interfaz — PliegoStack
 
 Redactado el 2026-09-19 a partir de `docs/UI-INVENTORY.md` y de las cinco capturas que lo acompañan.
