@@ -40,6 +40,11 @@ Que quien prepara un libro pueda llevarse la ficha técnica de lo que calculó: 
 5. Se revisa a mano en un navegador real sobre `npm run preview`, con la vista de impresión.
 6. `npm test`, `npm run build` y `npm run test:browser` terminan en 0, sin dependencias nuevas.
 
+**Estado.**
+Cerrado el 2026-10-02 en el commit `95a9c86`, sobre la rama `integrate/build-20261002`, pendiente de que Chris integre y apruebe el push.
+Verificado con Node v22.22.2: `npm test` con 505 tests en 21 archivos, `npm run build` y `npm run test:browser` con 52 pruebas en Chromium.
+La revisión a mano en Chrome sobre `npm run preview` incluyó la vista de impresión: dos hojas A4 sin controles de la herramienta.
+
 **Rollback.** Revertir el único commit del incremento.
 
 **Decisiones ya tomadas.**
