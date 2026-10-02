@@ -101,8 +101,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: portada e interior por separado; el interior en páginas individuales y en orden normal.
 - **Aplicación posible**: instrucciones de carga y verificación del PDF.
 - **Límite a confirmar**: aplica a su producto con corchetes.
-- **Fuente**: https://www.impressme.cl/libros-revistas-catalogos/libros/impresion-booklets/upload/, citada por la hoja.
-- **Estado**: por confirmar.
+  La portada va en un solo PDF de doble ancho, contraportada a la izquierda, sin lomo.
+- **Fuente**: https://www.impressme.cl/libros-revistas-catalogos/libros/impresion-booklets/upload/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ## Límites de producto
 
@@ -111,8 +112,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: hasta 64 páginas interiores y desde 10 unidades.
 - **Aplicación posible**: validación por producto y por encuadernación.
 - **Límite a confirmar**: no convertirlo en un límite técnico universal del corchete.
-- **Fuente**: https://www.impressme.cl/libros-revistas-catalogos/catalogos-y-revistas/impresion-booklets/, citada por la hoja.
-- **Estado**: por confirmar.
+  El selector ofrece el interior de 4 en 4, de 4 a 64 páginas, con la tapa aparte; la ayuda del mismo campo habla de un número par.
+- **Fuente**: https://www.impressme.cl/libros-revistas-catalogos/catalogos-y-revistas/impresion-booklets/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ## Flujo de producción
 

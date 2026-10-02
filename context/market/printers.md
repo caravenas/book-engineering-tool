@@ -237,16 +237,22 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Ronda**: dentro.
 - **Prioridad**: Media.
 - **Comuna**: Estación Central, RM.
-- **Perfil**: configurador editorial digital.
-- **Procesos**: digital.
-- **Equipamiento**: HP Indigo; formato no publicado.
-- **Encuadernación**: corchete; hotmelt y PUR en sus líneas editoriales.
-- **Datos públicos**: booklet de hasta 64 páginas y desde 10 unidades; opciones de papel, color, tapa y tamaño, y carga del PDF.
+- **Perfil**: configurador editorial digital; se presenta como «Imprenta Digital» con tienda en línea y despacho a todo Chile.
+- **Procesos**: digital, con HP Indigo para el booklet.
+- **Equipamiento**: HP Indigo; formato no aparece en las páginas consultadas.
+- **Encuadernación**: corchete en el booklet; la página del booklet nombra hotmelt y PUR como «lomo cuadrado» para cuando se superan sus 64 páginas.
+- **Booklet con corchete**: interior en couché mate o brillante de 130 g, en blanco y negro (1×1) o color (4×4); tapa aparte en couché de 300 g, 4×0 o 4×4, con laminado.
+  Páginas interiores a elegir de 4 en 4, de 4 a 64; la ayuda del campo dice en cambio que el total «siempre debe ser un número par» y que «2 páginas = 1 hoja».
+  Ocho tamaños: carta, A4, 13×21, 14×21, 14,8×21, 14×22, 15×22 y 15×23 cm, con opción apaisada.
+  Cantidades de 10 a 500; diez días hábiles; prueba en PDF antes de producir.
+- **Datos públicos**: pide la portada en un PDF con contraportada a la izquierda y portada a la derecha, sin lomo, del doble del ancho del producto; y el interior en otro PDF, en páginas sueltas y en orden normal, sin tapas.
+  Ofrece plantillas por tamaño con línea de sangrado y área segura; el día de la consulta, la plantilla mostraba un error por sangrados «nulos».
 - **Área a entrevistar**: cotizaciones / producto.
 - **Oportunidad (hipótesis)**: referencia de experiencia de uso: configurador, reglas visibles y carga de tapa e interior.
 - **Pregunta de validación**: comparar su cálculo de blancos y su validación de PDF con su flujo.
-- **Fuentes**: https://www.impressme.cl/libros-revistas-catalogos/catalogos-y-revistas/impresion-booklets/ y https://www.impressme.cl/libros-revistas-catalogos/libros/impresion-booklets/upload/, citadas por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: de las ocho imprentas verificadas hasta ahora, es la que vende un producto más parecido a un libro álbum corto, a color y en couché, con reglas visibles para quien lo encarga.
+- **Fuentes**: https://www.impressme.cl/libros-revistas-catalogos/catalogos-y-revistas/impresion-booklets/ y https://www.impressme.cl/libros-revistas-catalogos/libros/impresion-booklets/upload/, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Moris
 
