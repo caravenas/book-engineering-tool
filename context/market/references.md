@@ -74,8 +74,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: páginas, tamaño, interior, encuadernación, tiraje y estado del archivo.
 - **Aplicación posible**: un brief guiado con preflight temprano.
 - **Límite a confirmar**: la cotización final es personalizada.
-- **Fuente**: https://grafhika.com/, citada por la hoja.
-- **Estado**: por confirmar.
+  Cotiza solo libros diagramados; la cantidad se elige en tramos y el interior puede ser color, blanco y negro o mixto.
+- **Fuente**: https://grafhika.com/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ## Preflight y archivos
 

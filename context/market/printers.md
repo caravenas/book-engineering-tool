@@ -197,15 +197,22 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Prioridad**: Alta.
 - **Comuna**: Santiago, RM.
 - **Perfil**: editorial / instituciones.
-- **Procesos**: offset y digital.
-- **Equipamiento**: Heidelberg offset; formato no publicado.
-- **Encuadernación**: rústica y empaste; detalle no publicado.
-- **Datos públicos**: su formulario pide páginas, tamaño, interior, encuadernación y tiraje; dice revisar sangrado y perfiles.
+  Declara más de 30 años, más de 2.000 m² de planta en Santiago y certificación PEFC.
+  Se dirige a tres públicos: escritores independientes, editoriales pequeñas, e instituciones y editoriales; entre sus clientes nombra un ministerio, universidades y un grupo editorial.
+- **Procesos**: offset Heidelberg para tirajes medianos y altos; «impresión láser» para tirajes cortos, desde una unidad; gran formato en impresoras Roland.
+- **Equipamiento**: Heidelberg offset y Roland de gran formato; modelos, formatos, márgenes y área imprimible no aparecen en la página consultada.
+- **Encuadernación**: rústica (tapa blanda) y empaste (tapa dura); corte, doblez y laminado.
+  Si la tapa dura es propia o tercerizada, la página no lo dice.
+- **Cotización**: cotiza «solo libros terminados y diagramados», con precio el mismo día.
+  Su formulario pide el estado del libro, el formato del archivo, la cantidad en tramos (menos de 100, 100 a 300, 300 a 500, más de 500), el tipo de libro, las páginas, el tamaño final, el interior (color, blanco y negro o mixto) y la encuadernación.
+  Entre los tipos de libro no aparece el libro álbum ni el libro infantil.
+- **Proceso publicado**: ocho pasos; en el tercero, «preprensa revisa resolución, sangrados, tipografías y perfiles de color», y en el cuarto envía una maqueta física para aprobar tamaño, papel y colores antes del tiraje.
 - **Área a entrevistar**: ventas / preprensa.
 - **Oportunidad (hipótesis)**: un brief técnico con preflight y maqueta.
 - **Pregunta de validación**: qué errores del archivo retrasan una cotización.
-- **Fuentes**: https://grafhika.com/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: pide al autor o a la editorial pequeña solo el libro diagramado y deja la revisión técnica a su preprensa; quién calcula pliegos, lomo y tapa, la página no lo dice.
+- **Fuentes**: https://grafhika.com/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### GSR
 
