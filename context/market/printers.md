@@ -317,17 +317,18 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Media.
-- **Comuna**: Ñuñoa, RM.
-- **Perfil**: editorial bajo demanda.
-- **Procesos**: impresión por demanda.
-- **Equipamiento**: modelos no publicados.
-- **Encuadernación**: la ofrece; detalle no publicado.
-- **Datos públicos**: desarrollo editorial, preprensa y encuadernación, con su equipo identificado en el sitio.
+- **Comuna**: Ñuñoa, RM; dirección publicada en Eduardo Castillo Velasco, Ñuñoa.
+- **Perfil**: centro de impresión y producción por demanda, con «más de una década de experiencia»; atiende a editoriales, autores independientes, agencias y empresas.
+  Además de publicaciones editoriales ofrece libros personalizados, memorias, recuerdos de matrimonio, folletería y piezas especiales.
+- **Procesos**: impresión por demanda y de bajo tiraje; la página habla de «tecnología avanzada» sin nombrar máquinas.
+- **Equipamiento**: modelos y especificaciones no aparecen en la página consultada.
+- **Encuadernación**: no aparece como servicio en la página consultada; la hoja la daba por ofrecida.
+- **Datos públicos**: desarrollo editorial con asesoría en diseño, papeles y terminaciones.
 - **Área a entrevistar**: diseño / preprensa.
 - **Oportunidad (hipótesis)**: asistente técnico para bajo tiraje y validación de archivo.
 - **Pregunta de validación**: pedir un caso con cambios frecuentes de formato.
-- **Fuentes**: https://cipod.cl/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Fuentes**: https://cipod.cl/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### dospuntocero
 
