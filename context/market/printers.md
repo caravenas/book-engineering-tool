@@ -58,6 +58,7 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: perfiles de máquina, cálculo de cuadernillos y ruta de producción.
 - **Pregunta de validación**: validar las reglas de imposición por prensa y el umbral entre offset y digital.
+- **Relación con Impressme (inferencia)**: Impressme publica la misma dirección; ver su entrada.
 - **Lectura (inferencia)**: es una planta industrial donde un libro álbum de tapa dura convive con tirajes muy grandes; su formulario público cubre solo un libro digital de tapa blanda, en blanco y negro y de 21×14 cm, así que nada de lo publicado dice cómo prepara un libro álbum.
 - **Fuentes**: https://www.aimpresores.cl/quienes-somos/ y https://www.aimpresores.cl/imprime-tu-libro/, consultadas 2026-10-02.
 - **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
@@ -195,7 +196,7 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Alta.
-- **Comuna**: Santiago, RM.
+- **Comuna**: Santiago, RM, según la hoja; el sitio dice solo «planta productiva en Santiago».
 - **Perfil**: editorial / instituciones.
   Declara más de 30 años, más de 2.000 m² de planta en Santiago y certificación PEFC.
   Se dirige a tres públicos: escritores independientes, editoriales pequeñas, e instituciones y editoriales; entre sus clientes nombra un ministerio, universidades y un grupo editorial.
@@ -236,7 +237,8 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Media.
-- **Comuna**: Estación Central, RM.
+- **Comuna**: Estación Central, RM; el pie de sus páginas publica la misma dirección que A Impresores, Av. Gladys Marín Millie 6920.
+- **Relación con A Impresores (inferencia)**: la misma dirección, y sus imágenes se sirven desde una carpeta llamada «aimpresor», sugieren que es la tienda digital de A Impresores; ninguna de las dos páginas lo dice.
 - **Perfil**: configurador editorial digital; se presenta como «Imprenta Digital» con tienda en línea y despacho a todo Chile.
 - **Procesos**: digital, con HP Indigo para el booklet.
 - **Equipamiento**: HP Indigo; formato no aparece en las páginas consultadas.
@@ -258,17 +260,20 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Media.
-- **Comuna**: Santiago, RM.
-- **Perfil**: editorial / comercial.
-- **Procesos**: offset; otras tecnologías no detalladas.
-- **Equipamiento**: Heidelberg; modelos y formatos no publicados.
-- **Encuadernación**: PUR, tapa dura, anillo doble cero, espiral, alzadora.
-- **Datos públicos**: su formulario pide tamaño, papel, terminación, cantidad y colores.
+- **Comuna**: Santiago, RM; dirección publicada en Aldunate, comuna de Santiago.
+- **Perfil**: editorial / comercial, según la hoja.
+  Se presenta como empresa familiar con 50 años, atendida por sus dueños, cuya especialización son los «cuadernos corporativos»; imprime además libros, revistas, catálogos, memorias, agendas y otros productos.
+  Nombra clientes privados y públicos: colegios, universidades, municipalidades y servicios públicos.
+- **Procesos**: offset; «varios cuerpos de impresión, de gran Formato en maquinas Heidelberg».
+- **Equipamiento**: Heidelberg de gran formato; modelos, formatos, márgenes y área imprimible no aparecen en la página consultada.
+- **Encuadernación**: en sus propias instalaciones, «sin tener que tercializar»: máquinas de encuadernación, termolaminado, tapa dura, anillo doble cero, formadora de espirales PVC, máquina PUR «para libros» y alzadora.
+- **Datos públicos**: su formulario de cotización pide producto, tamaño, papel, terminación, cantidad y colores.
 - **Área a entrevistar**: cotizaciones / producción.
 - **Oportunidad (hipótesis)**: ficha de trabajo y recomendación de terminación.
 - **Pregunta de validación**: qué reglas aplican antes de cotizar.
-- **Fuentes**: https://moris.cl/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: hace tapa dura y PUR en su planta, así que podría responder `SUP-1` y `SUP-2` sin depender de un proveedor; los libros no son su especialidad declarada.
+- **Fuentes**: https://moris.cl/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### ImprimeTuLibro
 

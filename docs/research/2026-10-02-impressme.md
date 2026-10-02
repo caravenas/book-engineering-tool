@@ -19,12 +19,13 @@ Sin contacto con la imprenta: solo sus páginas públicas.
 | Hotmelt o PUR («lomo cuadrado») cuando se superan las 64 páginas o se quiere lomo visible. | verificado en el sitio | booklets |
 | Portada en un PDF de doble ancho sin lomo, contraportada a la izquierda; interior en páginas sueltas, en orden, sin tapas. | verificado en el sitio | upload |
 | Plantillas por tamaño con línea de sangrado y área segura; el día de la consulta la plantilla mostraba un error por sangrados nulos. | verificado en el sitio | booklets y upload |
+| El pie de las páginas publica Av. Gladys Marín Millie 6920, Estación Central, la misma dirección que A Impresores. | verificado en el sitio | booklets y aimpresores.cl/quienes-somos |
+| Las imágenes se sirven desde una carpeta «aimpresor»; junto con la dirección, sugiere que Impressme es la tienda digital de A Impresores. | inferencia | booklets |
 | Entre las ocho imprentas verificadas hasta ahora, es la que publica el producto más parecido a un libro álbum corto. | inferencia | booklets |
 
 ## Correcciones a la hoja
 
 Comparando con la hoja de prospectos citada en `context/market/printers.md`: coinciden con el sitio el HP Indigo, el corchete, las 64 páginas, el mínimo de 10 unidades y la carga de portada e interior por separado.
-La comuna, Estación Central, no aparece en las páginas consultadas.
 El sitio agrega que las páginas se eligen de 4 en 4 aunque la ayuda diga «número par», y que la tapa va aparte en otro papel.
 
 ## Supuestos del oficio
