@@ -1,7 +1,8 @@
 # Propuesta: formatos de prensa y de pliego publicados por Andros Impresores
 
 Fecha: 2026-10-02.
-Estado: propuesta; no es compromiso hasta que aparezca en `docs/PLAN.md`.
+Estado: diferida el 2026-10-02 por decisión de Chris, hasta tener los formatos de 2 o 3 imprentas más; no pasa al plan.
+Cuando las haya, esta propuesta se reabre con la comparación.
 
 ## Qué se encontró
 
