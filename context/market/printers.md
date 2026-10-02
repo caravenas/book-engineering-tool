@@ -298,17 +298,20 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Media.
-- **Comuna**: Independencia, RM.
-- **Perfil**: libros por demanda.
-- **Procesos**: digital y offset.
-- **Equipamiento**: modelos no publicados.
-- **Encuadernación**: rústica, empastado, espiral.
-- **Datos públicos**: el precio depende de páginas, papel, gramaje, color, tiraje y encuadernación.
+- **Comuna**: Independencia, RM; dirección publicada en Coronel Alvarado, Independencia.
+- **Perfil**: libros por demanda; se presenta como «imprenta digital» especializada en libros, catálogos, cuadernos y otros productos, para empresas y editoriales.
+- **Procesos**: cotiza impresión digital u offset según el proyecto; libros desde una unidad.
+- **Equipamiento**: modelos no publicados en la página consultada.
+- **Encuadernación**: rústica, empastado y espiral.
+- **Datos públicos**: el precio depende del tamaño, las páginas, la encuadernación, el papel y su gramaje, el color y el tiraje.
+  Publica precios de referencia por ejemplar: A5 de 100 páginas en blanco y negro, rústica, desde $3.200 con tiraje de 50; A4 de 150 páginas a color, empastado, desde $6.900 con tiraje de 100; libro técnico de 200 páginas con espiral, desde $4.500 con tiraje de 30.
+  Su cotización incluye revisión del archivo antes de imprimir y asesoría en materiales; responde en menos de 24 horas.
 - **Área a entrevistar**: cotizaciones.
 - **Oportunidad (hipótesis)**: ficha de costo por configuración y prueba de archivo.
 - **Pregunta de validación**: qué insumos quedan fuera de su formulario inicial.
-- **Fuentes**: https://www.printech.cl/valor-impresion-de-libros/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: es una referencia pública de precio por ejemplar; los ejemplos no dicen si son digitales u offset, qué papel usan, ni si alguno sería un libro álbum.
+- **Fuentes**: https://www.printech.cl/valor-impresion-de-libros/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### CIPOD
 
