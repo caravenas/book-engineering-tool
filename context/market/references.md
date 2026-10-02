@@ -128,5 +128,5 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: archivo, preparación técnica, maqueta, aprobación y producción.
 - **Aplicación posible**: un estado de aprobación ligado a la versión del archivo.
 - **Límite a confirmar**: es el flujo del sitio; falta el detalle de sus sistemas internos.
-- **Fuente**: https://donnebaum.com/, citada por la hoja.
-- **Estado**: por confirmar.
+- **Fuente**: https://donnebaum.com/, consultada 2026-10-02: «Recepción de archivos», «Confección de maqueta», y «Producción y envío» tras aprobar la maqueta.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.

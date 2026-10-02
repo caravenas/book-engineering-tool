@@ -146,16 +146,28 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Ronda**: dentro.
 - **Prioridad**: Alta.
 - **Comuna**: Maipú, RM.
-- **Perfil**: editorial industrial B2B.
-- **Procesos**: offset y digital; preprensa integrada.
-- **Equipamiento**: HP Indigo, Xerox, Ricoh; formatos no publicados.
-- **Encuadernación**: en planta; detalle no publicado.
+- **Dirección publicada**: Henry Ford 1410, Maipú.
+- **Perfil**: «imprenta industrial B2B» con más de 40 años, que hoy es un grupo con impresión editorial y comercial, tarjetas de PVC, cierres y estampado textil en la misma planta.
+  Declara 558 clientes activos, turnos continuos y líneas duplicadas; entre sus clientes nombra editoriales y textos escolares, y dice imprimir «libros de texto y a color con grandes editoriales».
+- **Procesos**: offset y digital; preprensa, impresión, encuadernación, terminaciones y despacho en planta.
+- **Equipamiento**: digital HP Indigo, Xerox y Ricoh; dice tener offset sin nombrar máquinas.
+  Formatos, márgenes y área imprimible de las prensas: no aparecen en las páginas consultadas.
+- **Encuadernación**: rústica, tapa dura y hotmelt en planta; laminados, barnices UV y troquelado.
+  Su cotizador ofrece además costura hilo, engrapado, espiral plástico, anillo doble cero, engomado y PUR, y tapa blanda, dura o emplacada.
+- **Cotizador de libros**: en `/cotizador/libros`, un cotizador «de Libros y Revistas» en línea.
+  Pide tipo de publicación (entre ellas «Para colorear — Actividades · Niños»), tamaño (de bolsillo a A4, o a medida hasta 320×900 mm), orientación, páginas, color de interior y tapa, papel de interior y de tapa, tipo y acabado de tapa, espejo u hoja de guarda en tapa dura, solapas con su ancho, tipo de encuadernación e insertos.
+  Muestra al usuario las páginas por pliego y los pliegos por ejemplar sobre un «pliego estándar», y un resumen de pliegos color y blanco y negro; el pliego de su lista de precios es de 47,2×32 cm.
+  Avisa que «la encuadernación no puede ser Hotmelt si el interior es de un sustrato superior a los 170g/m²», y fija un monto mínimo de cotización.
+  Muestra un acceso «Modo Interno — Ingresa la clave», que no se consultó.
 - **Datos públicos**: su flujo publicado es recepción del archivo, preparación técnica, maqueta, aprobación y producción.
+- **Marcas del grupo**: enlaza un sello editorial propio de libros ilustrados; ver `customers.md`.
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: el traspaso entre cotización, aprobación y orden técnica.
 - **Pregunta de validación**: quién revisa el archivo y cómo se traspasan los ajustes a la planta.
-- **Fuentes**: https://donnebaum.com/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: su cotizador público ya hace, para el cliente, parte de lo que PliegoStack calcula: rendimiento por pliego, pliegos por ejemplar, solapas y tapa dura.
+  Si eso la hace competencia o referencia para PliegoStack es una pregunta de entrevista.
+- **Fuentes**: https://donnebaum.com/, https://donnebaum.com/impresion y https://donnebaum.com/cotizador-libros.html?familia=libros (el cotizador que carga `/cotizador/libros`), consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Portal Gráfico
 
