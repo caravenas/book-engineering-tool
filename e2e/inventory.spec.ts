@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * docs/PLAN.md's R-3 reorganizes the page into three columns, which makes
+ * docs/legacy/PLAN.md's R-3 reorganizes the page into three columns, which makes
  * e2e/panels.spec.ts's per-panel heights and panel-to-label mapping obsolete
  * by design: those pin where things render, and R-3's whole point is to move
  * where things render. What must survive that move is R-3's own acceptance

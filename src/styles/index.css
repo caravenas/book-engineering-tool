@@ -393,7 +393,7 @@ body::before {
 }
 
 /* Single layout breakpoint: 1024px sits inside the 960-1200px window
-   UX-REVIEW.md 2.2 allows, replacing the three values used here before. */
+   docs/legacy/UX-REVIEW.md 2.2 allows, replacing the three values used here before. */
 @media (max-width: 1024px) {
   /* Sticky rather than fixed: it stays in the flow, so it takes its own
      height from the page instead of covering the first thing under it. */
