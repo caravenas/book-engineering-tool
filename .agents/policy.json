@@ -10,10 +10,11 @@
     "session_budget de build: tope duro de workers que una sesion de construccion puede lanzar."
   ],
   "protected_paths": [".verify.conf", ".agents/policy.json"],
+  "risk_path_fragments": ["src/engine/", "public/config/"],
   "worktree_symlinks": [],
   "lanes": {
     "research": {
-      "paths": ["docs/research", "context/market", "docs/decisions", "docs/learnings"]
+      "paths": ["docs/research", "context/market", "context/domain", "docs/decisions", "docs/learnings"]
     },
     "build": {
       "paths": [
