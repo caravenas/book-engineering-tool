@@ -126,15 +126,20 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Prioridad**: Alta.
 - **Comuna**: Renca, RM.
 - **Perfil**: libros editoriales.
-- **Procesos**: offset y digital.
-- **Equipamiento**: Heidelberg y Roland; modelo y formato no publicados.
-- **Encuadernación**: hotmelt, hilo, corchete, espiral.
-- **Datos públicos**: especialización editorial y un flujo que va del diseño a la impresión y la encuadernación.
+  Se declara «imprenta especializada en libros de editorial», «con el respaldo» de Penguin Random House; qué relación es esa, el sitio no lo dice.
+- **Procesos**: «imprenta convencional» y digital; el digital, «cuando la cantidad o urgencia en la entrega lo ameritan».
+  El sitio no dice «offset»; la hoja sí.
+  En lo editorial, el cliente trae los archivos y sus diseñadores los preparan para producción.
+- **Equipamiento**: «máquinas mono o bicolor» Heidelberg y Roland; nombra también la marca Polar, sin decir qué máquina es.
+  Modelos, formatos, márgenes y equipo digital: no aparecen en la página consultada.
+- **Encuadernación**: hotmelt, costura al hilo, corcheteado y espirales.
+- **Datos públicos**: el sitio es una sola página con servicios, empresa y clientes; no trae formulario, formatos ni reglas de archivo.
 - **Área a entrevistar**: Product Manager, cargo publicado.
 - **Oportunidad (hipótesis)**: ficha técnica editorial y comparación de rutas offset y digital.
 - **Pregunta de validación**: pedir sus criterios para elegir prensa y cuadernillo.
-- **Fuentes**: https://www.dfg.cl/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: si sus únicas prensas convencionales son de uno o dos colores, un libro álbum a cuatro colores pasaría varias veces por máquina o iría a su línea digital, de la que no publica nada; cómo lo resuelve es una pregunta de entrevista.
+- **Fuentes**: https://www.dfg.cl/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Donnebaum
 
