@@ -31,16 +31,16 @@ Origen: [`PLAN.md`, «Decisiones pendientes»](PLAN.md#decisiones-pendientes).
 - `A-01` **decisión tomada**, L1274: el repo lleva arnés de navegador, Playwright solo Chromium en `e2e/`, aprobado el 2026-09-19.
 - `A-02` **decisión tomada**, L1278: R-1 lo aplicó el capitán por una excepción autorizada el 2026-09-19, no un cambio del modo de trabajo.
 - `A-03` **decisión tomada**, L1280: se ejecuta el rediseño en R-1 a R-3 sin tocar tokens; el Catálogo unificado ocupa el lugar de la pantalla de Configuración de UX-7.
-- `A-04` **supuesto de imprenta** `SUP-1`, L1282: el peso del cartón no se calcula porque el catálogo no declara su densidad.
+- `A-04` **supuesto de imprenta** `SUP-1` ([concepto](../../context/domain/cover.md#densidad-del-cartón)), L1282: el peso del cartón no se calcula porque el catálogo no declara su densidad.
   Lo repite [«Incremento 4», no objetivos](PLAN.md#incremento-4--tapa-blanda-y-dura), L185.
-- `A-05` **supuesto de imprenta** `SUP-2`, L1283: las tolerancias de encajado de la tapa dura dependen de cada taller y no están modeladas.
-- `A-06` **supuesto de imprenta** `SUP-3`, L1284: dónde cae el sangrado en una tapa con solapas, en el borde exterior de la solapa porque la unión es hendido.
+- `A-05` **supuesto de imprenta** `SUP-2` ([concepto](../../context/domain/cover.md#tolerancias-de-encajado)), L1283: las tolerancias de encajado de la tapa dura dependen de cada taller y no están modeladas.
+- `A-06` **supuesto de imprenta** `SUP-3` ([concepto](../../context/domain/cover.md#sangrado-con-solapas)), L1284: dónde cae el sangrado en una tapa con solapas, en el borde exterior de la solapa porque la unión es hendido.
 - `A-07` **decisión tomada**, L1285: no añadir `spineType` a la encuadernación; el lomo plano se deriva de `nests`.
 - `A-08` **decisión tomada**, L1286: la revisión de UX se aprobó el 2026-09-16 para ejecutarse tras el incremento 4; se ejecutó hasta UX-6.
 - `A-09` **abierto**, L1287: UX-7, la pantalla de Configuración, y UX-8, exportar e importar, quedaron en pausa desde el 2026-09-19; UX-9, el editor visual de esquemas, nunca fue una tarea.
   Definidos en [`UX-REVIEW.md`, «Secuencia de implementación»](UX-REVIEW.md#7-secuencia-de-implementación).
   Relacionados: `UI-REDESIGN.md` punto 4 de «Huecos cerrados» (exportar e importar sin sitio) y `UI-INVENTORY.md` punto 3 de «Puntos abiertos» (el aviso de huérfanos no puede ofrecer exportar).
-- `A-10` **supuesto de imprenta** `SUP-4`, L1291: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema; con pliegos de 16 anidados queda sobreestimado.
+- `A-10` **supuesto de imprenta** `SUP-4` ([concepto](../../context/domain/binding.md#el-corrimiento)), L1291: el corrimiento se calcula siempre en grupos de 4 páginas, sin mirar el esquema; con pliegos de 16 anidados queda sobreestimado.
 - `A-11` **decisión tomada**, L1294: la imposición incluye la numeración de páginas en el pliego según el esquema, decidido el 2026-09-15.
 - `A-12` **abierto**, L1295: faltan tests adicionales del validador de configuración, y resolver el logo y el favicon con `BASE_URL` para despliegues en subrutas.
 - `A-13` **abierto**, L1296: la coletilla «guardado solo para esta sesión» no reacciona a un fallo de escritura a mitad de sesión; exige seguimiento por entrada.
@@ -52,7 +52,7 @@ Origen: [`PLAN.md`, «Decisiones pendientes»](PLAN.md#decisiones-pendientes).
 - `A-16` **cerrado**, L1304: el área táctil del botón de eliminar gramaje invadía a su vecino; sin objeto desde R-4b.
   `UI-INVENTORY.md`, punto 2 de «Puntos abiertos», es el mismo.
 - `A-17` **cerrado**, L1306: los esquemas de plegado entregados no superaban la derivación por dobleces; cerrado el 2026-09-23 en R-27.
-- `A-18` **supuesto de imprenta** `SUP-5`, L1308: cuál de los dos dobleces se salta para hacer una firma de 8 páginas, pendiente de confirmar doblando un papel; `esquemas.json` sigue `provisional`.
+- `A-18` **supuesto de imprenta** `SUP-5` ([concepto](../../context/domain/signatures.md#la-firma-de-8-páginas)), L1308: cuál de los dos dobleces se salta para hacer una firma de 8 páginas, pendiente de confirmar doblando un papel; `esquemas.json` sigue `provisional`.
 - `A-19` **abierto**, L1311: el motor de firmas no considera imponer varias firmas lado a lado en un mismo pliego; candidato a un incremento posterior.
 
 ## B. Secciones de cosas abiertas dentro del plan

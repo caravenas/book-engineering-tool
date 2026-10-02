@@ -119,3 +119,15 @@ Que un método produzca un lomo plano y cuadrado o solo un pliegue no es un camp
   Calcula el cartón lateral (`ancho de página + ceja − canal de bisagra` por `alto + 2 × ceja`), el cartón de lomo (`lomo + 2 × grosor del cartón`) y el forro, con sus canales y dobleces.
   Devuelve el área y el peso del forro, y el área del cartón por separado (lateral y de lomo), pero no su peso: el catálogo no declara una densidad de cartón.
 - **Razones de rechazo**: `binding-has-no-flat-spine` (una tapa dura con un método que anida pliegos), `flap-exceeds-page` (una tapa blanda cuya solapa es igual o mayor que la página) y `hinge-exceeds-board` (un canal de bisagra que deja el cartón lateral con ancho cero o negativo).
+
+## El porqué de cada motor
+
+Esta página dice qué calcula cada motor y cómo.
+Por qué el oficio lo hace así, y qué de eso está confirmado y qué es un supuesto, está en `context/domain/`:
+
+- `spine.ts`: `../domain/paper.md`.
+- `imposition.ts`: `../domain/imposition.md`.
+- `signatures.ts` y `folding.ts`: `../domain/imposition.md` y `../domain/signatures.md`.
+- `binding.ts`: `../domain/binding.md`.
+- `cover.ts`: `../domain/cover.md`.
+- El vocabulario de todos: `../domain/terminology.md`.
