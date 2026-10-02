@@ -279,17 +279,20 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Media.
-- **Comuna**: Las Condes, RM.
-- **Perfil**: cotizador de libros.
-- **Procesos**: tecnología de prensa no publicada.
-- **Equipamiento**: modelos no publicados.
-- **Encuadernación**: hilo en tapa dura, hotmelt en tapa blanda.
-- **Datos públicos**: cotizador instantáneo por empaste, impresión, páginas y ejemplares, desde 20 ejemplares.
+- **Comuna**: Las Condes, RM; el pie del sitio dice «Las Condes, Stgo.».
+- **Perfil**: cotizador de libros; se presenta como «taller especializado en libros» y como empresa del grupo EleMonkey.
+- **Procesos**: tecnología de prensa no publicada en la página consultada.
+- **Equipamiento**: modelos no publicados en la página consultada.
+- **Encuadernación**: tapa dura «de lujo», a todo color en couché, con costura al hilo y tela capitel; tapa blanda con hotmelt y tapa termolaminada; revistas y catálogos.
+- **Cotizador**: precio y PDF al instante, desde 20 ejemplares; sus controles admiten de 10 a 500 páginas y de 20 a 1.000 ejemplares, con tipo de empaste, tipo de impresión y zona de entrega.
+  Pide interior y tapa en PDF y dice revisarlos antes de imprimir; entrega en quince días hábiles desde el pago inicial y los archivos aprobados; confirmación por WhatsApp.
+- **Datos públicos**: declara que no trabaja con fondos concursables ni financiamiento público, y nombra Fondart y el Fondo del Libro.
 - **Área a entrevistar**: ventas / operación.
 - **Oportunidad (hipótesis)**: referencia de cotización en PDF y de interfaz de decisión.
 - **Pregunta de validación**: qué desglose técnico hay detrás de su precio instantáneo.
-- **Fuentes**: https://imprimetulibro.cl/, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: vende con un cotizador instantáneo a quien paga directo y deja fuera a quien imprime con fondos públicos; si esa exclusión pesa en el libro álbum chileno es una pregunta abierta.
+- **Fuentes**: https://imprimetulibro.cl/, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### Printech
 

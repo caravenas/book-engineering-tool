@@ -66,8 +66,9 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 - **Dato público**: cotiza por empaste, impresión, páginas y ejemplares, y entrega el presupuesto en PDF.
 - **Aplicación posible**: prototipo de un resultado editable y descargable.
 - **Límite a confirmar**: el precio y la tecnología requieren validarse con la imprenta.
-- **Fuente**: https://imprimetulibro.cl/, citada por la hoja.
-- **Estado**: por confirmar.
+  Sus controles admiten de 10 a 500 páginas y de 20 a 1.000 ejemplares.
+- **Fuente**: https://imprimetulibro.cl/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ### REF-13. Gráfhika: datos de entrada de la cotización
 
