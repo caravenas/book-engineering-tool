@@ -384,17 +384,19 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Exploratoria.
-- **Comuna**: Las Condes, RM.
-- **Perfil**: libros por demanda.
-- **Procesos**: digital y offset, según el catálogo.
-- **Equipamiento**: modelos no publicados.
-- **Encuadernación**: hotmelt, fastback, tapa dura y otras.
-- **Datos públicos**: libros desde una unidad, prueba o maqueta, y varias terminaciones.
+- **Comuna**: Las Condes, RM; dirección publicada en Av. Apoquindo, Las Condes.
+- **Perfil**: libros por demanda dentro de un servicio general de impresión, copiado, planos, digitalización y diseño.
+  Ofrece libros «desde 1 libro hasta cientos de unidades», con diseño y maqueta del libro en 24 horas.
+- **Procesos**: digital y offset, según su título; impresión en blanco y negro y color, efecto metálico, tinta blanca y barniz con reserva.
+- **Equipamiento**: modelos no aparecen en las páginas consultadas; describe un «sistema integrado casing-in» que produce tapa dura y blanda.
+- **Encuadernación**: hotmelt, fastback y tapa dura; además encuadernación extendida a 180°, clamp de páginas removibles, Unibind, «tapa dura personalizable», «tapa dura y folia», y restauración de libros.
+  Dice combinar procesos artesanales, desde un ejemplar hasta grandes tirajes.
 - **Área a entrevistar**: cotizaciones / producción.
 - **Oportunidad (hipótesis)**: flujo de prueba, validación y acabados especiales.
 - **Pregunta de validación**: medir la fricción de los trabajos únicos frente a la producción repetida.
-- **Fuentes**: https://www.tekkrom.cl/impresion/booklets.html y https://www.tekkrom.cl/encuadernacion-y-empastes/empastes.html, citadas por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: ofrece tapa dura y libros desde un ejemplar, pero las páginas no dicen si un libro de tapa dura de un ejemplar pasa por su sistema «casing-in» ni si se imprime en digital; es una pista para tiradas muy cortas que hay que preguntar.
+- **Fuentes**: https://www.tekkrom.cl/impresion/booklets.html y https://www.tekkrom.cl/encuadernacion-y-empastes/empastes.html, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### GL Impresores
 
