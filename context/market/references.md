@@ -15,11 +15,12 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 
 ### REF-1. Andros: formatos de prensa
 
-- **Dato público**: offset hasta 75×52 cm y 70×100 cm; digital de 31×46 cm.
+- **Dato público**: la página de impresión dice offset hasta 75×52 cm y 70×100 cm, y digital de 31×46 cm.
+  Su anexo «Formatos impresión» da otras cifras, con papel máximo, impresión máxima y papel mínimo por máquina: offset 4 colores 72×52, 70×50,5 y 30×44; offset 5 colores 72×102, 100×70,5 y 38×54; offset 2 colores 72×102, 100×68,5 y 35×54; digital 33×48, 31×46 y 17×25.
 - **Aplicación posible**: perfil de máquina y comprobación de cabida.
-- **Límite a confirmar**: es la dimensión máxima publicada, no el área imprimible ni el margen de pinza.
-- **Fuente**: https://andros.cl/servicios/impresion/, citada por la hoja.
-- **Estado**: por confirmar.
+- **Límite a confirmar**: las dos fuentes no coinciden; la impresión máxima da el área imprimible total pero no cómo se reparte entre pinza, cola y laterales.
+- **Fuente**: https://andros.cl/servicios/impresion/ y https://andros.cl/2026/wp-content/uploads/2016/12/anexo-1-formatos-de-impresión.pdf, consultadas 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ### REF-2. Portal Gráfico: formatos de prensa
 
@@ -79,11 +80,11 @@ Un dato confirmado no pasa solo a la configuración de la herramienta: se propon
 
 ### REF-5. Andros: reglas de preflight
 
-- **Dato público**: páginas correlativas, con los blancos incluidos y la portada aparte; un total múltiplo de 4 para ese flujo.
+- **Dato público**: páginas correlativas, con los blancos incluidos y la portada aparte; «el número total de páginas (tapas incluidas) debe ser múltiplo de 4»; sangrado de 2 a 5 mm.
 - **Aplicación posible**: una validación que explica el problema y sugiere dónde va la página en blanco.
-- **Límite a confirmar**: es una regla del proceso que describe esa imprenta, no del oficio.
-- **Fuente**: https://andros.cl/servicios/pre-prensa/, citada por la hoja.
-- **Estado**: por confirmar.
+- **Límite a confirmar**: es una regla del proceso que describe esa imprenta, no del oficio, y no dice por método de encuadernación; tampoco aclara cómo cuenta las tapas cuando la portada va en otro archivo.
+- **Fuente**: https://andros.cl/servicios/pre-prensa/, consultada 2026-10-02.
+- **Estado**: por confirmar; el dato público se verificó en el sitio el 2026-10-02.
 
 ### REF-6. dospuntocero: revisión de archivos
 

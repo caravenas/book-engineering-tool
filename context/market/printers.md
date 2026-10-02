@@ -92,16 +92,33 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 - **Ronda**: dentro.
 - **Prioridad**: Alta.
 - **Comuna**: Santiago, RM.
-- **Perfil**: editorial / institucional.
-- **Procesos**: offset y digital; CTP.
-- **Equipamiento**: Heidelberg de 75×52 cm y de 70×100 cm; Ricoh digital de 31×46 cm.
-- **Encuadernación**: doblado, hilo, corchete, hotmelt, corte trilateral.
-- **Datos públicos**: una guía en PDF pide páginas correlativas, con los blancos incluidos, la tapa en archivo separado y un total múltiplo de 4; publica los tamaños de sus prensas.
+- **Dirección publicada**: Santa Elena 1955, Santiago.
+- **Perfil**: editorial / institucional, según la hoja; se presenta como Productora Gráfica Andros, con diseño y diagramación, preprensa, impresión, encuadernación, terminaciones y despacho.
+- **Procesos**: offset y digital; CTP; pruebas digitales antes del visto bueno.
+- **Equipamiento**: offset Heidelberg y digital Ricoh.
+  Su anexo «Formatos impresión» da, por máquina, papel máximo, impresión máxima y papel mínimo, en centímetros:
+  offset 4 colores, 72×52, 70×50,5 y 30×44; offset 5 colores, 72×102, 100×70,5 y 38×54; offset 2 colores, 72×102, 100×68,5 y 35×54; digital color y digital blanco y negro, 33×48, 31×46 y 17×25.
+  La página de impresión describe el offset por clases de colores, con otras cifras: «1 a 4 colores» hasta 75×52, «1 a 5 colores» hasta 70×100 y «1 a 1 color» hasta 70×100.
+  Si esas clases son las mismas máquinas del anexo, y qué fuente está al día, no se sabe.
+- **Formatos de pliego**: su anexo «Formatos pliegos» asocia pliegos y tamaños de libro:
+  72×102 o 77×110, para bond, bond ahuesado y couché, con libros de 24×34, 17×24 y 11×17;
+  66×96 o 66×88, para bond y bond ahuesado, con libros de 15,5×23, 15×23, 14×21 y 15×21;
+  62×92 o 60×90, para couché, con libros tamaño carta de 21,5×28, 22×28 y 20×27.
+  Cada pliego aparece dibujado como una grilla de 8 por 4 casillas.
+- **Encuadernación**: en su taller, dobladoras, cosedora al hilo y al alambre (corchete), entapadora hotmelt, guillotina trilateral, troqueladora y plisadora; alzado, intercalado y dobleces especiales.
+  Con proveedores externos: tapa dura (cartoné), anillado espiral y doble cero, cuño seco, serigrafía, UV sectorizado y folias.
+  En su taller, polilaminado opaco o brillante y termorretractilado.
+- **Datos públicos**: su página de preprensa pide imágenes a 300 PPP (mínimo 220), en CMYK, y un sangrado («excedentes») de 2 a 5 mm más allá del corte.
+  Pide, para libros, páginas correlativas y no en cuartillas, con las páginas blancas incluidas y la portada en otro archivo, y que «el número total de páginas (tapas incluidas) debe ser múltiplo de 4».
+  Su PDF de indicaciones pide archivos editables empaquetados o un PDF/X-1a:2001, revisado con PitStop, con perfiles ISO Fogra 39, Fogra 27 o ISO Coated v2.
 - **Área a entrevistar**: preprensa; gerencia de producción.
 - **Oportunidad (hipótesis)**: preflight, formato por prensa y reglas de encuadernación.
 - **Pregunta de validación**: contrastar su regla del múltiplo de 4 con cada tipo de producto.
-- **Fuentes**: https://andros.cl/servicios/pre-prensa/ y https://andros.cl/servicios/impresion/, citadas por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Lectura (inferencia)**: de las tres imprentas verificadas hasta ahora (A Impresores, Ograma y Andros), es la única que publica cifras de pliego y de área de impresión que la herramienta podría usar.
+  Como terceriza la tapa dura, es probable que las respuestas a `SUP-1` y `SUP-2` vengan de su proveedor; si Andros las conoce, hay que preguntarlo en la entrevista.
+  La grilla de 8 por 4 sugiere 32 casillas por cara del tamaño de libro menor de cada pliego; es una lectura del dibujo, no algo que el anexo diga.
+- **Fuentes**: https://andros.cl/servicios/pre-prensa/, https://andros.cl/servicios/impresion/, https://andros.cl/servicios/encuadernacion/, https://andros.cl/servicios/terminaciones/, https://andros.cl/2026/wp-content/uploads/2016/12/indicaciones.pdf, https://andros.cl/2026/wp-content/uploads/2016/12/anexo-1-formatos-de-impresión.pdf y https://andros.cl/2026/wp-content/uploads/2016/12/anexo-2-formatos-pliegos.pdf, consultadas 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02; sin contacto con la imprenta.
 
 ### DFG
 
