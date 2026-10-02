@@ -402,14 +402,18 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
 
 - **Ronda**: dentro.
 - **Prioridad**: Exploratoria.
-- **Comuna**: Santiago Centro, RM.
-- **Perfil**: catálogos / revistas.
-- **Procesos**: offset y digital.
-- **Equipamiento**: Heidelberg offset de 4 colores; formato no publicado.
-- **Encuadernación**: acabados publicados; encuadernación no detallada.
-- **Datos públicos**: catálogos y revistas, cotización en línea y enfoque empresarial.
+- **Comuna**: Santiago Centro; dirección publicada en Lord Cochrane.
+- **Perfil**: se describe como «imprenta especializada en cuadernos, revistas y catálogos con más de 25 años de experiencia», con una planta de 1.000 m².
+  Hace también volantes, libros, afiches, packaging, gran formato, diseño y preprensa.
+- **Procesos**: offset de 4 colores; ofrece tirajes cortos «desde 1 unidad» sin decir con qué proceso.
+- **Equipamiento**: Heidelberg Speed Master 52-4, con capacidad declarada de hasta 10.000 pliegos por hora; Ryobi 750E; Ricoh Pro C9200.
+  Formatos, márgenes y área imprimible: no aparecen en los textos consultados.
+- **Encuadernación**: «encuadernación profesional» para revistas, catálogos, libros y manuales, y espiral para manuales; troquelado, stamping, barniz y foliado.
+  No detalla métodos de encuadernación de libros.
 - **Área a entrevistar**: cotizaciones / producción.
 - **Oportunidad (hipótesis)**: presupuesto técnico para revistas y catálogos.
 - **Pregunta de validación**: si encuaderna en planta y maneja cuadernillos.
-- **Fuentes**: https://glimpresores.cl/impresion-offset, citada por la hoja.
-- **Estado**: transcrito de la hoja, sin verificar contra el sitio.
+- **Cómo se leyó**: el sitio se arma con JavaScript; sus textos se tomaron del paquete que lo arma, y solo los de presentación de la empresa.
+  Del resto del paquete no se usó nada.
+- **Fuentes**: https://glimpresores.cl/impresion-offset, consultada 2026-10-02.
+- **Estado**: verificado contra el sitio 2026-10-02, en el paquete del sitio y no en la página dibujada; sin contacto con la imprenta.
