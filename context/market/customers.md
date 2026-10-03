@@ -36,6 +36,24 @@ Según el Informe Estadístico ISBN 2025 de la Cámara Chilena del Libro, que re
 - **Fuentes**: https://editorialesdechile.cl/editorial_category/ilustracion/ y su segunda página, https://editorialesdechile.cl/editorial_category/ilustracion/page/2/, consultadas 2026-10-02.
 - **Estado**: verificado en el sitio 2026-10-02; sin contacto.
 
+## Compras públicas de libros
+
+### Programa de Bibliotecas Escolares CRA
+
+- **Qué hace**: cada año convoca a proveedores para que presenten libros para las bibliotecas escolares; con los libros recomendados pide, por un requerimiento de información en Mercado Público, precio e ISBN, y luego los compra por licitación.
+  Los proveedores de las editoriales entregan los libros terminados en bodegas del Ministerio de Educación.
+- **Un caso**: la licitación «Adquisición Libros Bibliotecas CRA» (592-4-LR23), adjudicada el 2023-08-21, tenía por objeto adquirir libros para educación básica y media de establecimientos subvencionados.
+- **Por qué importa (inferencia)**: en estas compras el Estado adquiere libros terminados a proveedores de editoriales, no servicios de impresión.
+  Quién elige la imprenta de esos libros, y si los libros álbum chilenos pesan en esas compras, son preguntas abiertas.
+- **Fuentes**: https://bibliotecas-cra.cl/gestion/procesos/proveedores/ y https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?qs=ManBxehvJb0GH+h6obQNIA%3D%3D, consultadas 2026-10-02.
+- **Estado**: el proceso y la licitación, verificados en las fuentes 2026-10-02; la lectura, inferencia.
+
+### Textos escolares
+
+- El Ministerio de Educación licita la impresión de los textos escolares; la de 2024, de 17.449.946 libros en 72 títulos, la ganó A Impresores (ver `printers.md`).
+  Son textos escolares, no libros álbum.
+- **Fuente**: https://www.mineduc.cl/textos-escolares-ministro-cataldo-visita-imprenta/, publicada 2024-01-23, consultada 2026-10-02.
+
 ## Preguntas que toca
 
 - Pregunta 2, cuántos y de qué tamaño: la literatura infantil fue el 10,35 % de los títulos con ISBN entre 2016 y 2025, y en 2025 el promedio de tirada se concentró en 1 a 500 ejemplares; no hay una cifra de editoriales de libro álbum en Santiago.

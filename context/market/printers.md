@@ -55,6 +55,8 @@ Una imprenta fuera de la ronda puede volver a ella si una sesión verifica que t
   Ofrece solo tapa blanda, 21×14 cm cerrado, interior en blanco y negro y papel ahuesado de 80 g.
   «Desde 25 a 1.000» ejemplares y «Desde 48 a 608» páginas son textos de ejemplo de campos de texto libre, no límites que el formulario imponga.
   Las páginas consultadas no traen reglas de preparación del archivo: sangrado, múltiplos de página o lomo.
+- **Compras públicas**: según el Ministerio de Educación, A Impresores ganó la licitación de impresión de los textos escolares 2024: 17.449.946 libros en 72 títulos, por $14.746.545.240.
+  Fuente: https://www.mineduc.cl/textos-escolares-ministro-cataldo-visita-imprenta/, publicada 2024-01-23, consultada 2026-10-02.
 - **Área a entrevistar**: preprensa / producción.
 - **Oportunidad (hipótesis)**: perfiles de máquina, cálculo de cuadernillos y ruta de producción.
 - **Pregunta de validación**: validar las reglas de imposición por prensa y el umbral entre offset y digital.
