@@ -6,6 +6,10 @@ Lo que explica el producto, el oficio y la construcción vive en `context/`, emp
 
 ## Dónde estamos
 
+- **Proyecto en pausa desde el 2026-10-04.**
+  Chris pausó PliegoStack como producto y cerró el experimento de arquitectura de agentes que lo motivó; lo registra `docs/decisions/2026-10-04-pliegostack-se-pausa-como-producto-tras-cerrar-el-experiment.md`.
+  Ninguno de los dos frentes de abajo avanza hasta que Chris levante la pausa con una decisión nueva.
+  UX-8 quedó cerrado; la ronda de Santiago queda abierta y pausada, con sus supuestos `SUP-1` a `SUP-5` y las preguntas 1 a 15 sin cerrar.
 - La pausa del 2026-09-24 sigue en pie, levantada solo para los dos frentes de este plan.
   La levantó la aprobación de la propuesta de tres capas el 2026-10-02.
 - Verificado el 2026-10-02 con Node v22.22.2, sobre `f28666c`: `npx tsc --noEmit` en 0, `npm test` con 490 tests en 20 archivos, `npm run build` y `npm run test:browser` con 46 pruebas en Chromium.
@@ -41,7 +45,7 @@ Que quien prepara un libro pueda llevarse la ficha técnica de lo que calculó: 
 6. `npm test`, `npm run build` y `npm run test:browser` terminan en 0, sin dependencias nuevas.
 
 **Estado.**
-Cerrado el 2026-10-02 en el commit `95a9c86`, sobre la rama `integrate/build-20261002`, pendiente de que Chris integre y apruebe el push.
+Cerrado el 2026-10-02 en el commit `95a9c86` e integrado a `master` en el commit de fusión `4246d81`; el push sigue pendiente de Chris.
 Verificado con Node v22.22.2: `npm test` con 505 tests en 21 archivos, `npm run build` y `npm run test:browser` con 52 pruebas en Chromium.
 La revisión a mano en Chrome sobre `npm run preview` incluyó la vista de impresión: dos hojas A4 sin controles de la herramienta.
 
